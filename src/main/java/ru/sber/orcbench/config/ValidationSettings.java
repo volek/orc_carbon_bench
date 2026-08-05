@@ -3,11 +3,21 @@ package ru.sber.orcbench.config;
 import java.util.EnumSet;
 import java.util.Set;
 
-public record ValidationSettings(
-        Set<ValidationCheck> checks,
-        double sampleFraction,
-        double logFormatShareTolerance
-) {
+public final class ValidationSettings {
+    private final Set<ValidationCheck> checks;
+    private final double sampleFraction;
+    private final double logFormatShareTolerance;
+
+    public ValidationSettings(
+            Set<ValidationCheck> checks,
+            double sampleFraction,
+            double logFormatShareTolerance
+    ) {
+        this.checks = checks;
+        this.sampleFraction = sampleFraction;
+        this.logFormatShareTolerance = logFormatShareTolerance;
+    }
+
     public static ValidationSettings defaults() {
         return new ValidationSettings(
                 EnumSet.allOf(ValidationCheck.class),
@@ -25,6 +35,18 @@ public record ValidationSettings(
         double tolerance = parseShareTolerance(kv.getOrDefault("log-format-share-tolerance", "0.15"));
 
         return new ValidationSettings(checks, sampleFraction, tolerance);
+    }
+
+    public Set<ValidationCheck> checks() {
+        return checks;
+    }
+
+    public double sampleFraction() {
+        return sampleFraction;
+    }
+
+    public double logFormatShareTolerance() {
+        return logFormatShareTolerance;
     }
 
     private static double parseSampleFraction(String raw) {

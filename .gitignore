@@ -1,2 +1,4 @@
 .gradle/
 build/
+!build/libs/
+!build/libs/orc-carbon-bench-0.1.0-SNAPSHOT-all.jar

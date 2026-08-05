@@ -2,29 +2,66 @@ package ru.sber.orcbench.config;
 
 import ru.sber.orcbench.generator.GeneratorConfig;
 
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.OptionalInt;
 import java.util.Set;
 
-public record AppConfig(
-        Mode mode,
-        StoragePaths paths,
-        Set<OutputFormat> outputFormats,
-        long targetSizeTb,
-        long seed,
-        long avgRowBytes,
-        int chunkDays,
-        long timestampStartEpochMs,
-        long timestampEndEpochMs,
-        int targetFileSizeMb,
-        OrcWriteSettings orcWrite,
-        CarbonWriteSettings carbonWrite,
-        BenchmarkSettings benchmark,
-        IndexExperimentSettings indexExperiment,
-        ValidationSettings validation,
-        ReportSettings report
-) {
+public final class AppConfig {
+    private final Mode mode;
+    private final StoragePaths paths;
+    private final Set<OutputFormat> outputFormats;
+    private final long targetSizeTb;
+    private final long seed;
+    private final long avgRowBytes;
+    private final int chunkDays;
+    private final long timestampStartEpochMs;
+    private final long timestampEndEpochMs;
+    private final int targetFileSizeMb;
+    private final OrcWriteSettings orcWrite;
+    private final CarbonWriteSettings carbonWrite;
+    private final BenchmarkSettings benchmark;
+    private final IndexExperimentSettings indexExperiment;
+    private final ValidationSettings validation;
+    private final ReportSettings report;
+
+    public AppConfig(
+            Mode mode,
+            StoragePaths paths,
+            Set<OutputFormat> outputFormats,
+            long targetSizeTb,
+            long seed,
+            long avgRowBytes,
+            int chunkDays,
+            long timestampStartEpochMs,
+            long timestampEndEpochMs,
+            int targetFileSizeMb,
+            OrcWriteSettings orcWrite,
+            CarbonWriteSettings carbonWrite,
+            BenchmarkSettings benchmark,
+            IndexExperimentSettings indexExperiment,
+            ValidationSettings validation,
+            ReportSettings report
+    ) {
+        this.mode = mode;
+        this.paths = paths;
+        this.outputFormats = outputFormats;
+        this.targetSizeTb = targetSizeTb;
+        this.seed = seed;
+        this.avgRowBytes = avgRowBytes;
+        this.chunkDays = chunkDays;
+        this.timestampStartEpochMs = timestampStartEpochMs;
+        this.timestampEndEpochMs = timestampEndEpochMs;
+        this.targetFileSizeMb = targetFileSizeMb;
+        this.orcWrite = orcWrite;
+        this.carbonWrite = carbonWrite;
+        this.benchmark = benchmark;
+        this.indexExperiment = indexExperiment;
+        this.validation = validation;
+        this.report = report;
+    }
+
     public static AppConfig fromArgs(String[] args) {
         Map<String, String> kv = parseArgs(args);
         String modeValue = require(kv, "mode");
@@ -79,7 +116,7 @@ public record AppConfig(
 
         Set<OutputFormat> outputFormats = kv.containsKey("output-formats")
                 ? OutputFormat.parseCsv(kv.get("output-formats"))
-                : Set.of(OutputFormat.ORC, OutputFormat.CARBON);
+                : EnumSet.of(OutputFormat.ORC, OutputFormat.CARBON);
 
         BenchmarkSettings benchmark = new BenchmarkSettings(
                 ArgParser.parseNonNegativeInt(kv.getOrDefault("benchmark-warmup-runs", "1"), "benchmark-warmup-runs"),
@@ -90,7 +127,7 @@ public record AppConfig(
                 ArgParser.parseBoolean(kv.getOrDefault("clear-cache-between-runs", "true"), "clear-cache-between-runs"),
                 kv.containsKey("formats")
                         ? BenchmarkSettings.parseFormats(kv.get("formats"))
-                        : Set.of(OutputFormat.ORC, OutputFormat.CARBON)
+                        : EnumSet.of(OutputFormat.ORC, OutputFormat.CARBON)
         );
 
         IndexExperimentSettings indexExperiment = IndexExperimentSettings.from(kv, paths, carbonWrite, benchmark);
@@ -115,6 +152,70 @@ public record AppConfig(
                 validation,
                 report
         );
+    }
+
+    public Mode mode() {
+        return mode;
+    }
+
+    public StoragePaths paths() {
+        return paths;
+    }
+
+    public Set<OutputFormat> outputFormats() {
+        return outputFormats;
+    }
+
+    public long targetSizeTb() {
+        return targetSizeTb;
+    }
+
+    public long seed() {
+        return seed;
+    }
+
+    public long avgRowBytes() {
+        return avgRowBytes;
+    }
+
+    public int chunkDays() {
+        return chunkDays;
+    }
+
+    public long timestampStartEpochMs() {
+        return timestampStartEpochMs;
+    }
+
+    public long timestampEndEpochMs() {
+        return timestampEndEpochMs;
+    }
+
+    public int targetFileSizeMb() {
+        return targetFileSizeMb;
+    }
+
+    public OrcWriteSettings orcWrite() {
+        return orcWrite;
+    }
+
+    public CarbonWriteSettings carbonWrite() {
+        return carbonWrite;
+    }
+
+    public BenchmarkSettings benchmark() {
+        return benchmark;
+    }
+
+    public IndexExperimentSettings indexExperiment() {
+        return indexExperiment;
+    }
+
+    public ValidationSettings validation() {
+        return validation;
+    }
+
+    public ReportSettings report() {
+        return report;
     }
 
     public String basePath() {
@@ -172,7 +273,7 @@ public record AppConfig(
 
     private static String require(Map<String, String> kv, String key) {
         String value = kv.get(key);
-        if (value == null || value.isBlank()) {
+        if (value == null || value.trim().isEmpty()) {
             throw new IllegalArgumentException("Missing required argument: --" + key + "=...");
         }
         return value;

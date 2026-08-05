@@ -3,13 +3,27 @@ package ru.sber.orcbench.config;
 import java.util.EnumSet;
 import java.util.Set;
 
-public record BenchmarkSettings(
-        int warmupRuns,
-        int repeatRuns,
-        Set<BenchmarkScenario> scenarios,
-        boolean clearCacheBetweenRuns,
-        Set<OutputFormat> formats
-) {
+public final class BenchmarkSettings {
+    private final int warmupRuns;
+    private final int repeatRuns;
+    private final Set<BenchmarkScenario> scenarios;
+    private final boolean clearCacheBetweenRuns;
+    private final Set<OutputFormat> formats;
+
+    public BenchmarkSettings(
+            int warmupRuns,
+            int repeatRuns,
+            Set<BenchmarkScenario> scenarios,
+            boolean clearCacheBetweenRuns,
+            Set<OutputFormat> formats
+    ) {
+        this.warmupRuns = warmupRuns;
+        this.repeatRuns = repeatRuns;
+        this.scenarios = scenarios;
+        this.clearCacheBetweenRuns = clearCacheBetweenRuns;
+        this.formats = formats;
+    }
+
     public static BenchmarkSettings defaults() {
         return new BenchmarkSettings(
                 1,
@@ -36,5 +50,25 @@ public record BenchmarkSettings(
 
     public static Set<OutputFormat> parseFormats(String raw) {
         return OutputFormat.parseCsv(raw);
+    }
+
+    public int warmupRuns() {
+        return warmupRuns;
+    }
+
+    public int repeatRuns() {
+        return repeatRuns;
+    }
+
+    public Set<BenchmarkScenario> scenarios() {
+        return scenarios;
+    }
+
+    public boolean clearCacheBetweenRuns() {
+        return clearCacheBetweenRuns;
+    }
+
+    public Set<OutputFormat> formats() {
+        return formats;
     }
 }

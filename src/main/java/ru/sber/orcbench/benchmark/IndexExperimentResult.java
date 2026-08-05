@@ -6,20 +6,48 @@ import ru.sber.orcbench.config.OutputFormat;
 
 import java.time.Instant;
 
-public record IndexExperimentResult(
-        String runId,
-        BenchmarkScenario scenario,
-        OutputFormat format,
-        IndexProfile indexProfile,
-        String logFormat,
-        int runIndex,
-        long durationMs,
-        long rowsReturned,
-        long totalRows,
-        double selectivity,
-        long seed,
-        Instant executedAt
-) {
+public final class IndexExperimentResult {
+    private final String runId;
+    private final BenchmarkScenario scenario;
+    private final OutputFormat format;
+    private final IndexProfile indexProfile;
+    private final String logFormat;
+    private final int runIndex;
+    private final long durationMs;
+    private final long rowsReturned;
+    private final long totalRows;
+    private final double selectivity;
+    private final long seed;
+    private final Instant executedAt;
+
+    public IndexExperimentResult(
+            String runId,
+            BenchmarkScenario scenario,
+            OutputFormat format,
+            IndexProfile indexProfile,
+            String logFormat,
+            int runIndex,
+            long durationMs,
+            long rowsReturned,
+            long totalRows,
+            double selectivity,
+            long seed,
+            Instant executedAt
+    ) {
+        this.runId = runId;
+        this.scenario = scenario;
+        this.format = format;
+        this.indexProfile = indexProfile;
+        this.logFormat = logFormat;
+        this.runIndex = runIndex;
+        this.durationMs = durationMs;
+        this.rowsReturned = rowsReturned;
+        this.totalRows = totalRows;
+        this.selectivity = selectivity;
+        this.seed = seed;
+        this.executedAt = executedAt;
+    }
+
     public static IndexExperimentResult of(
             String runId,
             BenchmarkScenario scenario,
@@ -47,5 +75,53 @@ public record IndexExperimentResult(
                 seed,
                 Instant.now()
         );
+    }
+
+    public String runId() {
+        return runId;
+    }
+
+    public BenchmarkScenario scenario() {
+        return scenario;
+    }
+
+    public OutputFormat format() {
+        return format;
+    }
+
+    public IndexProfile indexProfile() {
+        return indexProfile;
+    }
+
+    public String logFormat() {
+        return logFormat;
+    }
+
+    public int runIndex() {
+        return runIndex;
+    }
+
+    public long durationMs() {
+        return durationMs;
+    }
+
+    public long rowsReturned() {
+        return rowsReturned;
+    }
+
+    public long totalRows() {
+        return totalRows;
+    }
+
+    public double selectivity() {
+        return selectivity;
+    }
+
+    public long seed() {
+        return seed;
+    }
+
+    public Instant executedAt() {
+        return executedAt;
     }
 }

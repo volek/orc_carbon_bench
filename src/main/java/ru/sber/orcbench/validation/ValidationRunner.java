@@ -62,17 +62,34 @@ public final class ValidationRunner {
         Dataset<Row> carbonSample = carbonFull.sample(false, settings.sampleFraction(), seed);
 
         for (ValidationCheck check : settings.checks()) {
-            ValidationResult result = switch (check) {
-                case ROW_COUNT_PARITY -> checkRowCountParity(runId, orcRows, carbonRows);
-                case CHECKSUM_PARITY -> checkChecksumParity(runId, orcFull, carbonFull);
-                case SAMPLE_QUERY_PARITY -> checkSampleQueryParity(
-                        runId, orcFull, carbonFull, timestampStartMs, timestampEndMs
-                );
-                case LOW_CARDINALITY_BOUNDS -> checkLowCardinalityBounds(runId, orcSample);
-                case TIMESTAMP_RANGE -> checkTimestampRange(runId, orcSample, timestampStartMs, timestampEndMs);
-                case LOG_FORMAT_DISTRIBUTION -> checkLogFormatDistribution(runId, orcSample, settings);
-                case LOG_MESSAGE_STRUCTURE -> checkLogMessageStructure(runId, orcSample);
-            };
+            ValidationResult result;
+            switch (check) {
+                case ROW_COUNT_PARITY:
+                    result = checkRowCountParity(runId, orcRows, carbonRows);
+                    break;
+                case CHECKSUM_PARITY:
+                    result = checkChecksumParity(runId, orcFull, carbonFull);
+                    break;
+                case SAMPLE_QUERY_PARITY:
+                    result = checkSampleQueryParity(
+                            runId, orcFull, carbonFull, timestampStartMs, timestampEndMs
+                    );
+                    break;
+                case LOW_CARDINALITY_BOUNDS:
+                    result = checkLowCardinalityBounds(runId, orcSample);
+                    break;
+                case TIMESTAMP_RANGE:
+                    result = checkTimestampRange(runId, orcSample, timestampStartMs, timestampEndMs);
+                    break;
+                case LOG_FORMAT_DISTRIBUTION:
+                    result = checkLogFormatDistribution(runId, orcSample, settings);
+                    break;
+                case LOG_MESSAGE_STRUCTURE:
+                    result = checkLogMessageStructure(runId, orcSample);
+                    break;
+                default:
+                    throw new IllegalStateException("Unsupported validation check: " + check);
+            }
             results.add(result);
             LOG.info("Validation check={} passed={} message={}", check.cliValue(), result.passed(), result.message());
         }
@@ -268,7 +285,7 @@ public final class ValidationRunner {
                         result.details(),
                         result.executedAt().toString()
                 ))
-                .toList();
+                .collect(Collectors.toList());
 
         spark.createDataFrame(rows, schema)
                 .coalesce(1)

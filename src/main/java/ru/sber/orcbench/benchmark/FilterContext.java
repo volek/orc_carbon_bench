@@ -5,18 +5,44 @@ import org.apache.spark.sql.Row;
 import java.io.Serializable;
 import java.time.Instant;
 
-public record FilterContext(
-        String eventId,
-        long userId,
-        String countryCode,
-        String status,
-        long productId,
-        long campaignId,
-        String logFormat,
-        String searchToken,
-        Instant timestampStart,
-        Instant timestampEnd
-) implements Serializable {
+public final class FilterContext implements Serializable {
+    private static final long serialVersionUID = 1L;
+
+    private final String eventId;
+    private final long userId;
+    private final String countryCode;
+    private final String status;
+    private final long productId;
+    private final long campaignId;
+    private final String logFormat;
+    private final String searchToken;
+    private final Instant timestampStart;
+    private final Instant timestampEnd;
+
+    public FilterContext(
+            String eventId,
+            long userId,
+            String countryCode,
+            String status,
+            long productId,
+            long campaignId,
+            String logFormat,
+            String searchToken,
+            Instant timestampStart,
+            Instant timestampEnd
+    ) {
+        this.eventId = eventId;
+        this.userId = userId;
+        this.countryCode = countryCode;
+        this.status = status;
+        this.productId = productId;
+        this.campaignId = campaignId;
+        this.logFormat = logFormat;
+        this.searchToken = searchToken;
+        this.timestampStart = timestampStart;
+        this.timestampEnd = timestampEnd;
+    }
+
     public static FilterContext fromSample(Row row, long timestampStartMs, long timestampEndMs) {
         String logMessage = row.getAs("log_message");
         String token = "mobile";
@@ -36,5 +62,45 @@ public record FilterContext(
                 Instant.ofEpochMilli(timestampStartMs),
                 Instant.ofEpochMilli(timestampEndMs)
         );
+    }
+
+    public String eventId() {
+        return eventId;
+    }
+
+    public long userId() {
+        return userId;
+    }
+
+    public String countryCode() {
+        return countryCode;
+    }
+
+    public String status() {
+        return status;
+    }
+
+    public long productId() {
+        return productId;
+    }
+
+    public long campaignId() {
+        return campaignId;
+    }
+
+    public String logFormat() {
+        return logFormat;
+    }
+
+    public String searchToken() {
+        return searchToken;
+    }
+
+    public Instant timestampStart() {
+        return timestampStart;
+    }
+
+    public Instant timestampEnd() {
+        return timestampEnd;
     }
 }

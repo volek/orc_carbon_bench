@@ -2,6 +2,7 @@ package ru.sber.orcbench.generator;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public enum LogFormatType {
     JSON("json"),
@@ -11,7 +12,7 @@ public enum LogFormatType {
 
     public static final List<String> ALL_VALUES = Arrays.stream(values())
             .map(LogFormatType::value)
-            .toList();
+            .collect(Collectors.toList());
 
     private final String value;
 

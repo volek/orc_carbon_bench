@@ -5,19 +5,45 @@ import ru.sber.orcbench.config.OutputFormat;
 
 import java.time.Instant;
 
-public record BenchmarkResult(
-        String runId,
-        BenchmarkScenario scenario,
-        OutputFormat format,
-        int runIndex,
-        boolean warmup,
-        long durationMs,
-        long rowsReturned,
-        long totalRows,
-        double selectivity,
-        long seed,
-        Instant executedAt
-) {
+public final class BenchmarkResult {
+    private final String runId;
+    private final BenchmarkScenario scenario;
+    private final OutputFormat format;
+    private final int runIndex;
+    private final boolean warmup;
+    private final long durationMs;
+    private final long rowsReturned;
+    private final long totalRows;
+    private final double selectivity;
+    private final long seed;
+    private final Instant executedAt;
+
+    public BenchmarkResult(
+            String runId,
+            BenchmarkScenario scenario,
+            OutputFormat format,
+            int runIndex,
+            boolean warmup,
+            long durationMs,
+            long rowsReturned,
+            long totalRows,
+            double selectivity,
+            long seed,
+            Instant executedAt
+    ) {
+        this.runId = runId;
+        this.scenario = scenario;
+        this.format = format;
+        this.runIndex = runIndex;
+        this.warmup = warmup;
+        this.durationMs = durationMs;
+        this.rowsReturned = rowsReturned;
+        this.totalRows = totalRows;
+        this.selectivity = selectivity;
+        this.seed = seed;
+        this.executedAt = executedAt;
+    }
+
     public static BenchmarkResult of(
             String runId,
             BenchmarkScenario scenario,
@@ -43,5 +69,49 @@ public record BenchmarkResult(
                 seed,
                 Instant.now()
         );
+    }
+
+    public String runId() {
+        return runId;
+    }
+
+    public BenchmarkScenario scenario() {
+        return scenario;
+    }
+
+    public OutputFormat format() {
+        return format;
+    }
+
+    public int runIndex() {
+        return runIndex;
+    }
+
+    public boolean warmup() {
+        return warmup;
+    }
+
+    public long durationMs() {
+        return durationMs;
+    }
+
+    public long rowsReturned() {
+        return rowsReturned;
+    }
+
+    public long totalRows() {
+        return totalRows;
+    }
+
+    public double selectivity() {
+        return selectivity;
+    }
+
+    public long seed() {
+        return seed;
+    }
+
+    public Instant executedAt() {
+        return executedAt;
     }
 }

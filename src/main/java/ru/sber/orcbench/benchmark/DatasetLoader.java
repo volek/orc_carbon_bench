@@ -10,9 +10,13 @@ public final class DatasetLoader {
     }
 
     public static Dataset<Row> load(SparkSession spark, OutputFormat format, String orcPath, String carbonPath) {
-        return switch (format) {
-            case ORC -> spark.read().orc(orcPath);
-            case CARBON -> spark.read().format("carbondata").load(carbonPath);
-        };
+        switch (format) {
+            case ORC:
+                return spark.read().orc(orcPath);
+            case CARBON:
+                return spark.read().format("carbondata").load(carbonPath);
+            default:
+                throw new IllegalStateException("Unsupported format: " + format);
+        }
     }
 }

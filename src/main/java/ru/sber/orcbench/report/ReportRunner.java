@@ -1,5 +1,6 @@
 package ru.sber.orcbench.report;
 
+import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.spark.sql.Dataset;
@@ -201,7 +202,7 @@ public final class ReportRunner {
             if (fs.exists(hadoopPath)) {
                 fs.delete(hadoopPath, false);
             }
-            try (var out = fs.create(hadoopPath, true)) {
+            try (FSDataOutputStream out = fs.create(hadoopPath, true)) {
                 out.write(markdown.getBytes(StandardCharsets.UTF_8));
             }
         } catch (IOException ex) {

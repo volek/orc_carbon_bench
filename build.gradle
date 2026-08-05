@@ -1,6 +1,7 @@
 plugins {
     id 'java'
     id 'application'
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
 }
 
 group = 'ru.sber.orcbench'
@@ -8,19 +9,28 @@ version = '0.1.0-SNAPSHOT'
 
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(18)
+        languageVersion = JavaLanguageVersion.of(8)
     }
 }
 
-repositories {
-    mavenCentral()
-}
-
-def sparkVersion = '3.5.1'
-def slf4jVersion = '2.0.13'
+def sparkVersion = '3.2.1'
+def carbonVersion = '2.3.0'
+def slf4jVersion = '1.7.36'
 
 dependencies {
     compileOnly "org.apache.spark:spark-sql_2.12:${sparkVersion}"
+
+    implementation("org.apache.carbondata:carbondata-spark_3.1:${carbonVersion}") {
+        exclude group: 'org.apache.spark'
+        exclude group: 'org.apache.hadoop'
+        exclude group: 'org.scala-lang'
+        exclude group: 'org.scala-lang.modules'
+        exclude group: 'io.confluent'
+        exclude module: 'carbondata-streaming_3.1'
+        exclude module: 'spark-streaming_2.12'
+        exclude module: 'spark-streaming-kafka-0-10_2.12'
+    }
+
     implementation "org.slf4j:slf4j-api:${slf4jVersion}"
     implementation "org.slf4j:slf4j-simple:${slf4jVersion}"
 
@@ -41,6 +51,26 @@ jar {
     manifest {
         attributes 'Main-Class': 'ru.sber.orcbench.AppMain'
     }
+}
+
+shadowJar {
+    archiveClassifier.set('all')
+    mergeServiceFiles()
+
+    dependencies {
+        exclude(dependency('org.apache.spark:.*'))
+        exclude(dependency('org.apache.hadoop:.*'))
+        exclude(dependency('org.scala-lang:.*'))
+        exclude(dependency('org.scala-lang.modules:.*'))
+    }
+
+    manifest {
+        attributes 'Main-Class': 'ru.sber.orcbench.AppMain'
+    }
+}
+
+tasks.named('build') {
+    dependsOn tasks.named('shadowJar')
 }
 
 tasks.test {

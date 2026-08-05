@@ -37,48 +37,60 @@ public final class AppMain {
             );
 
             switch (config.mode()) {
-                case GENERATE -> GenerateRunner.run(spark, GeneratorConfig.from(config));
-                case VALIDATE -> ValidationRunner.run(
-                        spark,
-                        config.validation(),
-                        config.orcPath(),
-                        config.carbonPath(),
-                        config.reportsValidationPath(),
-                        config.seed(),
-                        config.timestampStartEpochMs(),
-                        config.timestampEndEpochMs()
-                );
-                case INDEX_EXPERIMENT -> IndexExperimentRunner.run(
-                        spark,
-                        config.indexExperiment(),
-                        config.carbonWrite(),
-                        config.orcPath(),
-                        config.carbonPath(),
-                        config.reportsIndexPath(),
-                        config.reportsIndexBuildPath(),
-                        config.seed(),
-                        config.timestampStartEpochMs(),
-                        config.timestampEndEpochMs()
-                );
-                case BENCHMARK -> BenchmarkRunner.run(
-                        spark,
-                        config.benchmark(),
-                        config.orcPath(),
-                        config.carbonPath(),
-                        config.reportsRawPath(),
-                        config.seed(),
-                        config.timestampStartEpochMs(),
-                        config.timestampEndEpochMs()
-                );
-                case REPORT -> ReportRunner.run(
-                        spark,
-                        config.report(),
-                        config.reportsRawPath(),
-                        config.reportsIndexPath(),
-                        config.reportsIndexBuildPath(),
-                        config.reportsValidationPath(),
-                        config.reportsSummaryPath()
-                );
+                case GENERATE:
+                    GenerateRunner.run(spark, GeneratorConfig.from(config));
+                    break;
+                case VALIDATE:
+                    ValidationRunner.run(
+                            spark,
+                            config.validation(),
+                            config.orcPath(),
+                            config.carbonPath(),
+                            config.reportsValidationPath(),
+                            config.seed(),
+                            config.timestampStartEpochMs(),
+                            config.timestampEndEpochMs()
+                    );
+                    break;
+                case INDEX_EXPERIMENT:
+                    IndexExperimentRunner.run(
+                            spark,
+                            config.indexExperiment(),
+                            config.carbonWrite(),
+                            config.orcPath(),
+                            config.carbonPath(),
+                            config.reportsIndexPath(),
+                            config.reportsIndexBuildPath(),
+                            config.seed(),
+                            config.timestampStartEpochMs(),
+                            config.timestampEndEpochMs()
+                    );
+                    break;
+                case BENCHMARK:
+                    BenchmarkRunner.run(
+                            spark,
+                            config.benchmark(),
+                            config.orcPath(),
+                            config.carbonPath(),
+                            config.reportsRawPath(),
+                            config.seed(),
+                            config.timestampStartEpochMs(),
+                            config.timestampEndEpochMs()
+                    );
+                    break;
+                case REPORT:
+                    ReportRunner.run(
+                            spark,
+                            config.report(),
+                            config.reportsRawPath(),
+                            config.reportsIndexPath(),
+                            config.reportsIndexBuildPath(),
+                            config.reportsValidationPath(),
+                            config.reportsSummaryPath()
+                    );
+                    break;
+                default:
+                    throw new IllegalStateException("Unsupported mode: " + config.mode());
             }
         } finally {
             spark.stop();

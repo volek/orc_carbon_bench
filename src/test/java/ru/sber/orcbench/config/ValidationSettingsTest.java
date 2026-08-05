@@ -2,6 +2,7 @@ package ru.sber.orcbench.config;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -11,11 +12,11 @@ class ValidationSettingsTest {
 
     @Test
     void parsesCustomChecksAndSampleFraction() {
-        ValidationSettings settings = ValidationSettings.from(Map.of(
-                "validation-checks", "row_count_parity,checksum_parity",
-                "validation-sample-fraction", "0.05",
-                "log-format-share-tolerance", "0.2"
-        ));
+        Map<String, String> args = new HashMap<>();
+        args.put("validation-checks", "row_count_parity,checksum_parity");
+        args.put("validation-sample-fraction", "0.05");
+        args.put("log-format-share-tolerance", "0.2");
+        ValidationSettings settings = ValidationSettings.from(args);
 
         assertEquals(2, settings.checks().size());
         assertTrue(settings.checks().contains(ValidationCheck.ROW_COUNT_PARITY));

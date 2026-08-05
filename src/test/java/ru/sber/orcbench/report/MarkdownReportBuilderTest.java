@@ -6,6 +6,8 @@ import org.apache.spark.sql.types.DataTypes;
 import org.apache.spark.sql.types.StructType;
 import org.junit.jupiter.api.Test;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -29,11 +31,11 @@ class MarkdownReportBuilderTest {
 
     @Test
     void buildsComparisonAndRecommendations() {
-        List<Row> rows = List.of(
+        List<Row> rows = Collections.unmodifiableList(Arrays.asList(
                 row("benchmark", "point_lookup", "orc", 3L, 90.0, null),
                 row("benchmark", "point_lookup", "carbon", 3L, 60.0, null),
                 row("validation", "row_count_parity", "n/a", 1L, null, true)
-        );
+        ));
 
         String markdown = MarkdownReportBuilder.build(rows, "test-report");
 

@@ -107,7 +107,7 @@ public final class CarbonWriter {
 
     private static void setIfMissing(SparkSession spark, String key, String value) {
         String current = spark.conf().get(key, "");
-        if (current == null || current.isBlank()) {
+        if (current == null || current.trim().isEmpty()) {
             spark.conf().set(key, value);
         }
     }

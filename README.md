@@ -1,27 +1,31 @@
 # orc-carbon-bench
 
-Spark 3 / Java 18 приложение для сравнения форматов хранения ORC и CarbonData на HDFS.
+Spark 3 / Java 8 приложение для сравнения форматов хранения ORC и CarbonData на HDFS.
 
 ## Требования
 
-- Java 18
-- Spark 3.x кластер
+- Java 8 (совместимо с JVM кластера)
+- Spark **3.2.x** кластер
 - HDFS (или совместимое хранилище)
-- CarbonData JAR на classpath (при записи в CarbonData)
+- Fat JAR со встроенным CarbonData (`*-all.jar`) — отдельный `--packages` не нужен
 
 ## Сборка
-
-```bash
-gradlew.bat build
-```
-
-Linux/macOS:
 
 ```bash
 ./gradlew build
 ```
 
-Артефакт: `build/libs/orc-carbon-bench-0.1.0-SNAPSHOT.jar`
+Windows:
+
+```bash
+gradlew.bat build
+```
+
+Артефакты:
+- `build/libs/orc-carbon-bench-0.1.0-SNAPSHOT.jar` — тонкий JAR
+- `build/libs/orc-carbon-bench-0.1.0-SNAPSHOT-all.jar` — **fat JAR** (приложение + CarbonData 2.3.0 / Spark 3.1 module, без Spark/Hadoop)
+
+Версии сборки: Spark compile `3.2.1`, CarbonData `org.apache.carbondata:carbondata-spark_3.1:2.3.0`.
 
 ## Формат аргументов
 
@@ -58,13 +62,13 @@ generate  →  validate  →  benchmark  →  index-experiment  →  report
 | `--carbon-path` | `<base-path>/carbon` | Путь для CarbonData |
 | `--reports-path` | `<base-path>/reports` | Путь для отчётов бенчмарков |
 
-Пример с полностью кастомными путями:
+Пример для целевого кластера:
 
 ```bash
---base-path=hdfs://namenode:8020/bench/orc-carbon \
---orc-path=hdfs://namenode:8020/data/bench/orc \
---carbon-path=hdfs://namenode:8020/data/bench/carbon \
---reports-path=hdfs://namenode:8020/data/bench/reports
+--base-path=hdfs://dev1-abyss-sdp2-ambari-02.opsmon.sbt:50470/bench/orc-carbon \
+--orc-path=hdfs://dev1-abyss-sdp2-ambari-02.opsmon.sbt:50470/bench/orc-carbon/orc \
+--carbon-path=hdfs://dev1-abyss-sdp2-ambari-02.opsmon.sbt:50470/bench/orc-carbon/carbon \
+--reports-path=hdfs://dev1-abyss-sdp2-ambari-02.opsmon.sbt:50470/bench/orc-carbon/reports
 ```
 
 Структура каталогов:
@@ -150,13 +154,7 @@ spark.sql.extensions=org.apache.spark.sql.CarbonExtensions
 spark.sql.catalog.spark_catalog=org.apache.spark.sql.CarbonSessionCatalog
 ```
 
-CarbonData JAR на classpath:
-
-```bash
-spark-submit \
-  --packages org.apache.carbondata:carbondata-spark3-3.5_2.12:2.8.1 \
-  ...
-```
+CarbonData уже внутри fat JAR — **не** передавайте `--packages`.
 
 ### Расчёты
 
@@ -196,13 +194,12 @@ write_partitions   = ceil(chunk_rows * avg_row_bytes / target_file_size_mb / 102
 
 ```bash
 spark-submit \
-  --packages org.apache.carbondata:carbondata-spark3-3.5_2.12:2.8.1 \
+  --master yarn \
+  --deploy-mode cluster \
   --class ru.sber.orcbench.AppMain \
-  build/libs/orc-carbon-bench-0.1.0-SNAPSHOT.jar \
+  build/libs/orc-carbon-bench-0.1.0-SNAPSHOT-all.jar \
   --mode=generate \
-  --base-path=hdfs://namenode:8020/bench/orc-carbon \
-  --orc-path=hdfs://namenode:8020/bench/orc-carbon/orc \
-  --carbon-path=hdfs://namenode:8020/bench/orc-carbon/carbon \
+  --base-path=hdfs://dev1-abyss-sdp2-ambari-02.opsmon.sbt:50470/bench/orc-carbon \
   --target-size-tb=5 \
   --seed=42 \
   --output-formats=orc,carbon \
@@ -215,10 +212,12 @@ spark-submit \
 
 ```bash
 spark-submit \
+  --master yarn \
+  --deploy-mode cluster \
   --class ru.sber.orcbench.AppMain \
-  build/libs/orc-carbon-bench-0.1.0-SNAPSHOT.jar \
+  build/libs/orc-carbon-bench-0.1.0-SNAPSHOT-all.jar \
   --mode=generate \
-  --orc-path=hdfs://namenode:8020/data/bench/orc \
+  --base-path=hdfs://dev1-abyss-sdp2-ambari-02.opsmon.sbt:50470/bench/orc-carbon \
   --output-formats=orc \
   --target-size-tb=1 \
   --orc-compression=zstd
@@ -228,11 +227,12 @@ spark-submit \
 
 ```bash
 spark-submit \
-  --packages org.apache.carbondata:carbondata-spark3-3.5_2.12:2.8.1 \
+  --master yarn \
+  --deploy-mode cluster \
   --class ru.sber.orcbench.AppMain \
-  build/libs/orc-carbon-bench-0.1.0-SNAPSHOT.jar \
+  build/libs/orc-carbon-bench-0.1.0-SNAPSHOT-all.jar \
   --mode=generate \
-  --carbon-path=hdfs://namenode:8020/data/bench/carbon \
+  --base-path=hdfs://dev1-abyss-sdp2-ambari-02.opsmon.sbt:50470/bench/orc-carbon \
   --output-formats=carbon \
   --target-size-tb=1 \
   --enable-bloom-index=true \
@@ -249,7 +249,7 @@ spark-submit \
 ### Сценарии
 
 | Сценарий | Описание |
-|---|---|
+|---|---|---|
 | `full_scan` | Полное сканирование |
 | `projection` | Выбор подмножества колонок |
 | `filter_low_cardinality` | Фильтр по `country_code`, `status` |
@@ -264,7 +264,7 @@ spark-submit \
 ### Метрики (Parquet в `<reports-path>/raw/`)
 
 | Поле | Описание |
-|---|---|
+|---|---|---|
 | `run_id` | ID прогона |
 | `scenario` | Имя сценария |
 | `format` | `orc` или `carbon` |
@@ -299,12 +299,12 @@ spark-submit \
 
 ```bash
 spark-submit \
+  --master yarn \
+  --deploy-mode cluster \
   --class ru.sber.orcbench.AppMain \
-  build/libs/orc-carbon-bench-0.1.0-SNAPSHOT.jar \
+  build/libs/orc-carbon-bench-0.1.0-SNAPSHOT-all.jar \
   --mode=benchmark \
-  --orc-path=hdfs://namenode:8020/bench/orc-carbon/orc \
-  --carbon-path=hdfs://namenode:8020/bench/orc-carbon/carbon \
-  --reports-path=hdfs://namenode:8020/bench/orc-carbon/reports \
+  --base-path=hdfs://dev1-abyss-sdp2-ambari-02.opsmon.sbt:50470/bench/orc-carbon \
   --seed=42
 ```
 
@@ -374,15 +374,16 @@ spark-submit \
 
 ```bash
 spark-submit \
-  --packages org.apache.carbondata:carbondata-spark3-3.5_2.12:2.8.1 \
+  --master yarn \
+  --deploy-mode cluster \
   --class ru.sber.orcbench.AppMain \
-  build/libs/orc-carbon-bench-0.1.0-SNAPSHOT.jar \
+  build/libs/orc-carbon-bench-0.1.0-SNAPSHOT-all.jar \
   --mode=index-experiment \
-  --orc-path=hdfs://namenode:8020/bench/orc-carbon/orc \
-  --carbon-baseline-path=hdfs://namenode:8020/bench/orc-carbon/carbon-baseline \
-  --carbon-bloom-path=hdfs://namenode:8020/bench/orc-carbon/carbon-bloom \
-  --carbon-lucene-path=hdfs://namenode:8020/bench/orc-carbon/carbon-lucene \
-  --carbon-bloom-lucene-path=hdfs://namenode:8020/bench/orc-carbon/carbon-bloom-lucene \
+  --base-path=hdfs://dev1-abyss-sdp2-ambari-02.opsmon.sbt:50470/bench/orc-carbon \
+  --carbon-baseline-path=hdfs://dev1-abyss-sdp2-ambari-02.opsmon.sbt:50470/bench/orc-carbon/carbon-baseline \
+  --carbon-bloom-path=hdfs://dev1-abyss-sdp2-ambari-02.opsmon.sbt:50470/bench/orc-carbon/carbon-bloom \
+  --carbon-lucene-path=hdfs://dev1-abyss-sdp2-ambari-02.opsmon.sbt:50470/bench/orc-carbon/carbon-lucene \
+  --carbon-bloom-lucene-path=hdfs://dev1-abyss-sdp2-ambari-02.opsmon.sbt:50470/bench/orc-carbon/carbon-bloom-lucene \
   --index-profiles=baseline,bloom,lucene,bloom_lucene \
   --seed=42
 ```
@@ -396,7 +397,7 @@ spark-submit \
 ### Проверки
 
 | Проверка | Описание |
-|---|---|
+|---|---|---|
 | `row_count_parity` | Число строк ORC == CarbonData |
 | `checksum_parity` | Контрольные суммы по ключевым колонкам совпадают |
 | `sample_query_parity` | Одинаковый фильтр возвращает одинаковый count в ORC и Carbon |
@@ -424,7 +425,7 @@ spark-submit \
 Локальные тесты без Spark-кластера:
 
 ```bash
-gradlew.bat test
+./gradlew test
 ```
 
 Покрывают: `ArgParser`, `GeneratorConfig`, `LogMessageBuilder`, `ValidationSettings`, `IndexProfile`.
@@ -433,13 +434,12 @@ gradlew.bat test
 
 ```bash
 spark-submit \
-  --packages org.apache.carbondata:carbondata-spark3-3.5_2.12:2.8.1 \
+  --master yarn \
+  --deploy-mode cluster \
   --class ru.sber.orcbench.AppMain \
-  build/libs/orc-carbon-bench-0.1.0-SNAPSHOT.jar \
+  build/libs/orc-carbon-bench-0.1.0-SNAPSHOT-all.jar \
   --mode=validate \
-  --orc-path=hdfs://namenode:8020/bench/orc-carbon/orc \
-  --carbon-path=hdfs://namenode:8020/bench/orc-carbon/carbon \
-  --reports-path=hdfs://namenode:8020/bench/orc-carbon/reports \
+  --base-path=hdfs://dev1-abyss-sdp2-ambari-02.opsmon.sbt:50470/bench/orc-carbon \
   --validation-checks=all \
   --validation-sample-fraction=0.01
 ```
@@ -464,7 +464,7 @@ spark-submit \
 ### Выходные файлы (`<reports-path>/summary/`)
 
 | Файл | Описание |
-|---|---|
+|---|---|---|
 | `results.parquet` | Агрегированные метрики (benchmark, index, validation) |
 | `results.csv` | То же в CSV |
 | `results.json` | То же в JSON |
@@ -480,56 +480,59 @@ spark-submit \
 
 ```bash
 spark-submit \
+  --master yarn \
+  --deploy-mode cluster \
   --class ru.sber.orcbench.AppMain \
-  build/libs/orc-carbon-bench-0.1.0-SNAPSHOT.jar \
+  build/libs/orc-carbon-bench-0.1.0-SNAPSHOT-all.jar \
   --mode=report \
-  --reports-path=hdfs://namenode:8020/bench/orc-carbon/reports
+  --base-path=hdfs://dev1-abyss-sdp2-ambari-02.opsmon.sbt:50470/bench/orc-carbon
 ```
 
 ---
 
 ## Полный прогон пайплайна
 
+Рекомендуемый порядок на кластере: **generate → validate → benchmark → index-experiment → report**.  
+Перед ТБ-прогоном сделайте smoke с `--target-size-tb=0.01`.
+
 ```bash
+JAR=build/libs/orc-carbon-bench-0.1.0-SNAPSHOT-all.jar
+BASE=hdfs://dev1-abyss-sdp2-ambari-02.opsmon.sbt:50470/bench/orc-carbon
+
 # 1. Генерация в ORC + CarbonData
-spark-submit \
-  --packages org.apache.carbondata:carbondata-spark3-3.5_2.12:2.8.1 \
-  --class ru.sber.orcbench.AppMain build/libs/orc-carbon-bench-0.1.0-SNAPSHOT.jar \
+spark-submit --master yarn --deploy-mode cluster \
+  --class ru.sber.orcbench.AppMain "$JAR" \
   --mode=generate \
-  --orc-path=hdfs://namenode:8020/bench/orc-carbon/orc \
-  --carbon-path=hdfs://namenode:8020/bench/orc-carbon/carbon \
+  --base-path="$BASE" \
   --target-size-tb=5 --seed=42 \
   --enable-bloom-index=true --enable-lucene-index=true
 
-# 2. Бенчмарки
-spark-submit --class ru.sber.orcbench.AppMain build/libs/orc-carbon-bench-0.1.0-SNAPSHOT.jar \
-  --mode=benchmark \
-  --orc-path=hdfs://namenode:8020/bench/orc-carbon/orc \
-  --carbon-path=hdfs://namenode:8020/bench/orc-carbon/carbon \
-  --reports-path=hdfs://namenode:8020/bench/orc-carbon/reports
+# 2. Валидация
+spark-submit --master yarn --deploy-mode cluster \
+  --class ru.sber.orcbench.AppMain "$JAR" \
+  --mode=validate \
+  --base-path="$BASE"
 
-# 3. Индексные эксперименты
-spark-submit \
-  --packages org.apache.carbondata:carbondata-spark3-3.5_2.12:2.8.1 \
-  --class ru.sber.orcbench.AppMain build/libs/orc-carbon-bench-0.1.0-SNAPSHOT.jar \
+# 3. Бенчмарки
+spark-submit --master yarn --deploy-mode cluster \
+  --class ru.sber.orcbench.AppMain "$JAR" \
+  --mode=benchmark \
+  --base-path="$BASE"
+
+# 4. Индексные эксперименты
+spark-submit --master yarn --deploy-mode cluster \
+  --class ru.sber.orcbench.AppMain "$JAR" \
   --mode=index-experiment \
-  --orc-path=hdfs://namenode:8020/bench/orc-carbon/orc \
-  --carbon-baseline-path=hdfs://namenode:8020/bench/orc-carbon/carbon-baseline \
-  --carbon-bloom-path=hdfs://namenode:8020/bench/orc-carbon/carbon-bloom \
+  --base-path="$BASE" \
+  --carbon-baseline-path="$BASE/carbon-baseline" \
+  --carbon-bloom-path="$BASE/carbon-bloom" \
   --index-profiles=baseline,bloom
 
-# 4. Валидация
-spark-submit \
-  --packages org.apache.carbondata:carbondata-spark3-3.5_2.12:2.8.1 \
-  --class ru.sber.orcbench.AppMain build/libs/orc-carbon-bench-0.1.0-SNAPSHOT.jar \
-  --mode=validate \
-  --orc-path=hdfs://namenode:8020/bench/orc-carbon/orc \
-  --carbon-path=hdfs://namenode:8020/bench/orc-carbon/carbon
-
 # 5. Отчёт
-spark-submit --class ru.sber.orcbench.AppMain build/libs/orc-carbon-bench-0.1.0-SNAPSHOT.jar \
+spark-submit --master yarn --deploy-mode cluster \
+  --class ru.sber.orcbench.AppMain "$JAR" \
   --mode=report \
-  --reports-path=hdfs://namenode:8020/bench/orc-carbon/reports
+  --base-path="$BASE"
 ```
 
 ---
@@ -537,7 +540,7 @@ spark-submit --class ru.sber.orcbench.AppMain build/libs/orc-carbon-bench-0.1.0-
 ## Ошибки валидации аргументов
 
 | Ситуация | Сообщение об ошибке |
-|---|---|
+|---|---|---|
 | Не передан `--mode` | `Missing required argument: --mode=...` |
 | Неизвестный режим | `Unknown mode: <value>` |
 | Неизвестный формат | `Unknown output format: <value>. Allowed: orc, carbon` |

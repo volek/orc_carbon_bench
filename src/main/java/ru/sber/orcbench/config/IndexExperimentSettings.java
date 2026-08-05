@@ -5,14 +5,30 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-public record IndexExperimentSettings(
-        Set<IndexProfile> profiles,
-        Map<IndexProfile, String> carbonPathsByProfile,
-        boolean rebuildIndexes,
-        int warmupRuns,
-        int repeatRuns,
-        boolean clearCacheBetweenRuns
-) {
+public final class IndexExperimentSettings {
+    private final Set<IndexProfile> profiles;
+    private final Map<IndexProfile, String> carbonPathsByProfile;
+    private final boolean rebuildIndexes;
+    private final int warmupRuns;
+    private final int repeatRuns;
+    private final boolean clearCacheBetweenRuns;
+
+    public IndexExperimentSettings(
+            Set<IndexProfile> profiles,
+            Map<IndexProfile, String> carbonPathsByProfile,
+            boolean rebuildIndexes,
+            int warmupRuns,
+            int repeatRuns,
+            boolean clearCacheBetweenRuns
+    ) {
+        this.profiles = profiles;
+        this.carbonPathsByProfile = carbonPathsByProfile;
+        this.rebuildIndexes = rebuildIndexes;
+        this.warmupRuns = warmupRuns;
+        this.repeatRuns = repeatRuns;
+        this.clearCacheBetweenRuns = clearCacheBetweenRuns;
+    }
+
     public static IndexExperimentSettings from(
             Map<String, String> kv,
             StoragePaths paths,
@@ -58,5 +74,29 @@ public record IndexExperimentSettings(
 
     public String resolveCarbonPath(IndexProfile profile, String defaultCarbonPath) {
         return carbonPathsByProfile.getOrDefault(profile, defaultCarbonPath);
+    }
+
+    public Set<IndexProfile> profiles() {
+        return profiles;
+    }
+
+    public Map<IndexProfile, String> carbonPathsByProfile() {
+        return carbonPathsByProfile;
+    }
+
+    public boolean rebuildIndexes() {
+        return rebuildIndexes;
+    }
+
+    public int warmupRuns() {
+        return warmupRuns;
+    }
+
+    public int repeatRuns() {
+        return repeatRuns;
+    }
+
+    public boolean clearCacheBetweenRuns() {
+        return clearCacheBetweenRuns;
     }
 }

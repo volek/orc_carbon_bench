@@ -39,7 +39,7 @@ public final class MarkdownReportBuilder {
                 .filter(row -> source.equals(row.getString(row.fieldIndex("source"))))
                 .sorted(Comparator.comparing((Row r) -> r.getString(r.fieldIndex("scenario")))
                         .thenComparing(r -> nullableString(r, "format")))
-                .toList();
+                .collect(Collectors.toList());
     }
 
     private static void appendSection(StringBuilder md, String title, List<Row> rows, boolean includeFormat) {

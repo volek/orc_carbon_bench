@@ -4,8 +4,10 @@ import org.junit.jupiter.api.Test;
 import ru.sber.orcbench.config.AppConfig;
 import ru.sber.orcbench.config.CarbonWriteSettings;
 import ru.sber.orcbench.config.OrcWriteSettings;
+import ru.sber.orcbench.config.OutputFormat;
 
-import java.util.Set;
+import java.util.Collections;
+import java.util.EnumSet;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -33,7 +35,7 @@ class GeneratorConfigTest {
         return new AppConfig(
                 ru.sber.orcbench.config.Mode.GENERATE,
                 ru.sber.orcbench.config.StoragePaths.from("/bench", null, null, null),
-                Set.of(ru.sber.orcbench.config.OutputFormat.ORC),
+                EnumSet.of(OutputFormat.ORC),
                 targetTb,
                 42L,
                 avgRowBytes,
@@ -49,10 +51,10 @@ class GeneratorConfigTest {
                 ),
                 ru.sber.orcbench.config.BenchmarkSettings.defaults(),
                 new ru.sber.orcbench.config.IndexExperimentSettings(
-                        Set.of(), java.util.Map.of(), false, 1, 3, true
+                        Collections.emptySet(), Collections.emptyMap(), false, 1, 3, true
                 ),
                 ru.sber.orcbench.config.ValidationSettings.defaults(),
-                ru.sber.orcbench.config.ReportSettings.from(java.util.Map.of())
+                ru.sber.orcbench.config.ReportSettings.from(Collections.<String, String>emptyMap())
         );
     }
 }

@@ -18,11 +18,20 @@ public final class ArgParser {
 
     public static boolean parseBoolean(String raw, String key) {
         String normalized = raw.trim().toLowerCase(Locale.ROOT);
-        return switch (normalized) {
-            case "true", "1", "yes", "y" -> true;
-            case "false", "0", "no", "n" -> false;
-            default -> throw new IllegalArgumentException("Invalid boolean argument for --" + key + ": " + raw);
-        };
+        switch (normalized) {
+            case "true":
+            case "1":
+            case "yes":
+            case "y":
+                return true;
+            case "false":
+            case "0":
+            case "no":
+            case "n":
+                return false;
+            default:
+                throw new IllegalArgumentException("Invalid boolean argument for --" + key + ": " + raw);
+        }
     }
 
     public static OptionalInt parseOptionalPositiveInt(Map<String, String> kv, String key) {

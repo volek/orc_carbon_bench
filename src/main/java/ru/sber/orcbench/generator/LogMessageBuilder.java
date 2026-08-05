@@ -6,6 +6,8 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 
 public final class LogMessageBuilder implements Serializable {
+    private static final long serialVersionUID = 1L;
+
     private static final DateTimeFormatter APACHE_TS =
             DateTimeFormatter.ofPattern("dd/MMM/yyyy:HH:mm:ss Z").withZone(ZoneOffset.UTC);
 
@@ -26,28 +28,33 @@ public final class LogMessageBuilder implements Serializable {
             long timestampMs,
             double amount
     ) {
-        return switch (logFormat) {
-            case "json" -> buildJson(
-                    eventId, userId, sessionId, countryCode, deviceType, status,
-                    productId, campaignId, regionId, timestampMs, amount
-            );
-            case "plain_text" -> buildPlainText(
-                    eventId, userId, sessionId, countryCode, deviceType, status,
-                    productId, campaignId, regionId, timestampMs, amount
-            );
-            case "key_value" -> buildKeyValue(
-                    eventId, userId, sessionId, countryCode, deviceType, status,
-                    productId, campaignId, regionId, timestampMs, amount
-            );
-            case "apache_common" -> buildApacheCommon(
-                    eventId, userId, sessionId, countryCode, deviceType, status,
-                    productId, campaignId, regionId, timestampMs, amount
-            );
-            default -> buildJson(
-                    eventId, userId, sessionId, countryCode, deviceType, status,
-                    productId, campaignId, regionId, timestampMs, amount
-            );
-        };
+        switch (logFormat) {
+            case "json":
+                return buildJson(
+                        eventId, userId, sessionId, countryCode, deviceType, status,
+                        productId, campaignId, regionId, timestampMs, amount
+                );
+            case "plain_text":
+                return buildPlainText(
+                        eventId, userId, sessionId, countryCode, deviceType, status,
+                        productId, campaignId, regionId, timestampMs, amount
+                );
+            case "key_value":
+                return buildKeyValue(
+                        eventId, userId, sessionId, countryCode, deviceType, status,
+                        productId, campaignId, regionId, timestampMs, amount
+                );
+            case "apache_common":
+                return buildApacheCommon(
+                        eventId, userId, sessionId, countryCode, deviceType, status,
+                        productId, campaignId, regionId, timestampMs, amount
+                );
+            default:
+                return buildJson(
+                        eventId, userId, sessionId, countryCode, deviceType, status,
+                        productId, campaignId, regionId, timestampMs, amount
+                );
+        }
     }
 
     private static String buildJson(

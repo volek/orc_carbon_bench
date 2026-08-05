@@ -86,7 +86,7 @@ public final class DataGenerator {
                 )
                 .withColumn("timestamp_ms", expr("cast(unix_timestamp(timestamp) * 1000 as bigint)"))
                 .withColumn("amount", round(rand(config.seed() + chunkIndex).multiply(lit(10_000.0)), 2))
-                .withColumn("log_format", elementAtDictionary(LogFormatType.ALL_VALUES.toArray(String[]::new), col("global_id"), config.seed() + 19))
+                .withColumn("log_format", elementAtDictionary(LogFormatType.ALL_VALUES.toArray(new String[0]), col("global_id"), config.seed() + 19))
                 .withColumn(
                         "payload_json",
                         expr("build_log_message('json', event_id, user_id, session_id, country_code, device_type, "

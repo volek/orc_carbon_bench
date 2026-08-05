@@ -13,6 +13,7 @@ import ru.sber.orcbench.config.OutputFormat;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 public final class BenchmarkRunner {
     private static final Logger LOG = LoggerFactory.getLogger(BenchmarkRunner.class);
@@ -165,7 +166,7 @@ public final class BenchmarkRunner {
                         result.seed(),
                         result.executedAt().toString()
                 ))
-                .toList();
+                .collect(Collectors.toList());
 
         spark.createDataFrame(rows, schema)
                 .coalesce(1)

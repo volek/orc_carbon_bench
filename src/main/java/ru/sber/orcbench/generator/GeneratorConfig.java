@@ -10,21 +10,49 @@ import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.Set;
 
-public record GeneratorConfig(
-        String orcPath,
-        String carbonPath,
-        Set<OutputFormat> outputFormats,
-        long targetSizeTb,
-        long seed,
-        long avgRowBytes,
-        int chunkDays,
-        long timestampStartEpochMs,
-        long timestampEndEpochMs,
-        int targetFileSizeMb,
-        OrcWriteSettings orcWrite,
-        CarbonWriteSettings carbonWrite
-) {
+public final class GeneratorConfig {
     private static final long BYTES_PER_TB = 1L << 40;
+
+    private final String orcPath;
+    private final String carbonPath;
+    private final Set<OutputFormat> outputFormats;
+    private final long targetSizeTb;
+    private final long seed;
+    private final long avgRowBytes;
+    private final int chunkDays;
+    private final long timestampStartEpochMs;
+    private final long timestampEndEpochMs;
+    private final int targetFileSizeMb;
+    private final OrcWriteSettings orcWrite;
+    private final CarbonWriteSettings carbonWrite;
+
+    public GeneratorConfig(
+            String orcPath,
+            String carbonPath,
+            Set<OutputFormat> outputFormats,
+            long targetSizeTb,
+            long seed,
+            long avgRowBytes,
+            int chunkDays,
+            long timestampStartEpochMs,
+            long timestampEndEpochMs,
+            int targetFileSizeMb,
+            OrcWriteSettings orcWrite,
+            CarbonWriteSettings carbonWrite
+    ) {
+        this.orcPath = orcPath;
+        this.carbonPath = carbonPath;
+        this.outputFormats = outputFormats;
+        this.targetSizeTb = targetSizeTb;
+        this.seed = seed;
+        this.avgRowBytes = avgRowBytes;
+        this.chunkDays = chunkDays;
+        this.timestampStartEpochMs = timestampStartEpochMs;
+        this.timestampEndEpochMs = timestampEndEpochMs;
+        this.targetFileSizeMb = targetFileSizeMb;
+        this.orcWrite = orcWrite;
+        this.carbonWrite = carbonWrite;
+    }
 
     public static GeneratorConfig from(AppConfig appConfig) {
         return new GeneratorConfig(
@@ -41,6 +69,54 @@ public record GeneratorConfig(
                 appConfig.orcWrite(),
                 appConfig.carbonWrite()
         );
+    }
+
+    public String orcPath() {
+        return orcPath;
+    }
+
+    public String carbonPath() {
+        return carbonPath;
+    }
+
+    public Set<OutputFormat> outputFormats() {
+        return outputFormats;
+    }
+
+    public long targetSizeTb() {
+        return targetSizeTb;
+    }
+
+    public long seed() {
+        return seed;
+    }
+
+    public long avgRowBytes() {
+        return avgRowBytes;
+    }
+
+    public int chunkDays() {
+        return chunkDays;
+    }
+
+    public long timestampStartEpochMs() {
+        return timestampStartEpochMs;
+    }
+
+    public long timestampEndEpochMs() {
+        return timestampEndEpochMs;
+    }
+
+    public int targetFileSizeMb() {
+        return targetFileSizeMb;
+    }
+
+    public OrcWriteSettings orcWrite() {
+        return orcWrite;
+    }
+
+    public CarbonWriteSettings carbonWrite() {
+        return carbonWrite;
     }
 
     public boolean writesOrc() {

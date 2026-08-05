@@ -2,7 +2,9 @@ package ru.sber.orcbench.config;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.Collections;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -12,7 +14,7 @@ class ReportSettingsTest {
 
     @Test
     void usesDefaultsWhenArgumentsMissing() {
-        ReportSettings settings = ReportSettings.from(Map.of());
+        ReportSettings settings = ReportSettings.from(Collections.<String, String>emptyMap());
 
         assertEquals(EnumSet.allOf(ReportFormat.class), settings.formats());
         assertEquals("benchmark-report", settings.reportName());
@@ -20,10 +22,10 @@ class ReportSettingsTest {
 
     @Test
     void parsesCustomFormatsAndName() {
-        ReportSettings settings = ReportSettings.from(Map.of(
-                "report-formats", "csv,markdown",
-                "report-name", "custom-report"
-        ));
+        Map<String, String> args = new HashMap<>();
+        args.put("report-formats", "csv,markdown");
+        args.put("report-name", "custom-report");
+        ReportSettings settings = ReportSettings.from(args);
 
         assertEquals(EnumSet.of(ReportFormat.CSV, ReportFormat.MARKDOWN), settings.formats());
         assertEquals("custom-report", settings.reportName());
@@ -31,9 +33,9 @@ class ReportSettingsTest {
 
     @Test
     void parsesAllReportFormats() {
-        ReportSettings settings = ReportSettings.from(Map.of(
-                "report-formats", "parquet,csv,json,markdown"
-        ));
+        Map<String, String> args = new HashMap<>();
+        args.put("report-formats", "parquet,csv,json,markdown");
+        ReportSettings settings = ReportSettings.from(args);
 
         assertTrue(settings.formats().containsAll(EnumSet.allOf(ReportFormat.class)));
     }

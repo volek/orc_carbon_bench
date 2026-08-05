@@ -19,6 +19,7 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 public final class IndexExperimentRunner {
     private static final Logger LOG = LoggerFactory.getLogger(IndexExperimentRunner.class);
@@ -298,7 +299,7 @@ public final class IndexExperimentRunner {
                         result.seed(),
                         result.executedAt().toString()
                 ))
-                .toList();
+                .collect(Collectors.toList());
 
         spark.createDataFrame(rows, schema)
                 .coalesce(1)
@@ -331,7 +332,7 @@ public final class IndexExperimentRunner {
                         metric.buildTimeMs(),
                         metric.executedAt().toString()
                 ))
-                .toList();
+                .collect(Collectors.toList());
 
         spark.createDataFrame(rows, schema)
                 .coalesce(1)
