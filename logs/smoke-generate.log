@@ -1,0 +1,40 @@
+SPARK_MAJOR_VERSION is set to 3, using Spark3
+26/08/05 14:30:27 WARN NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
+26/08/05 14:30:27 INFO ConfiguredRMFailoverProxyProvider: Failing over to rm2
+26/08/05 14:30:27 INFO Client: Requesting a new application from cluster with 0 NodeManagers
+26/08/05 14:30:28 WARN DomainSocketFactory: The short-circuit local reads feature cannot be used because libhadoop cannot be loaded.
+26/08/05 14:30:28 INFO Configuration: found resource resource-types.xml at file:/etc/hadoop/3.5.7.0-1/0/resource-types.xml
+26/08/05 14:30:28 INFO Client: Verifying our application has not requested more than the maximum memory capability of the cluster (9216 MB per container)
+26/08/05 14:30:28 INFO Client: Will allocate AM container, with 1408 MB memory including 384 MB overhead
+26/08/05 14:30:28 INFO Client: Setting up container launch context for our AM
+26/08/05 14:30:28 INFO Client: Setting up the launch environment for our AM container
+26/08/05 14:30:28 INFO Client: Preparing resources for our AM container
+26/08/05 14:30:28 WARN Client: Neither spark.yarn.jars nor spark.yarn.archive is set, falling back to uploading libraries under SPARK_HOME.
+26/08/05 14:30:31 INFO Client: Uploading resource file:/tmp/spark-81e3b89d-831e-4b6e-afda-ced5d8ecea66/__spark_libs__2680754297746977440.zip -> hdfs://sdp-dzo-dev/user/hdfs_migration_user/.sparkStaging/application_1785928909888_0001/__spark_libs__2680754297746977440.zip
+26/08/05 14:30:35 INFO Client: Uploading resource file:/home/abyss_ci/orc-carbon-bench-0.1.0-SNAPSHOT-all.jar -> hdfs://sdp-dzo-dev/user/hdfs_migration_user/.sparkStaging/application_1785928909888_0001/orc-carbon-bench-0.1.0-SNAPSHOT-all.jar
+26/08/05 14:30:36 INFO Client: Uploading resource file:/tmp/spark-81e3b89d-831e-4b6e-afda-ced5d8ecea66/__spark_conf__3863090166030673251.zip -> hdfs://sdp-dzo-dev/user/hdfs_migration_user/.sparkStaging/application_1785928909888_0001/__spark_conf__.zip
+26/08/05 14:30:36 INFO SecurityManager: Changing view acls to: abyss_ci,hdfs_migration_user
+26/08/05 14:30:36 INFO SecurityManager: Changing modify acls to: abyss_ci,hdfs_migration_user
+26/08/05 14:30:36 INFO SecurityManager: Changing view acls groups to: 
+26/08/05 14:30:36 INFO SecurityManager: Changing modify acls groups to: 
+26/08/05 14:30:36 INFO SecurityManager: SecurityManager: authentication disabled; ui acls enabled; users  with view permissions: Set(abyss_ci, hdfs_migration_user); groups with view permissions: Set(); users  with modify permissions: Set(abyss_ci, hdfs_migration_user); groups with modify permissions: Set()
+26/08/05 14:30:36 INFO Client: Deleted staging directory hdfs://sdp-dzo-dev/user/hdfs_migration_user/.sparkStaging/application_1785928909888_0001
+Exception in thread "main" java.lang.IllegalArgumentException: requirement failed: SSLContext does not support any of the enabled algorithms: sdp-deployer
+	at scala.Predef$.require(Predef.scala:281)
+	at org.apache.spark.SSLOptions.<init>(SSLOptions.scala:126)
+	at org.apache.spark.SSLOptions$.parse(SSLOptions.scala:231)
+	at org.apache.spark.SecurityManager.<init>(SecurityManager.scala:98)
+	at org.apache.spark.deploy.yarn.Client.createContainerLaunchContext(Client.scala:1095)
+	at org.apache.spark.deploy.yarn.Client.submitApplication(Client.scala:219)
+	at org.apache.spark.deploy.yarn.Client.run(Client.scala:1285)
+	at org.apache.spark.deploy.yarn.YarnClusterApplication.start(Client.scala:1694)
+	at org.apache.spark.deploy.SparkSubmit.org$apache$spark$deploy$SparkSubmit$$runMain(SparkSubmit.scala:968)
+	at org.apache.spark.deploy.SparkSubmit.doRunMain$1(SparkSubmit.scala:180)
+	at org.apache.spark.deploy.SparkSubmit.submit(SparkSubmit.scala:203)
+	at org.apache.spark.deploy.SparkSubmit.doSubmit(SparkSubmit.scala:90)
+	at org.apache.spark.deploy.SparkSubmit$$anon$2.doSubmit(SparkSubmit.scala:1056)
+	at org.apache.spark.deploy.SparkSubmit$.main(SparkSubmit.scala:1065)
+	at org.apache.spark.deploy.SparkSubmit.main(SparkSubmit.scala)
+26/08/05 14:30:36 INFO ShutdownHookManager: Shutdown hook called
+26/08/05 14:30:36 INFO ShutdownHookManager: Deleting directory /tmp/spark-1184d526-bca0-4f51-9776-17dcb2a158db
+26/08/05 14:30:36 INFO ShutdownHookManager: Deleting directory /tmp/spark-81e3b89d-831e-4b6e-afda-ced5d8ecea66
