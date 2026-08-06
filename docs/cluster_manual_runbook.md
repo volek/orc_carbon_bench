@@ -162,3 +162,138 @@ tar -czf bench-logs.tgz smoke-*.log yarn-*.log hdfs-*.txt env-versions.txt summa
 1. Файлы `smoke-*.log`
 2. `hdfs-du.txt`
 3. Каталог `summary/` (особенно `*.md`)
+
+---
+
+## 6. Типичные ошибки submit (разбор логов)
+
+Ошибки ниже относятся к **инфраструктуре кластера**, не к коду `orc-carbon-bench`.  
+`AppMain` / `--mode=generate` стартуют только после успешного submit и выдачи токенов.
+
+### 6.1. YARN ResourceManager: `Connection refused` на `:8032`
+
+**Симптом:** `ConfiguredRMFailoverProxyProvider` / `Call From … to …:8032 failed … Connection refused`.
+
+**Смысл:** клиент не достучался до YARN RM (сервис down, неверный host/port, firewall, оба RM в HA недоступны).
+
+**Что делать:**
+
+```bash
+yarn node -list
+yarn rmadmin -getAllServiceState
+grep -E 'yarn.resourcemanager\.(address|ha|hostname)' /etc/hadoop/conf/yarn-site.xml
+```
+
+Поднять ResourceManager / NodeManager в Ambari или поправить `yarn-site.xml`.
+
+---
+
+### 6.2. SSL: `SSLContext does not support … algorithms: sdp-deployer`
+
+**Симптом:** после upload JAR в staging:
+
+```text
+IllegalArgumentException: requirement failed: SSLContext does not support any of the enabled algorithms: sdp-deployer
+```
+
+**Смысл:** в Spark SSL-конфиге (`spark.ssl.*` / Ambari) указано значение `sdp-deployer` вместо валидных TLS cipher suites.
+
+**Что делать:** найти и исправить в `$SPARK_HOME/conf` / Ambari:
+
+```bash
+grep -rniE 'ssl|sdp-deployer|enabledAlgorithms' $SPARK_HOME/conf /etc/spark*/conf 2>/dev/null
+```
+
+Убрать `sdp-deployer` из списка algorithms или отключить ненужный `spark.ssl.enabled`. Правка платформы, не приложения.
+
+---
+
+### 6.3. Hive Metastore недоступен (`:9083`)
+
+**Симптом:**
+
+```text
+Trying to connect to metastore with URI thrift://…ambari-02:9083
+Trying to connect to metastore with URI thrift://…ambari-03:9083
+Failed to connect to the MetaStore Server...
+Unable to instantiate … SessionHiveMetaStoreClient
+```
+
+И подсказка Spark:
+
+```text
+If hive is not used, set spark.security.credentials.hive.enabled to false
+```
+
+**Смысл:** при submit Spark пытается взять Hive delegation token; Metastore на `:9083` не слушает.
+
+**Что делать (предпочтительно):** в Ambari поднять **Hive Metastore** (Healthy на обоих URI из `hive-site.xml`).
+
+Проверка:
+
+```bash
+nc -vz dev1-abyss-sdp2-ambari-02.opsmon.sbt 9083
+nc -vz dev1-abyss-sdp2-ambari-03.opsmon.sbt 9083
+```
+
+Для полного Carbon (`CarbonSessionCatalog`, индексы) живой Metastore обычно **нужен**.
+
+---
+
+### 6.4. HBase RegionServer: `Connection refused` на `:16020`
+
+**Симптом:** после (или вместо) Hive-токенов:
+
+```text
+Call to address=…flink-01.opsmon.sbt:16020 failed … Connection refused
+… on table 'hbase:meta' …
+RpcRetryingCallerImpl: Call exception, tries=N, retries=36 …
+```
+
+Submit **зависает** на ретраях (минуты); `AppMain` не запускается.
+
+**Смысл:** на classpath есть HBase-клиент (`/usr/sdp/current/hbase-client/...`); Spark берёт HBase credentials, ZK отдаёт RS `…flink-01:16020`, процесс не слушает.
+
+**Что делать (предпочтительно):** поднять **HBase** (Master + RegionServer) или поправить локацию RS в конфиге/ZK.
+
+Проверка:
+
+```bash
+nc -vz dev1-abyss-sdp2-flink-01.opsmon.sbt 16020
+echo "status" | hbase shell
+```
+
+---
+
+### 6.5. Временный обход: отключить Hive/HBase credentials
+
+Если сервисы не поднять сразу, а нужно только пройти submit / ORC-smoke:
+
+```bash
+spark-submit --master yarn --deploy-mode cluster \
+  --conf spark.security.credentials.hive.enabled=false \
+  --conf spark.security.credentials.hbase.enabled=false \
+  --class ru.sber.orcbench.AppMain "$JAR" \
+  --mode=generate \
+  --base-path="$BASE" \
+  --target-size-tb=0.01 \
+  --seed=42 \
+  --output-formats=orc,carbon \
+  --enable-bloom-index=true \
+  --enable-lucene-index=true \
+  2>&1 | tee smoke-generate.log
+```
+
+**Ограничения:** это снимает зависание на токенах. Если при записи Carbon job всё равно обратится к Metastore — снова понадобится живой Hive (п. 6.3). Для полного сравнения ORC vs Carbon предпочтителен п. A (поднять сервисы).
+
+---
+
+### 6.6. Чеклист перед повторным smoke
+
+1. `yarn node -list` — есть RUNNING NodeManager’ы  
+2. Нет ошибки `sdp-deployer` в SSL  
+3. Hive Metastore отвечает на `:9083` **или** задано `spark.security.credentials.hive.enabled=false`  
+4. HBase RS отвечает на `:16020` **или** задано `spark.security.credentials.hbase.enabled=false`  
+5. В логе после submit есть строки приложения (`orc-carbon-bench` / `Writing` / `Generating`), а не только ретраи HBase  
+
+При новом падении прислать полный `smoke-*.log` + `applicationId` + `yarn logs -applicationId …`.
