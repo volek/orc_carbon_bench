@@ -16,7 +16,7 @@ public final class GeneratorConfig {
     private final String orcPath;
     private final String carbonPath;
     private final Set<OutputFormat> outputFormats;
-    private final long targetSizeTb;
+    private final double targetSizeTb;
     private final long seed;
     private final long avgRowBytes;
     private final int chunkDays;
@@ -30,7 +30,7 @@ public final class GeneratorConfig {
             String orcPath,
             String carbonPath,
             Set<OutputFormat> outputFormats,
-            long targetSizeTb,
+            double targetSizeTb,
             long seed,
             long avgRowBytes,
             int chunkDays,
@@ -83,7 +83,7 @@ public final class GeneratorConfig {
         return outputFormats;
     }
 
-    public long targetSizeTb() {
+    public double targetSizeTb() {
         return targetSizeTb;
     }
 
@@ -128,7 +128,7 @@ public final class GeneratorConfig {
     }
 
     public long targetBytes() {
-        return targetSizeTb * BYTES_PER_TB;
+        return Math.max(1L, Math.round(targetSizeTb * (double) BYTES_PER_TB));
     }
 
     public long estimatedTotalRows() {

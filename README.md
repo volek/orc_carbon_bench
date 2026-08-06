@@ -110,7 +110,7 @@ generate  →  validate  →  benchmark  →  index-experiment  →  report
 | `--orc-path` | нет | `<base-path>/orc` | HDFS-путь для ORC |
 | `--carbon-path` | нет | `<base-path>/carbon` | HDFS-путь для CarbonData |
 | `--output-formats` | нет | `orc,carbon` | Форматы записи: `orc`, `carbon` или оба через запятую |
-| `--target-size-tb` | нет | `5` | Целевой объём датасета в терабайтах |
+| `--target-size-tb` | нет | `5` | Целевой объём датасета в терабайтах (допускаются дроби, например `0.01`) |
 | `--seed` | нет | `42` | Seed генератора для воспроизводимости |
 | `--avg-row-bytes` | нет | `512` | Средний размер строки в байтах |
 | `--chunk-days` | нет | `1` | Размер временного окна одного чанка в днях |

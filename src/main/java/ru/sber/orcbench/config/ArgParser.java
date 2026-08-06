@@ -53,6 +53,18 @@ public final class ArgParser {
         }
     }
 
+    public static double parsePositiveDouble(String raw, String key) {
+        try {
+            double value = Double.parseDouble(raw.trim());
+            if (Double.isNaN(value) || Double.isInfinite(value) || value <= 0.0d) {
+                throw new IllegalArgumentException("Argument --" + key + " must be positive: " + raw);
+            }
+            return value;
+        } catch (NumberFormatException ex) {
+            throw new IllegalArgumentException("Invalid numeric argument for --" + key + ": " + raw, ex);
+        }
+    }
+
     public static int parseNonNegativeInt(String raw, String key) {
         try {
             int value = Integer.parseInt(raw.trim());

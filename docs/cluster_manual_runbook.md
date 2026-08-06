@@ -297,3 +297,18 @@ spark-submit --master yarn --deploy-mode cluster \
 5. В логе после submit есть строки приложения (`orc-carbon-bench` / `Writing` / `Generating`), а не только ретраи HBase  
 
 При новом падении прислать полный `smoke-*.log` + `applicationId` + `yarn logs -applicationId …`.
+
+---
+
+### 6.7. `Invalid numeric argument for --target-size-tb: 0.01`
+
+**Симптом:** AM стартует, затем:
+
+```text
+IllegalArgumentException: Invalid numeric argument for --target-size-tb: 0.01
+NumberFormatException: For input string: "0.01"
+```
+
+**Смысл:** старые сборки парсили `--target-size-tb` как `long`. Нужен fat JAR с поддержкой дробных ТБ (`double`).
+
+**Что делать:** использовать актуальный `orc-carbon-bench-0.1.0-SNAPSHOT-all.jar` (после фикса) и снова `--target-size-tb=0.01`.

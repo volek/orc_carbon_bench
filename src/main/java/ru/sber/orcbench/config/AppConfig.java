@@ -12,7 +12,7 @@ public final class AppConfig {
     private final Mode mode;
     private final StoragePaths paths;
     private final Set<OutputFormat> outputFormats;
-    private final long targetSizeTb;
+    private final double targetSizeTb;
     private final long seed;
     private final long avgRowBytes;
     private final int chunkDays;
@@ -30,7 +30,7 @@ public final class AppConfig {
             Mode mode,
             StoragePaths paths,
             Set<OutputFormat> outputFormats,
-            long targetSizeTb,
+            double targetSizeTb,
             long seed,
             long avgRowBytes,
             int chunkDays,
@@ -138,7 +138,7 @@ public final class AppConfig {
                 Mode.fromCli(modeValue),
                 paths,
                 outputFormats,
-                parseLong(kv.getOrDefault("target-size-tb", "5"), "target-size-tb"),
+                ArgParser.parsePositiveDouble(kv.getOrDefault("target-size-tb", "5"), "target-size-tb"),
                 parseLong(kv.getOrDefault("seed", "42"), "seed"),
                 parseLong(kv.getOrDefault("avg-row-bytes", "512"), "avg-row-bytes"),
                 (int) parseLong(kv.getOrDefault("chunk-days", "1"), "chunk-days"),
@@ -166,7 +166,7 @@ public final class AppConfig {
         return outputFormats;
     }
 
-    public long targetSizeTb() {
+    public double targetSizeTb() {
         return targetSizeTb;
     }
 

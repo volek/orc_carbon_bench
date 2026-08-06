@@ -16,7 +16,7 @@ class GeneratorConfigTest {
 
     @Test
     void estimatesRowsFromTargetSize() {
-        AppConfig config = minimalConfig(5, 512);
+        AppConfig config = minimalConfig(5.0d, 512);
         GeneratorConfig generatorConfig = GeneratorConfig.from(config);
 
         long expected = 5L * (1L << 40) / 512L;
@@ -24,14 +24,23 @@ class GeneratorConfigTest {
     }
 
     @Test
+    void estimatesRowsFromFractionalTargetSize() {
+        AppConfig config = minimalConfig(0.01d, 512);
+        GeneratorConfig generatorConfig = GeneratorConfig.from(config);
+
+        long expected = Math.round(0.01d * (1L << 40)) / 512L;
+        assertEquals(expected, generatorConfig.estimatedTotalRows());
+    }
+
+    @Test
     void chunkCountUsesConfiguredDays() {
-        AppConfig config = minimalConfig(1, 512);
+        AppConfig config = minimalConfig(1.0d, 512);
         GeneratorConfig generatorConfig = GeneratorConfig.from(config);
 
         assertTrue(generatorConfig.chunkCount() >= 365);
     }
 
-    private static AppConfig minimalConfig(long targetTb, long avgRowBytes) {
+    private static AppConfig minimalConfig(double targetTb, long avgRowBytes) {
         return new AppConfig(
                 ru.sber.orcbench.config.Mode.GENERATE,
                 ru.sber.orcbench.config.StoragePaths.from("/bench", null, null, null),
