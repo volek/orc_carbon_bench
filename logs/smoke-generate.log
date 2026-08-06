@@ -1,454 +1,411 @@
 SPARK_MAJOR_VERSION is set to 3, using Spark3
-26/08/06 11:14:26 WARN NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
-26/08/06 11:14:27 INFO ConfiguredRMFailoverProxyProvider: Failing over to rm2
-26/08/06 11:14:27 INFO Client: Requesting a new application from cluster with 7 NodeManagers
-26/08/06 11:14:27 WARN DomainSocketFactory: The short-circuit local reads feature cannot be used because libhadoop cannot be loaded.
-26/08/06 11:14:27 INFO Configuration: found resource resource-types.xml at file:/etc/hadoop/3.5.7.0-1/0/resource-types.xml
-26/08/06 11:14:27 INFO Client: Verifying our application has not requested more than the maximum memory capability of the cluster (9216 MB per container)
-26/08/06 11:14:27 INFO Client: Will allocate AM container, with 1408 MB memory including 384 MB overhead
-26/08/06 11:14:27 INFO Client: Setting up container launch context for our AM
-26/08/06 11:14:27 INFO Client: Setting up the launch environment for our AM container
-26/08/06 11:14:27 INFO Client: Preparing resources for our AM container
-26/08/06 11:14:27 WARN Client: Neither spark.yarn.jars nor spark.yarn.archive is set, falling back to uploading libraries under SPARK_HOME.
-26/08/06 11:14:30 INFO Client: Uploading resource file:/tmp/spark-64bf5f85-82e1-4cca-a3bd-fe3e535d1ea8/__spark_libs__5200459611931682127.zip -> hdfs://sdp-dzo-dev/user/hdfs_migration_user/.sparkStaging/application_1785928909888_0003/__spark_libs__5200459611931682127.zip
-26/08/06 11:14:34 INFO Client: Uploading resource file:/home/abyss_ci/orc-carbon-bench-0.1.0-SNAPSHOT-all.jar -> hdfs://sdp-dzo-dev/user/hdfs_migration_user/.sparkStaging/application_1785928909888_0003/orc-carbon-bench-0.1.0-SNAPSHOT-all.jar
-26/08/06 11:14:36 INFO Client: Uploading resource file:/tmp/spark-64bf5f85-82e1-4cca-a3bd-fe3e535d1ea8/__spark_conf__3629963145948691707.zip -> hdfs://sdp-dzo-dev/user/hdfs_migration_user/.sparkStaging/application_1785928909888_0003/__spark_conf__.zip
-26/08/06 11:14:36 INFO SecurityManager: Changing view acls to: abyss_ci,hdfs_migration_user
-26/08/06 11:14:36 INFO SecurityManager: Changing modify acls to: abyss_ci,hdfs_migration_user
-26/08/06 11:14:36 INFO SecurityManager: Changing view acls groups to: 
-26/08/06 11:14:36 INFO SecurityManager: Changing modify acls groups to: 
-26/08/06 11:14:36 INFO SecurityManager: SecurityManager: authentication disabled; ui acls enabled; users  with view permissions: Set(abyss_ci, hdfs_migration_user); groups with view permissions: Set(); users  with modify permissions: Set(abyss_ci, hdfs_migration_user); groups with modify permissions: Set()
-26/08/06 11:14:36 INFO HadoopDelegationTokenManager: Attempting to load user's ticket cache.
-26/08/06 11:14:36 INFO HiveConf: Found configuration file file:/etc/spark3/3.5.7.0-1/0/hive-site.xml
-26/08/06 11:14:37 INFO metastore: Trying to connect to metastore with URI thrift://dev1-abyss-sdp2-ambari-02.opsmon.sbt:9083
-26/08/06 11:14:37 WARN metastore: Failed to connect to the MetaStore Server...
-26/08/06 11:14:37 INFO metastore: Trying to connect to metastore with URI thrift://dev1-abyss-sdp2-ambari-03.opsmon.sbt:9083
-26/08/06 11:14:37 WARN metastore: Failed to connect to the MetaStore Server...
-26/08/06 11:14:37 INFO metastore: Waiting 5 seconds before next connection attempt.
-26/08/06 11:14:42 INFO metastore: Trying to connect to metastore with URI thrift://dev1-abyss-sdp2-ambari-02.opsmon.sbt:9083
-26/08/06 11:14:42 WARN metastore: Failed to connect to the MetaStore Server...
-26/08/06 11:14:42 INFO metastore: Trying to connect to metastore with URI thrift://dev1-abyss-sdp2-ambari-03.opsmon.sbt:9083
-26/08/06 11:14:42 WARN metastore: Failed to connect to the MetaStore Server...
-26/08/06 11:14:42 INFO metastore: Waiting 5 seconds before next connection attempt.
-26/08/06 11:14:47 INFO metastore: Trying to connect to metastore with URI thrift://dev1-abyss-sdp2-ambari-02.opsmon.sbt:9083
-26/08/06 11:14:47 WARN metastore: Failed to connect to the MetaStore Server...
-26/08/06 11:14:47 INFO metastore: Trying to connect to metastore with URI thrift://dev1-abyss-sdp2-ambari-03.opsmon.sbt:9083
-26/08/06 11:14:47 WARN metastore: Failed to connect to the MetaStore Server...
-26/08/06 11:14:47 INFO metastore: Waiting 5 seconds before next connection attempt.
-26/08/06 11:14:52 WARN Hive: Failed to register all functions.
-java.lang.RuntimeException: Unable to instantiate org.apache.hadoop.hive.ql.metadata.SessionHiveMetaStoreClient
-	at org.apache.hadoop.hive.metastore.MetaStoreUtils.newInstance(MetaStoreUtils.java:1742)
-	at org.apache.hadoop.hive.metastore.RetryingMetaStoreClient.<init>(RetryingMetaStoreClient.java:83)
-	at org.apache.hadoop.hive.metastore.RetryingMetaStoreClient.getProxy(RetryingMetaStoreClient.java:133)
-	at org.apache.hadoop.hive.metastore.RetryingMetaStoreClient.getProxy(RetryingMetaStoreClient.java:104)
-	at org.apache.hadoop.hive.ql.metadata.Hive.createMetaStoreClient(Hive.java:3607)
-	at org.apache.hadoop.hive.ql.metadata.Hive.getMSC(Hive.java:3659)
-	at org.apache.hadoop.hive.ql.metadata.Hive.getMSC(Hive.java:3639)
-	at org.apache.hadoop.hive.ql.metadata.Hive.getAllFunctions(Hive.java:3901)
-	at org.apache.hadoop.hive.ql.metadata.Hive.reloadFunctions(Hive.java:248)
-	at org.apache.hadoop.hive.ql.metadata.Hive.registerAllFunctionsOnce(Hive.java:231)
-	at org.apache.hadoop.hive.ql.metadata.Hive.<init>(Hive.java:395)
-	at org.apache.hadoop.hive.ql.metadata.Hive.create(Hive.java:339)
-	at org.apache.hadoop.hive.ql.metadata.Hive.getInternal(Hive.java:319)
-	at org.apache.hadoop.hive.ql.metadata.Hive.get(Hive.java:288)
-	at org.apache.hadoop.hive.ql.metadata.Hive.get(Hive.java:273)
-	at org.apache.spark.sql.hive.security.HiveDelegationTokenProvider.$anonfun$obtainDelegationTokens$4(HiveDelegationTokenProvider.scala:102)
-	at scala.runtime.java8.JFunction0$mcV$sp.apply(JFunction0$mcV$sp.java:23)
-	at org.apache.spark.sql.hive.security.HiveDelegationTokenProvider$$anon$1.run(HiveDelegationTokenProvider.scala:138)
-	at java.security.AccessController.doPrivileged(Native Method)
-	at javax.security.auth.Subject.doAs(Subject.java:422)
-	at org.apache.hadoop.security.UserGroupInformation.doAs(UserGroupInformation.java:1878)
-	at org.apache.spark.sql.hive.security.HiveDelegationTokenProvider.doAsRealUser(HiveDelegationTokenProvider.scala:137)
-	at org.apache.spark.sql.hive.security.HiveDelegationTokenProvider.obtainDelegationTokens(HiveDelegationTokenProvider.scala:101)
-	at org.apache.spark.deploy.security.HadoopDelegationTokenManager.$anonfun$obtainDelegationTokens$2(HadoopDelegationTokenManager.scala:164)
-	at scala.collection.TraversableLike.$anonfun$flatMap$1(TraversableLike.scala:293)
-	at scala.collection.Iterator.foreach(Iterator.scala:943)
-	at scala.collection.Iterator.foreach$(Iterator.scala:943)
-	at scala.collection.AbstractIterator.foreach(Iterator.scala:1431)
-	at scala.collection.MapLike$DefaultValuesIterable.foreach(MapLike.scala:214)
-	at scala.collection.TraversableLike.flatMap(TraversableLike.scala:293)
-	at scala.collection.TraversableLike.flatMap$(TraversableLike.scala:290)
-	at scala.collection.AbstractTraversable.flatMap(Traversable.scala:108)
-	at org.apache.spark.deploy.security.HadoopDelegationTokenManager.org$apache$spark$deploy$security$HadoopDelegationTokenManager$$obtainDelegationTokens(HadoopDelegationTokenManager.scala:162)
-	at org.apache.spark.deploy.security.HadoopDelegationTokenManager$$anon$2.run(HadoopDelegationTokenManager.scala:148)
-	at org.apache.spark.deploy.security.HadoopDelegationTokenManager$$anon$2.run(HadoopDelegationTokenManager.scala:146)
-	at java.security.AccessController.doPrivileged(Native Method)
-	at javax.security.auth.Subject.doAs(Subject.java:422)
-	at org.apache.hadoop.security.UserGroupInformation.doAs(UserGroupInformation.java:1878)
-	at org.apache.spark.deploy.security.HadoopDelegationTokenManager.obtainDelegationTokens(HadoopDelegationTokenManager.scala:146)
-	at org.apache.spark.deploy.yarn.Client.setupSecurityToken(Client.scala:353)
-	at org.apache.spark.deploy.yarn.Client.createContainerLaunchContext(Client.scala:1098)
-	at org.apache.spark.deploy.yarn.Client.submitApplication(Client.scala:219)
-	at org.apache.spark.deploy.yarn.Client.run(Client.scala:1285)
-	at org.apache.spark.deploy.yarn.YarnClusterApplication.start(Client.scala:1694)
-	at org.apache.spark.deploy.SparkSubmit.org$apache$spark$deploy$SparkSubmit$$runMain(SparkSubmit.scala:968)
-	at org.apache.spark.deploy.SparkSubmit.doRunMain$1(SparkSubmit.scala:180)
-	at org.apache.spark.deploy.SparkSubmit.submit(SparkSubmit.scala:203)
-	at org.apache.spark.deploy.SparkSubmit.doSubmit(SparkSubmit.scala:90)
-	at org.apache.spark.deploy.SparkSubmit$$anon$2.doSubmit(SparkSubmit.scala:1056)
-	at org.apache.spark.deploy.SparkSubmit$.main(SparkSubmit.scala:1065)
-	at org.apache.spark.deploy.SparkSubmit.main(SparkSubmit.scala)
-Caused by: java.lang.reflect.InvocationTargetException
-	at sun.reflect.NativeConstructorAccessorImpl.newInstance0(Native Method)
-	at sun.reflect.NativeConstructorAccessorImpl.newInstance(NativeConstructorAccessorImpl.java:62)
-	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
-	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
-	at org.apache.hadoop.hive.metastore.MetaStoreUtils.newInstance(MetaStoreUtils.java:1740)
-	... 50 more
-Caused by: MetaException(message:Could not connect to meta store using any of the URIs provided. Most recent failure: org.apache.thrift.transport.TTransportException: java.net.ConnectException: Connection refused (Connection refused)
-	at org.apache.thrift.transport.TSocket.open(TSocket.java:226)
-	at org.apache.thrift.transport.TSaslTransport.open(TSaslTransport.java:266)
-	at org.apache.thrift.transport.TSaslClientTransport.open(TSaslClientTransport.java:38)
-	at org.apache.hadoop.hive.thrift.client.TUGIAssumingTransport$1.run(TUGIAssumingTransport.java:52)
-	at org.apache.hadoop.hive.thrift.client.TUGIAssumingTransport$1.run(TUGIAssumingTransport.java:49)
-	at java.security.AccessController.doPrivileged(Native Method)
-	at javax.security.auth.Subject.doAs(Subject.java:422)
-	at org.apache.hadoop.security.UserGroupInformation.doAs(UserGroupInformation.java:1878)
-	at org.apache.hadoop.hive.thrift.client.TUGIAssumingTransport.open(TUGIAssumingTransport.java:49)
-	at org.apache.hadoop.hive.metastore.HiveMetaStoreClient.open(HiveMetaStoreClient.java:478)
-	at org.apache.hadoop.hive.metastore.HiveMetaStoreClient.<init>(HiveMetaStoreClient.java:245)
-	at org.apache.hadoop.hive.ql.metadata.SessionHiveMetaStoreClient.<init>(SessionHiveMetaStoreClient.java:70)
-	at sun.reflect.NativeConstructorAccessorImpl.newInstance0(Native Method)
-	at sun.reflect.NativeConstructorAccessorImpl.newInstance(NativeConstructorAccessorImpl.java:62)
-	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
-	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
-	at org.apache.hadoop.hive.metastore.MetaStoreUtils.newInstance(MetaStoreUtils.java:1740)
-	at org.apache.hadoop.hive.metastore.RetryingMetaStoreClient.<init>(RetryingMetaStoreClient.java:83)
-	at org.apache.hadoop.hive.metastore.RetryingMetaStoreClient.getProxy(RetryingMetaStoreClient.java:133)
-	at org.apache.hadoop.hive.metastore.RetryingMetaStoreClient.getProxy(RetryingMetaStoreClient.java:104)
-	at org.apache.hadoop.hive.ql.metadata.Hive.createMetaStoreClient(Hive.java:3607)
-	at org.apache.hadoop.hive.ql.metadata.Hive.getMSC(Hive.java:3659)
-	at org.apache.hadoop.hive.ql.metadata.Hive.getMSC(Hive.java:3639)
-	at org.apache.hadoop.hive.ql.metadata.Hive.getAllFunctions(Hive.java:3901)
-	at org.apache.hadoop.hive.ql.metadata.Hive.reloadFunctions(Hive.java:248)
-	at org.apache.hadoop.hive.ql.metadata.Hive.registerAllFunctionsOnce(Hive.java:231)
-	at org.apache.hadoop.hive.ql.metadata.Hive.<init>(Hive.java:395)
-	at org.apache.hadoop.hive.ql.metadata.Hive.create(Hive.java:339)
-	at org.apache.hadoop.hive.ql.metadata.Hive.getInternal(Hive.java:319)
-	at org.apache.hadoop.hive.ql.metadata.Hive.get(Hive.java:288)
-	at org.apache.hadoop.hive.ql.metadata.Hive.get(Hive.java:273)
-	at org.apache.spark.sql.hive.security.HiveDelegationTokenProvider.$anonfun$obtainDelegationTokens$4(HiveDelegationTokenProvider.scala:102)
-	at scala.runtime.java8.JFunction0$mcV$sp.apply(JFunction0$mcV$sp.java:23)
-	at org.apache.spark.sql.hive.security.HiveDelegationTokenProvider$$anon$1.run(HiveDelegationTokenProvider.scala:138)
-	at java.security.AccessController.doPrivileged(Native Method)
-	at javax.security.auth.Subject.doAs(Subject.java:422)
-	at org.apache.hadoop.security.UserGroupInformation.doAs(UserGroupInformation.java:1878)
-	at org.apache.spark.sql.hive.security.HiveDelegationTokenProvider.doAsRealUser(HiveDelegationTokenProvider.scala:137)
-	at org.apache.spark.sql.hive.security.HiveDelegationTokenProvider.obtainDelegationTokens(HiveDelegationTokenProvider.scala:101)
-	at org.apache.spark.deploy.security.HadoopDelegationTokenManager.$anonfun$obtainDelegationTokens$2(HadoopDelegationTokenManager.scala:164)
-	at scala.collection.TraversableLike.$anonfun$flatMap$1(TraversableLike.scala:293)
-	at scala.collection.Iterator.foreach(Iterator.scala:943)
-	at scala.collection.Iterator.foreach$(Iterator.scala:943)
-	at scala.collection.AbstractIterator.foreach(Iterator.scala:1431)
-	at scala.collection.MapLike$DefaultValuesIterable.foreach(MapLike.scala:214)
-	at scala.collection.TraversableLike.flatMap(TraversableLike.scala:293)
-	at scala.collection.TraversableLike.flatMap$(TraversableLike.scala:290)
-	at scala.collection.AbstractTraversable.flatMap(Traversable.scala:108)
-	at org.apache.spark.deploy.security.HadoopDelegationTokenManager.org$apache$spark$deploy$security$HadoopDelegationTokenManager$$obtainDelegationTokens(HadoopDelegationTokenManager.scala:162)
-	at org.apache.spark.deploy.security.HadoopDelegationTokenManager$$anon$2.run(HadoopDelegationTokenManager.scala:148)
-	at org.apache.spark.deploy.security.HadoopDelegationTokenManager$$anon$2.run(HadoopDelegationTokenManager.scala:146)
-	at java.security.AccessController.doPrivileged(Native Method)
-	at javax.security.auth.Subject.doAs(Subject.java:422)
-	at org.apache.hadoop.security.UserGroupInformation.doAs(UserGroupInformation.java:1878)
-	at org.apache.spark.deploy.security.HadoopDelegationTokenManager.obtainDelegationTokens(HadoopDelegationTokenManager.scala:146)
-	at org.apache.spark.deploy.yarn.Client.setupSecurityToken(Client.scala:353)
-	at org.apache.spark.deploy.yarn.Client.createContainerLaunchContext(Client.scala:1098)
-	at org.apache.spark.deploy.yarn.Client.submitApplication(Client.scala:219)
-	at org.apache.spark.deploy.yarn.Client.run(Client.scala:1285)
-	at org.apache.spark.deploy.yarn.YarnClusterApplication.start(Client.scala:1694)
-	at org.apache.spark.deploy.SparkSubmit.org$apache$spark$deploy$SparkSubmit$$runMain(SparkSubmit.scala:968)
-	at org.apache.spark.deploy.SparkSubmit.doRunMain$1(SparkSubmit.scala:180)
-	at org.apache.spark.deploy.SparkSubmit.submit(SparkSubmit.scala:203)
-	at org.apache.spark.deploy.SparkSubmit.doSubmit(SparkSubmit.scala:90)
-	at org.apache.spark.deploy.SparkSubmit$$anon$2.doSubmit(SparkSubmit.scala:1056)
-	at org.apache.spark.deploy.SparkSubmit$.main(SparkSubmit.scala:1065)
-	at org.apache.spark.deploy.SparkSubmit.main(SparkSubmit.scala)
-Caused by: java.net.ConnectException: Connection refused (Connection refused)
-	at java.net.PlainSocketImpl.socketConnect(Native Method)
-	at java.net.AbstractPlainSocketImpl.doConnect(AbstractPlainSocketImpl.java:350)
-	at java.net.AbstractPlainSocketImpl.connectToAddress(AbstractPlainSocketImpl.java:206)
-	at java.net.AbstractPlainSocketImpl.connect(AbstractPlainSocketImpl.java:188)
-	at java.net.SocksSocketImpl.connect(SocksSocketImpl.java:392)
-	at java.net.Socket.connect(Socket.java:607)
-	at org.apache.thrift.transport.TSocket.open(TSocket.java:221)
-	... 66 more
+26/08/06 16:35:59 WARN NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
+26/08/06 16:35:59 INFO ConfiguredRMFailoverProxyProvider: Failing over to rm2
+26/08/06 16:35:59 INFO Client: Requesting a new application from cluster with 7 NodeManagers
+26/08/06 16:35:59 WARN DomainSocketFactory: The short-circuit local reads feature cannot be used because libhadoop cannot be loaded.
+26/08/06 16:35:59 INFO Configuration: found resource resource-types.xml at file:/etc/hadoop/3.5.7.0-1/0/resource-types.xml
+26/08/06 16:35:59 INFO Client: Verifying our application has not requested more than the maximum memory capability of the cluster (9216 MB per container)
+26/08/06 16:35:59 INFO Client: Will allocate AM container, with 1408 MB memory including 384 MB overhead
+26/08/06 16:35:59 INFO Client: Setting up container launch context for our AM
+26/08/06 16:35:59 INFO Client: Setting up the launch environment for our AM container
+26/08/06 16:35:59 INFO Client: Preparing resources for our AM container
+26/08/06 16:36:00 WARN Client: Neither spark.yarn.jars nor spark.yarn.archive is set, falling back to uploading libraries under SPARK_HOME.
+26/08/06 16:36:02 INFO Client: Uploading resource file:/tmp/spark-ce5c0c3d-8c88-4fd0-9d73-d68b6ddebca9/__spark_libs__8661991207654157578.zip -> hdfs://sdp-dzo-dev/user/hdfs_migration_user/.sparkStaging/application_1785928909888_0005/__spark_libs__8661991207654157578.zip
+26/08/06 16:36:06 INFO Client: Uploading resource file:/home/abyss_ci/orc-carbon-bench-0.1.0-SNAPSHOT-all.jar -> hdfs://sdp-dzo-dev/user/hdfs_migration_user/.sparkStaging/application_1785928909888_0005/orc-carbon-bench-0.1.0-SNAPSHOT-all.jar
+26/08/06 16:36:07 INFO Client: Uploading resource file:/tmp/spark-ce5c0c3d-8c88-4fd0-9d73-d68b6ddebca9/__spark_conf__5510399436943468871.zip -> hdfs://sdp-dzo-dev/user/hdfs_migration_user/.sparkStaging/application_1785928909888_0005/__spark_conf__.zip
+26/08/06 16:36:07 INFO SecurityManager: Changing view acls to: abyss_ci,hdfs_migration_user
+26/08/06 16:36:07 INFO SecurityManager: Changing modify acls to: abyss_ci,hdfs_migration_user
+26/08/06 16:36:07 INFO SecurityManager: Changing view acls groups to: 
+26/08/06 16:36:07 INFO SecurityManager: Changing modify acls groups to: 
+26/08/06 16:36:07 INFO SecurityManager: SecurityManager: authentication disabled; ui acls enabled; users  with view permissions: Set(abyss_ci, hdfs_migration_user); groups with view permissions: Set(); users  with modify permissions: Set(abyss_ci, hdfs_migration_user); groups with modify permissions: Set()
+26/08/06 16:36:07 INFO HadoopDelegationTokenManager: Attempting to load user's ticket cache.
+26/08/06 16:36:07 INFO HadoopFSDelegationTokenProvider: getting token for: DFS[DFSClient[clientName=DFSClient_NONMAPREDUCE_-1677692240_1, ugi=hdfs_migration_user@OPSMON.SBT (auth:KERBEROS)]] with renewer rm/dev1-abyss-sdp2-ambari-02.opsmon.sbt@OPSMON.SBT
+26/08/06 16:36:07 INFO DFSClient: Created token for hdfs_migration_user: HDFS_DELEGATION_TOKEN owner=hdfs_migration_user@OPSMON.SBT, renewer=yarn, realUser=, issueDate=1786023367793, maxDate=1786628167793, sequenceNumber=171, masterKeyId=125 on ha-hdfs:sdp2-dzo-dev1
+26/08/06 16:36:07 INFO HadoopFSDelegationTokenProvider: getting token for: DFS[DFSClient[clientName=DFSClient_NONMAPREDUCE_1945635928_1, ugi=hdfs_migration_user@OPSMON.SBT (auth:KERBEROS)]] with renewer rm/dev1-abyss-sdp2-ambari-02.opsmon.sbt@OPSMON.SBT
+26/08/06 16:36:07 INFO DFSClient: Created token for hdfs_migration_user: HDFS_DELEGATION_TOKEN owner=hdfs_migration_user@OPSMON.SBT, renewer=yarn, realUser=, issueDate=1786023367836, maxDate=1786628167836, sequenceNumber=2632, masterKeyId=816 on ha-hdfs:sdp-dzo-dev
+26/08/06 16:36:07 INFO HadoopFSDelegationTokenProvider: getting token for: DFS[DFSClient[clientName=DFSClient_NONMAPREDUCE_-1677692240_1, ugi=hdfs_migration_user@OPSMON.SBT (auth:KERBEROS)]] with renewer hdfs_migration_user@OPSMON.SBT
+26/08/06 16:36:07 INFO DFSClient: Created token for hdfs_migration_user: HDFS_DELEGATION_TOKEN owner=hdfs_migration_user@OPSMON.SBT, renewer=hdfs_migration_user, realUser=, issueDate=1786023367842, maxDate=1786628167842, sequenceNumber=172, masterKeyId=125 on ha-hdfs:sdp2-dzo-dev1
+26/08/06 16:36:07 INFO HadoopFSDelegationTokenProvider: getting token for: DFS[DFSClient[clientName=DFSClient_NONMAPREDUCE_1945635928_1, ugi=hdfs_migration_user@OPSMON.SBT (auth:KERBEROS)]] with renewer hdfs_migration_user@OPSMON.SBT
+26/08/06 16:36:07 INFO DFSClient: Created token for hdfs_migration_user: HDFS_DELEGATION_TOKEN owner=hdfs_migration_user@OPSMON.SBT, renewer=hdfs_migration_user, realUser=, issueDate=1786023367846, maxDate=1786628167846, sequenceNumber=2633, masterKeyId=816 on ha-hdfs:sdp-dzo-dev
+26/08/06 16:36:07 INFO HadoopFSDelegationTokenProvider: Renewal interval is 86400015 for token HDFS_DELEGATION_TOKEN
+26/08/06 16:36:07 INFO HadoopFSDelegationTokenProvider: Renewal interval is 86400026 for token HDFS_DELEGATION_TOKEN
+26/08/06 16:36:07 INFO Client: Submitting application application_1785928909888_0005 to ResourceManager
+26/08/06 16:36:08 INFO YarnClientImpl: Submitted application application_1785928909888_0005
+26/08/06 16:36:09 INFO Client: Application report for application_1785928909888_0005 (state: ACCEPTED)
+26/08/06 16:36:09 INFO Client: 
+	 client token: Token { kind: YARN_CLIENT_TOKEN, service:  }
+	 diagnostics: AM container is launched, waiting for AM container to Register with RM
+	 ApplicationMaster host: N/A
+	 ApplicationMaster RPC port: -1
+	 queue: default
+	 start time: 1786023367934
+	 final status: UNDEFINED
+	 tracking URL: https://dev1-abyss-sdp2-ambari-03.opsmon.sbt:8090/proxy/application_1785928909888_0005/
+	 user: hdfs_migration_user
+26/08/06 16:36:10 INFO Client: Application report for application_1785928909888_0005 (state: ACCEPTED)
+26/08/06 16:36:11 INFO Client: Application report for application_1785928909888_0005 (state: ACCEPTED)
+26/08/06 16:36:12 INFO Client: Application report for application_1785928909888_0005 (state: ACCEPTED)
+26/08/06 16:36:13 INFO Client: Application report for application_1785928909888_0005 (state: ACCEPTED)
+26/08/06 16:36:14 INFO Client: Application report for application_1785928909888_0005 (state: ACCEPTED)
+26/08/06 16:36:15 INFO Client: Application report for application_1785928909888_0005 (state: ACCEPTED)
+26/08/06 16:36:16 INFO Client: Application report for application_1785928909888_0005 (state: ACCEPTED)
+26/08/06 16:36:17 INFO Client: Application report for application_1785928909888_0005 (state: ACCEPTED)
+26/08/06 16:36:18 INFO Client: Application report for application_1785928909888_0005 (state: ACCEPTED)
+26/08/06 16:36:19 INFO Client: Application report for application_1785928909888_0005 (state: ACCEPTED)
+26/08/06 16:36:20 INFO Client: Application report for application_1785928909888_0005 (state: ACCEPTED)
+26/08/06 16:36:21 INFO Client: Application report for application_1785928909888_0005 (state: ACCEPTED)
+26/08/06 16:36:22 INFO Client: Application report for application_1785928909888_0005 (state: ACCEPTED)
+26/08/06 16:36:23 INFO Client: Application report for application_1785928909888_0005 (state: ACCEPTED)
+26/08/06 16:36:24 INFO Client: Application report for application_1785928909888_0005 (state: ACCEPTED)
+26/08/06 16:36:25 INFO Client: Application report for application_1785928909888_0005 (state: ACCEPTED)
+26/08/06 16:36:26 INFO Client: Application report for application_1785928909888_0005 (state: ACCEPTED)
+26/08/06 16:36:27 INFO Client: Application report for application_1785928909888_0005 (state: ACCEPTED)
+26/08/06 16:36:28 INFO Client: Application report for application_1785928909888_0005 (state: ACCEPTED)
+26/08/06 16:36:29 INFO Client: Application report for application_1785928909888_0005 (state: ACCEPTED)
+26/08/06 16:36:30 INFO Client: Application report for application_1785928909888_0005 (state: ACCEPTED)
+26/08/06 16:36:31 INFO Client: Application report for application_1785928909888_0005 (state: ACCEPTED)
+26/08/06 16:36:32 INFO Client: Application report for application_1785928909888_0005 (state: ACCEPTED)
+26/08/06 16:36:33 INFO Client: Application report for application_1785928909888_0005 (state: ACCEPTED)
+26/08/06 16:36:34 INFO Client: Application report for application_1785928909888_0005 (state: ACCEPTED)
+26/08/06 16:36:35 INFO Client: Application report for application_1785928909888_0005 (state: ACCEPTED)
+26/08/06 16:36:36 INFO Client: Application report for application_1785928909888_0005 (state: ACCEPTED)
+26/08/06 16:36:37 INFO Client: Application report for application_1785928909888_0005 (state: ACCEPTED)
+26/08/06 16:36:38 INFO Client: Application report for application_1785928909888_0005 (state: ACCEPTED)
+26/08/06 16:36:39 INFO Client: Application report for application_1785928909888_0005 (state: ACCEPTED)
+26/08/06 16:36:40 INFO Client: Application report for application_1785928909888_0005 (state: ACCEPTED)
+26/08/06 16:36:41 INFO Client: Application report for application_1785928909888_0005 (state: ACCEPTED)
+26/08/06 16:36:42 INFO Client: Application report for application_1785928909888_0005 (state: ACCEPTED)
+26/08/06 16:36:43 INFO Client: Application report for application_1785928909888_0005 (state: ACCEPTED)
+26/08/06 16:36:44 INFO Client: Application report for application_1785928909888_0005 (state: ACCEPTED)
+26/08/06 16:36:45 INFO Client: Application report for application_1785928909888_0005 (state: ACCEPTED)
+26/08/06 16:36:46 INFO Client: Application report for application_1785928909888_0005 (state: ACCEPTED)
+26/08/06 16:36:47 INFO Client: Application report for application_1785928909888_0005 (state: ACCEPTED)
+26/08/06 16:36:48 INFO Client: Application report for application_1785928909888_0005 (state: ACCEPTED)
+26/08/06 16:36:49 INFO Client: Application report for application_1785928909888_0005 (state: ACCEPTED)
+26/08/06 16:36:50 INFO Client: Application report for application_1785928909888_0005 (state: ACCEPTED)
+26/08/06 16:36:51 INFO Client: Application report for application_1785928909888_0005 (state: ACCEPTED)
+26/08/06 16:36:52 INFO Client: Application report for application_1785928909888_0005 (state: ACCEPTED)
+26/08/06 16:36:53 INFO Client: Application report for application_1785928909888_0005 (state: ACCEPTED)
+26/08/06 16:36:54 INFO Client: Application report for application_1785928909888_0005 (state: ACCEPTED)
+26/08/06 16:36:55 INFO Client: Application report for application_1785928909888_0005 (state: ACCEPTED)
+26/08/06 16:36:56 INFO Client: Application report for application_1785928909888_0005 (state: ACCEPTED)
+26/08/06 16:36:57 INFO Client: Application report for application_1785928909888_0005 (state: ACCEPTED)
+26/08/06 16:36:58 INFO Client: Application report for application_1785928909888_0005 (state: ACCEPTED)
+26/08/06 16:36:59 INFO Client: Application report for application_1785928909888_0005 (state: ACCEPTED)
+26/08/06 16:37:00 INFO Client: Application report for application_1785928909888_0005 (state: ACCEPTED)
+26/08/06 16:37:01 INFO Client: Application report for application_1785928909888_0005 (state: ACCEPTED)
+26/08/06 16:37:02 INFO Client: Application report for application_1785928909888_0005 (state: ACCEPTED)
+26/08/06 16:37:03 INFO Client: Application report for application_1785928909888_0005 (state: ACCEPTED)
+26/08/06 16:37:04 INFO Client: Application report for application_1785928909888_0005 (state: FAILED)
+26/08/06 16:37:04 INFO Client: 
+	 client token: N/A
+	 diagnostics: Application application_1785928909888_0005 failed 2 times due to AM Container for appattempt_1785928909888_0005_000002 exited with  exitCode: 13
+Failing this attempt.Diagnostics: [2026-08-06 16:37:04.002]Exception from container-launch.
+Container id: container_e16_1785928909888_0005_02_000001
+Exit code: 13
+Exception message: Launch container failed
+Shell output: main : command provided 1
+main : run as user is hdfs_migration_user
+main : requested yarn user is hdfs_migration_user
+Getting exit code file...
+Creating script paths...
+Writing pid file...
+Writing to tmp file /data/yarn/local/nmPrivate/application_1785928909888_0005/container_e16_1785928909888_0005_02_000001/container_e16_1785928909888_0005_02_000001.pid.tmp
+Writing to cgroup task files...
+Creating local dirs...
+Launching container...
+
+
+[2026-08-06 16:37:04.013]Container exited with a non-zero exit code 13. Error file: prelaunch.err.
+Last 4096 bytes of prelaunch.err :
+Last 4096 bytes of stderr :
+.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.spark.deploy.yarn.ApplicationMaster$$anon$2.run(ApplicationMaster.scala:737)
+Caused by: java.lang.NumberFormatException: For input string: "0.01"
+	at java.lang.NumberFormatException.forInputString(NumberFormatException.java:65)
+	at java.lang.Long.parseLong(Long.java:589)
+	at java.lang.Long.parseLong(Long.java:631)
+	at ru.sber.orcbench.config.ArgParser.parsePositiveLong(ArgParser.java:46)
+	... 8 more
+26/08/06 16:37:03 INFO ApplicationMaster: Final app status: FAILED, exitCode: 13, (reason: User class threw exception: java.lang.IllegalArgumentException: Invalid numeric argument for --target-size-tb: 0.01
+	at ru.sber.orcbench.config.ArgParser.parsePositiveLong(ArgParser.java:52)
+	at ru.sber.orcbench.config.AppConfig.parseLong(AppConfig.java:283)
+	at ru.sber.orcbench.config.AppConfig.fromArgs(AppConfig.java:141)
+	at ru.sber.orcbench.AppMain.main(AppMain.java:22)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.spark.deploy.yarn.ApplicationMaster$$anon$2.run(ApplicationMaster.scala:737)
+Caused by: java.lang.NumberFormatException: For input string: "0.01"
+	at java.lang.NumberFormatException.forInputString(NumberFormatException.java:65)
+	at java.lang.Long.parseLong(Long.java:589)
+	at java.lang.Long.parseLong(Long.java:631)
+	at ru.sber.orcbench.config.ArgParser.parsePositiveLong(ArgParser.java:46)
+	... 8 more
 )
-	at org.apache.hadoop.hive.metastore.HiveMetaStoreClient.open(HiveMetaStoreClient.java:527)
-	at org.apache.hadoop.hive.metastore.HiveMetaStoreClient.<init>(HiveMetaStoreClient.java:245)
-	at org.apache.hadoop.hive.ql.metadata.SessionHiveMetaStoreClient.<init>(SessionHiveMetaStoreClient.java:70)
-	... 55 more
-26/08/06 11:14:52 WARN HiveDelegationTokenProvider: Failed to get token from service hive due to org.apache.hadoop.hive.ql.metadata.HiveException: java.lang.RuntimeException: Unable to instantiate org.apache.hadoop.hive.ql.metadata.SessionHiveMetaStoreClient. If hive is not used, set spark.security.credentials.hive.enabled to false.
-26/08/06 11:14:52 INFO HadoopFSDelegationTokenProvider: getting token for: DFS[DFSClient[clientName=DFSClient_NONMAPREDUCE_-602568587_1, ugi=hdfs_migration_user@OPSMON.SBT (auth:KERBEROS)]] with renewer rm/dev1-abyss-sdp2-ambari-02.opsmon.sbt@OPSMON.SBT
-26/08/06 11:14:52 INFO DFSClient: Created token for hdfs_migration_user: HDFS_DELEGATION_TOKEN owner=hdfs_migration_user@OPSMON.SBT, renewer=yarn, realUser=, issueDate=1786004092308, maxDate=1786608892308, sequenceNumber=169, masterKeyId=124 on ha-hdfs:sdp2-dzo-dev1
-26/08/06 11:14:52 INFO HadoopFSDelegationTokenProvider: getting token for: DFS[DFSClient[clientName=DFSClient_NONMAPREDUCE_404240635_1, ugi=hdfs_migration_user@OPSMON.SBT (auth:KERBEROS)]] with renewer rm/dev1-abyss-sdp2-ambari-02.opsmon.sbt@OPSMON.SBT
-26/08/06 11:14:52 INFO DFSClient: Created token for hdfs_migration_user: HDFS_DELEGATION_TOKEN owner=hdfs_migration_user@OPSMON.SBT, renewer=yarn, realUser=, issueDate=1786004092362, maxDate=1786608892362, sequenceNumber=2630, masterKeyId=815 on ha-hdfs:sdp-dzo-dev
-26/08/06 11:14:52 INFO HadoopFSDelegationTokenProvider: getting token for: DFS[DFSClient[clientName=DFSClient_NONMAPREDUCE_-602568587_1, ugi=hdfs_migration_user@OPSMON.SBT (auth:KERBEROS)]] with renewer hdfs_migration_user@OPSMON.SBT
-26/08/06 11:14:52 INFO DFSClient: Created token for hdfs_migration_user: HDFS_DELEGATION_TOKEN owner=hdfs_migration_user@OPSMON.SBT, renewer=hdfs_migration_user, realUser=, issueDate=1786004092370, maxDate=1786608892370, sequenceNumber=170, masterKeyId=124 on ha-hdfs:sdp2-dzo-dev1
-26/08/06 11:14:52 INFO HadoopFSDelegationTokenProvider: getting token for: DFS[DFSClient[clientName=DFSClient_NONMAPREDUCE_404240635_1, ugi=hdfs_migration_user@OPSMON.SBT (auth:KERBEROS)]] with renewer hdfs_migration_user@OPSMON.SBT
-26/08/06 11:14:52 INFO DFSClient: Created token for hdfs_migration_user: HDFS_DELEGATION_TOKEN owner=hdfs_migration_user@OPSMON.SBT, renewer=hdfs_migration_user, realUser=, issueDate=1786004092375, maxDate=1786608892375, sequenceNumber=2631, masterKeyId=815 on ha-hdfs:sdp-dzo-dev
-26/08/06 11:14:52 INFO HadoopFSDelegationTokenProvider: Renewal interval is 86400023 for token HDFS_DELEGATION_TOKEN
-26/08/06 11:14:52 INFO HadoopFSDelegationTokenProvider: Renewal interval is 86400041 for token HDFS_DELEGATION_TOKEN
-26/08/06 11:14:54 INFO ZooKeeper: Client environment:zookeeper.version=3.6.2--1c0109d82b2ebfd8f852cb8840867f001c4c010a-dirty, built on 12/07/2021 10:05 GMT
-26/08/06 11:14:54 INFO ZooKeeper: Client environment:host.name=dev1-abyss-sdp2-ambari-01.opsmon.sbt
-26/08/06 11:14:54 INFO ZooKeeper: Client environment:java.version=1.8.0_472
-26/08/06 11:14:54 INFO ZooKeeper: Client environment:java.vendor=SBERTECH JSC
-26/08/06 11:14:54 INFO ZooKeeper: Client environment:java.home=/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.472.b08-1.sl8^1.x86_64/jre
-26/08/06 11:14:54 INFO ZooKeeper: Client environment:java.class.path=/usr/sdp/current/spark3-client/conf/:/usr/sdp/current/spark3-client/jars/lz4-java-1.7.1.jar:/usr/sdp/current/spark3-client/jars/httpcore-4.4.14.jar:/usr/sdp/current/spark3-client/jars/kubernetes-model-metrics-5.4.1.jar:/usr/sdp/current/spark3-client/jars/ST4-4.0.4.jar:/usr/sdp/current/spark3-client/jars/xz-1.8.jar:/usr/sdp/current/spark3-client/jars/guava-14.0.1.jar:/usr/sdp/current/spark3-client/jars/metrics-core-4.2.0.jar:/usr/sdp/current/spark3-client/jars/javax.jdo-3.2.0-m3.jar:/usr/sdp/current/spark3-client/jars/jackson-dataformat-yaml-2.12.3.jar:/usr/sdp/current/spark3-client/jars/threeten-extra-1.5.0.jar:/usr/sdp/current/spark3-client/jars/curator-framework-2.13.0.jar:/usr/sdp/current/spark3-client/jars/jersey-common-2.34.jar:/usr/sdp/current/spark3-client/jars/orc-mapreduce-1.6.12.jar:/usr/sdp/current/spark3-client/jars/xbean-asm9-shaded-4.20.jar:/usr/sdp/current/spark3-client/jars/jersey-container-servlet-core-2.34.jar:/usr/sdp/current/spark3-client/jars/kubernetes-model-apiextensions-5.4.1.jar:/usr/sdp/current/spark3-client/jars/commons-compiler-3.0.16.jar:/usr/sdp/current/spark3-client/jars/antlr4-runtime-4.8.jar:/usr/sdp/current/spark3-client/jars/spark-mllib-local_2.12-3.2.1.3.5.7.0-1-SNAPSHOT.jar:/usr/sdp/current/spark3-client/jars/commons-cli-1.2.jar:/usr/sdp/current/spark3-client/jars/kubernetes-model-discovery-5.4.1.jar:/usr/sdp/current/spark3-client/jars/zjsonpatch-0.3.0.jar:/usr/sdp/current/spark3-client/jars/hive-shims-0.23-2.3.9.jar:/usr/sdp/current/spark3-client/jars/jcl-over-slf4j-1.7.30.jar:/usr/sdp/current/spark3-client/jars/kubernetes-model-rbac-5.4.1.jar:/usr/sdp/current/spark3-client/jars/kubernetes-model-batch-5.4.1.jar:/usr/sdp/current/spark3-client/jars/aopalliance-repackaged-2.6.1.jar:/usr/sdp/current/spark3-client/jars/shims-0.9.0.jar:/usr/sdp/current/spark3-client/jars/algebra_2.12-2.0.1.jar:/usr/sdp/current/spark3-client/jars/pyrolite-4.30.jar:/usr/sdp/current/spark3-client/jars/kubernetes-model-events-5.4.1.jar:/usr/sdp/current/spark3-client/jars/blas-2.2.1.jar:/usr/sdp/current/spark3-client/jars/jersey-server-2.34.jar:/usr/sdp/current/spark3-client/jars/spire-macros_2.12-0.17.0.jar:/usr/sdp/current/spark3-client/jars/jakarta.servlet-api-4.0.3.jar:/usr/sdp/current/spark3-client/jars/curator-recipes-2.13.0.jar:/usr/sdp/current/spark3-client/jars/commons-dbcp-1.4.jar:/usr/sdp/current/spark3-client/jars/okio-1.14.0.jar:/usr/sdp/current/spark3-client/jars/janino-3.0.16.jar:/usr/sdp/current/spark3-client/jars/httpclient-4.5.13.jar:/usr/sdp/current/spark3-client/jars/parquet-hadoop-1.12.2.jar:/usr/sdp/current/spark3-client/jars/metrics-json-4.2.0.jar:/usr/sdp/current/spark3-client/jars/spark-hive-thriftserver_2.12-3.2.1.3.5.7.0-1-SNAPSHOT.jar:/usr/sdp/current/spark3-client/jars/scala-xml_2.12-1.2.0.jar:/usr/sdp/current/spark3-client/jars/json4s-jackson_2.12-3.7.0-M11.jar:/usr/sdp/current/spark3-client/jars/hk2-utils-2.6.1.jar:/usr/sdp/current/spark3-client/jars/objenesis-2.6.jar:/usr/sdp/current/spark3-client/jars/ivy-2.5.0.jar:/usr/sdp/current/spark3-client/jars/paranamer-2.8.jar:/usr/sdp/current/spark3-client/jars/velocity-1.5.jar:/usr/sdp/current/spark3-client/jars/spark-mesos_2.12-3.2.1.3.5.7.0-1-SNAPSHOT.jar:/usr/sdp/current/spark3-client/jars/orc-core-1.6.12.jar:/usr/sdp/current/spark3-client/jars/gson-2.2.4.jar:/usr/sdp/current/spark3-client/jars/scala-reflect-2.12.15.jar:/usr/sdp/current/spark3-client/jars/parquet-format-structures-1.12.2.jar:/usr/sdp/current/spark3-client/jars/rocksdbjni-6.20.3.jar:/usr/sdp/current/spark3-client/jars/hive-shims-scheduler-2.3.9.jar:/usr/sdp/current/spark3-client/jars/spark-streaming_2.12-3.2.1.3.5.7.0-1-SNAPSHOT.jar:/usr/sdp/current/spark3-client/jars/JLargeArrays-1.5.jar:/usr/sdp/current/spark3-client/jars/netty-all-4.1.68.Final.jar:/usr/sdp/current/spark3-client/jars/hive-vector-code-gen-2.3.9.jar:/usr/sdp/current/spark3-client/jars/antlr-runtime-3.5.2.jar:/usr/sdp/current/spark3-client/jars/spark-catalyst_2.12-3.2.1.3.5.7.0-1-SNAPSHOT.jar:/usr/sdp/current/spark3-client/jars/py4j-0.10.9.3.jar:/usr/sdp/current/spark3-client/jars/transaction-api-1.1.jar:/usr/sdp/current/spark3-client/jars/audience-annotations-0.5.0.jar:/usr/sdp/current/spark3-client/jars/zstd-jni-1.5.0-4.jar:/usr/sdp/current/spark3-client/jars/kubernetes-client-5.4.1.jar:/usr/sdp/current/spark3-client/jars/commons-math3-3.4.1.jar:/usr/sdp/current/spark3-client/jars/slf4j-log4j12-1.7.30.jar:/usr/sdp/current/spark3-client/jars/spark-unsafe_2.12-3.2.1.3.5.7.0-1-SNAPSHOT.jar:/usr/sdp/current/spark3-client/jars/jakarta.ws.rs-api-2.1.6.jar:/usr/sdp/current/spark3-client/jars/kubernetes-model-extensions-5.4.1.jar:/usr/sdp/current/spark3-client/jars/kubernetes-model-flowcontrol-5.4.1.jar:/usr/sdp/current/spark3-client/jars/derby-10.14.2.0.jar:/usr/sdp/current/spark3-client/jars/orc-shims-1.6.12.jar:/usr/sdp/current/spark3-client/jars/commons-net-3.1.jar:/usr/sdp/current/spark3-client/jars/kubernetes-model-storageclass-5.4.1.jar:/usr/sdp/current/spark3-client/jars/kubernetes-model-node-5.4.1.jar:/usr/sdp/current/spark3-client/jars/arpack-2.2.1.jar:/usr/sdp/current/spark3-client/jars/jackson-module-scala_2.12-2.12.3.jar:/usr/sdp/current/spark3-client/jars/kubernetes-model-autoscaling-5.4.1.jar:/usr/sdp/current/spark3-client/jars/kubernetes-model-scheduling-5.4.1.jar:/usr/sdp/current/spark3-client/jars/snappy-java-1.1.8.4.jar:/usr/sdp/current/spark3-client/jars/minlog-1.3.0.jar:/usr/sdp/current/spark3-client/jars/tink-1.7.0.jar:/usr/sdp/current/spark3-client/jars/kubernetes-model-policy-5.4.1.jar:/usr/sdp/current/spark3-client/jars/mesos-1.4.0-shaded-protobuf.jar:/usr/sdp/current/spark3-client/jars/stream-2.9.6.jar:/usr/sdp/current/spark3-client/jars/stax-api-1.0.1.jar:/usr/sdp/current/spark3-client/jars/leveldbjni-all-1.8.jar:/usr/sdp/current/spark3-client/jars/jackson-databind-2.12.3.jar:/usr/sdp/current/spark3-client/jars/arpack_combined_all-0.1.jar:/usr/sdp/current/spark3-client/jars/commons-text-1.10.0.jar:/usr/sdp/current/spark3-client/jars/hadoop-shaded-guava-1.1.1.jar:/usr/sdp/current/spark3-client/jars/commons-crypto-1.1.0.jar:/usr/sdp/current/spark3-client/jars/metrics-jmx-4.2.0.jar:/usr/sdp/current/spark3-client/jars/jsr305-3.0.0.jar:/usr/sdp/current/spark3-client/jars/kubernetes-model-coordination-5.4.1.jar:/usr/sdp/current/spark3-client/jars/kubernetes-model-core-5.4.1.jar:/usr/sdp/current/spark3-client/jars/javolution-5.5.1.jar:/usr/sdp/current/spark3-client/jars/hk2-api-2.6.1.jar:/usr/sdp/current/spark3-client/jars/avro-1.10.2.jar:/usr/sdp/current/spark3-client/jars/datanucleus-api-jdo-4.2.4.jar:/usr/sdp/current/spark3-client/jars/spark-network-common_2.12-3.2.1.3.5.7.0-1-SNAPSHOT.jar:/usr/sdp/current/spark3-client/jars/kubernetes-model-apps-5.4.1.jar:/usr/sdp/current/spark3-client/jars/spark-tags_2.12-3.2.1.3.5.7.0-1-SNAPSHOT.jar:/usr/sdp/current/spark3-client/jars/oro-2.0.8.jar:/usr/sdp/current/spark3-client/jars/jakarta.validation-api-2.0.2.jar:/usr/sdp/current/spark3-client/jars/spire-platform_2.12-0.17.0.jar:/usr/sdp/current/spark3-client/jars/htrace-core4-4.1.0-incubating.jar:/usr/sdp/current/spark3-client/jars/hadoop-yarn-server-web-proxy-3.3.1.jar:/usr/sdp/current/spark3-client/jars/generex-1.0.2.jar:/usr/sdp/current/spark3-client/jars/parquet-jackson-1.12.2.jar:/usr/sdp/current/spark3-client/jars/spark-tags_2.12-3.2.1.3.5.7.0-1-SNAPSHOT-tests.jar:/usr/sdp/current/spark3-client/jars/avro-mapred-1.10.2.jar:/usr/sdp/current/spark3-client/jars/spark-yarn_2.12-3.2.1.3.5.7.0-1-SNAPSHOT.jar:/usr/sdp/current/spark3-client/jars/logging-interceptor-3.12.12.jar:/usr/sdp/current/spark3-client/jars/osgi-resource-locator-1.0.3.jar:/usr/sdp/current/spark3-client/jars/parquet-column-1.12.2.jar:/usr/sdp/current/spark3-client/jars/scala-library-2.12.15.jar:/usr/sdp/current/spark3-client/jars/jul-to-slf4j-1.7.30.jar:/usr/sdp/current/spark3-client/jars/arrow-memory-netty-2.0.0.jar:/usr/sdp/current/spark3-client/jars/jta-1.1.jar:/usr/sdp/current/spark3-client/jars/snakeyaml-1.27.jar:/usr/sdp/current/spark3-client/jars/compress-lzf-1.0.3.jar:/usr/sdp/current/spark3-client/jars/sqljdbc-4.2.jar:/usr/sdp/current/spark3-client/jars/scala-compiler-2.12.15.jar:/usr/sdp/current/spark3-client/jars/slf4j-api-1.7.30.jar:/usr/sdp/current/spark3-client/jars/flatbuffers-java-1.9.0.jar:/usr/sdp/current/spark3-client/jars/arrow-vector-2.0.0.jar:/usr/sdp/current/spark3-client/jars/curator-client-2.13.0.jar:/usr/sdp/current/spark3-client/jars/libthrift-0.12.0.jar:/usr/sdp/current/spark3-client/jars/json4s-core_2.12-3.7.0-M11.jar:/usr/sdp/current/spark3-client/jars/postgresql-42.2.18.jar:/usr/sdp/current/spark3-client/jars/hive-jdbc-2.3.9.jar:/usr/sdp/current/spark3-client/jars/univocity-parsers-2.9.1.jar:/usr/sdp/current/spark3-client/jars/jaxb-api-2.2.11.jar:/usr/sdp/current/spark3-client/jars/javassist-3.25.0-GA.jar:/usr/sdp/current/spark3-client/jars/spire-util_2.12-0.17.0.jar:/usr/sdp/current/spark3-client/jars/dropwizard-metrics-hadoop-metrics2-reporter-0.1.2.jar:/usr/sdp/current/spark3-client/jars/hadoop-client-api-3.3.1.jar:/usr/sdp/current/spark3-client/jars/macro-compat_2.12-1.1.1.jar:/usr/sdp/current/spark3-client/jars/json-1.8.jar:/usr/sdp/current/spark3-client/jars/arrow-memory-core-2.0.0.jar:/usr/sdp/current/spark3-client/jars/spark-launcher_2.12-3.2.1.3.5.7.0-1-SNAPSHOT.jar:/usr/sdp/current/spark3-client/jars/hive-exec-2.3.9-core.jar:/usr/sdp/current/spark3-client/jars/kubernetes-model-networking-5.4.1.jar:/usr/sdp/current/spark3-client/jars/spark-network-shuffle_2.12-3.2.1.3.5.7.0-1-SNAPSHOT.jar:/usr/sdp/current/spark3-client/jars/zookeeper-jute-3.6.2.jar:/usr/sdp/current/spark3-client/jars/spark-sql_2.12-3.2.1.3.5.7.0-1-SNAPSHOT.jar:/usr/sdp/current/spark3-client/jars/jakarta.inject-2.6.1.jar:/usr/sdp/current/spark3-client/jars/metrics-graphite-4.2.0.jar:/usr/sdp/current/spark3-client/jars/JTransforms-3.1.jar:/usr/sdp/current/spark3-client/jars/protobuf-java-2.5.0.jar:/usr/sdp/current/spark3-client/jars/RoaringBitmap-0.9.0.jar:/usr/sdp/current/spark3-client/jars/zookeeper-3.6.2.jar:/usr/sdp/current/spark3-client/jars/annotations-17.0.0.jar:/usr/sdp/current/spark3-client/jars/jackson-mapper-asl-1.9.13.jar:/usr/sdp/current/spark3-client/jars/scala-collection-compat_2.12-2.1.1.jar:/usr/sdp/current/spark3-client/jars/parquet-common-1.12.2.jar:/usr/sdp/current/spark3-client/jars/jline-2.14.6.jar:/usr/sdp/current/spark3-client/jars/kubernetes-model-common-5.4.1.jar:/usr/sdp/current/spark3-client/jars/libfb303-0.9.3.jar:/usr/sdp/current/spark3-client/jars/hive-shims-common-2.3.9.jar:/usr/sdp/current/spark3-client/jars/hive-cli-2.3.9.jar:/usr/sdp/current/spark3-client/jars/okhttp-3.12.12.jar:/usr/sdp/current/spark3-client/jars/automaton-1.11-8.jar:/usr/sdp/current/spark3-client/jars/activation-1.1.1.jar:/usr/sdp/current/spark3-client/jars/hive-serde-2.3.9.jar:/usr/sdp/current/spark3-client/jars/hadoop-client-runtime-3.3.1.jar:/usr/sdp/current/spark3-client/jars/commons-compress-1.21.jar:/usr/sdp/current/spark3-client/jars/kubernetes-model-certificates-5.4.1.jar:/usr/sdp/current/spark3-client/jars/hive-common-2.3.9.jar:/usr/sdp/current/spark3-client/jars/spark-hive_2.12-3.2.1.3.5.7.0-1-SNAPSHOT.jar:/usr/sdp/current/spark3-client/jars/jackson-annotations-2.12.3.jar:/usr/sdp/current/spark3-client/jars/opencsv-2.3.jar:/usr/sdp/current/spark3-client/jars/hive-shims-2.3.9.jar:/usr/sdp/current/spark3-client/jars/hive-beeline-2.3.9.jar:/usr/sdp/current/spark3-client/jars/cats-kernel_2.12-2.1.1.jar:/usr/sdp/current/spark3-client/jars/datanucleus-core-4.1.17.jar:/usr/sdp/current/spark3-client/jars/breeze-macros_2.12-1.2.jar:/usr/sdp/current/spark3-client/jars/jodd-core-3.5.2.jar:/usr/sdp/current/spark3-client/jars/chill_2.12-0.10.0.jar:/usr/sdp/current/spark3-client/jars/chill-java-0.10.0.jar:/usr/sdp/current/spark3-client/jars/hive-metastore-2.3.9.jar:/usr/sdp/current/spark3-client/jars/hk2-locator-2.6.1.jar:/usr/sdp/current/spark3-client/jars/spark-kvstore_2.12-3.2.1.3.5.7.0-1-SNAPSHOT.jar:/usr/sdp/current/spark3-client/jars/commons-lang-2.6.jar:/usr/sdp/current/spark3-client/jars/jakarta.annotation-api-1.3.5.jar:/usr/sdp/current/spark3-client/jars/commons-io-2.8.0.jar:/usr/sdp/current/spark3-client/jars/arrow-format-2.0.0.jar:/usr/sdp/current/spark3-client/jars/metrics-jvm-4.2.0.jar:/usr/sdp/current/spark3-client/jars/commons-lang3-3.12.0.jar:/usr/sdp/current/spark3-client/jars/spark-core_2.12-3.2.1.3.5.7.0-1-SNAPSHOT.jar:/usr/sdp/current/spark3-client/jars/breeze_2.12-1.2.jar:/usr/sdp/current/spark3-client/jars/jackson-core-asl-1.9.13.jar:/usr/sdp/current/spark3-client/jars/parquet-encoding-1.12.2.jar:/usr/sdp/current/spark3-client/jars/aircompressor-0.21.jar:/usr/sdp/current/spark3-client/jars/avro-ipc-1.10.2.jar:/usr/sdp/current/spark3-client/jars/commons-codec-1.15.jar:/usr/sdp/current/spark3-client/jars/jersey-container-servlet-2.34.jar:/usr/sdp/current/spark3-client/jars/spire_2.12-0.17.0.jar:/usr/sdp/current/spark3-client/jars/commons-pool-1.5.4.jar:/usr/sdp/current/spark3-client/jars/scala-parser-combinators_2.12-1.1.2.jar:/usr/sdp/current/spark3-client/jars/HikariCP-2.5.1.jar:/usr/sdp/current/spark3-client/jars/jdo-api-3.0.1.jar:/usr/sdp/current/spark3-client/jars/core-1.1.2.jar:/usr/sdp/current/spark3-client/jars/json4s-scalap_2.12-3.7.0-M11.jar:/usr/sdp/current/spark3-client/jars/lapack-2.2.1.jar:/usr/sdp/current/spark3-client/jars/jackson-datatype-jsr310-2.11.2.jar:/usr/sdp/current/spark3-client/jars/spark-graphx_2.12-3.2.1.3.5.7.0-1-SNAPSHOT.jar:/usr/sdp/current/spark3-client/jars/commons-collections-3.2.2.jar:/usr/sdp/current/spark3-client/jars/spark-sketch_2.12-3.2.1.3.5.7.0-1-SNAPSHOT.jar:/usr/sdp/current/spark3-client/jars/log4j-1.2.17.jar:/usr/sdp/current/spark3-client/jars/super-csv-2.2.0.jar:/usr/sdp/current/spark3-client/jars/jpam-1.1.jar:/usr/sdp/current/spark3-client/jars/bonecp-0.8.0.RELEASE.jar:/usr/sdp/current/spark3-client/jars/spark-kubernetes_2.12-3.2.1.3.5.7.0-1-SNAPSHOT.jar:/usr/sdp/current/spark3-client/jars/ojdbc8-19.3.0.0.jar:/usr/sdp/current/spark3-client/jars/jersey-hk2-2.34.jar:/usr/sdp/current/spark3-client/jars/hive-llap-common-2.3.9.jar:/usr/sdp/current/spark3-client/jars/commons-logging-1.1.3.jar:/usr/sdp/current/spark3-client/jars/jackson-core-2.12.3.jar:/usr/sdp/current/spark3-client/jars/kryo-shaded-4.0.2.jar:/usr/sdp/current/spark3-client/jars/joda-time-2.10.10.jar:/usr/sdp/current/spark3-client/jars/jaxb-runtime-2.3.2.jar:/usr/sdp/current/spark3-client/jars/jakarta.xml.bind-api-2.3.2.jar:/usr/sdp/current/spark3-client/jars/json4s-ast_2.12-3.7.0-M11.jar:/usr/sdp/current/spark3-client/jars/shapeless_2.12-2.3.3.jar:/usr/sdp/current/spark3-client/jars/hive-storage-api-2.7.2.jar:/usr/sdp/current/spark3-client/jars/spark-repl_2.12-3.2.1.3.5.7.0-1-SNAPSHOT.jar:/usr/sdp/current/spark3-client/jars/hive-service-rpc-3.1.2.jar:/usr/sdp/current/spark3-client/jars/kubernetes-model-admissionregistration-5.4.1.jar:/usr/sdp/current/spark3-client/jars/jersey-client-2.34.jar:/usr/sdp/current/spark3-client/jars/istack-commons-runtime-3.0.8.jar:/usr/sdp/current/spark3-client/jars/spark-mllib_2.12-3.2.1.3.5.7.0-1-SNAPSHOT.jar:/usr/sdp/current/spark3-client/jars/datanucleus-rdbms-4.1.19.jar:/usr/sdp/3.5.7.0-1/hadoop/conf/:/usr/sdp/current/hbase-client/lib/kerb-common-1.0.1.jar:/usr/sdp/current/hbase-client/lib/stax2-api-3.1.4.jar:/usr/sdp/current/hbase-client/lib/hadoop-yarn-server-common-3.1.3.3.5.7.0-1-20250630.140826-59.jar:/usr/sdp/current/hbase-client/lib/caffeine-2.8.1.jar:/usr/sdp/current/hbase-client/lib/hadoop-yarn-server-tests-3.1.3.3.5.7.0-1-20250630.140843-59-tests.jar:/usr/sdp/current/hbase-client/lib/hbase-rest-2.4.18.3.5.7.0-1-SNAPSHOT.jar:/usr/sdp/current/hbase-client/lib/hadoop-minicluster-3.1.3.3.5.7.0-1-20250630.140938-57.jar:/usr/sdp/current/hbase-client/lib/ehcache-3.3.1.jar:/usr/sdp/current/hbase-client/lib/hbase-logging-2.4.18.3.5.7.0.jar:/usr/sdp/current/hbase-client/lib/netty-transport-native-unix-common-4.1.100.Final.jar:/usr/sdp/current/hbase-client/lib/curator-client-4.2.0.jar:/usr/sdp/current/hbase-client/lib/hbase-protocol-shaded-2.4.18.3.5.7.0-1-SNAPSHOT.jar:/usr/sdp/current/hbase-client/lib/hbase-endpoint-2.4.18.3.5.7.0-1-SNAPSHOT.jar:/usr/sdp/current/hbase-client/lib/hbase-thrift-2.4.18.3.5.7.0-1-SNAPSHOT.jar:/usr/sdp/current/hbase-client/lib/json-io-2.5.1.jar:/usr/sdp/current/hbase-client/lib/hbase-shaded-gson.jar:/usr/sdp/current/hbase-client/lib/jetty-util-9.3.24.v20180605.jar:/usr/sdp/current/hbase-client/lib/hadoop-yarn-server-resourcemanager-3.1.3.3.5.7.0-1-20250630.140840-59.jar:/usr/sdp/current/hbase-client/lib/jaxb-api-2.3.1.jar:/usr/sdp/current/hbase-client/lib/javax.activation-api-1.2.0.jar:/usr/sdp/current/hbase-client/lib/snappy-java-1.1.10.4.jar:/usr/sdp/current/hbase-client/lib/mssql-jdbc-6.2.1.jre7.jar:/usr/sdp/current/hbase-client/lib/hbase-http-2.4.18.3.5.7.0.jar:/usr/sdp/current/hbase-client/lib/ranger-plugin-classloader-2.4.0.3.5.7.0-1-SNAPSHOT.jar:/usr/sdp/current/hbase-client/lib/curator-recipes-4.2.0.jar:/usr/sdp/current/hbase-client/lib/hbase-resource-bundle-2.4.18.3.5.7.0.jar:/usr/sdp/current/hbase-client/lib/netty-codec-dns-4.1.100.Final.jar:/usr/sdp/current/hbase-client/lib/hbase-resource-bundle-2.4.18.3.5.7.0-1-SNAPSHOT.jar:/usr/sdp/current/hbase-client/lib/hbase-mapreduce-2.4.18.3.5.7.0.jar:/usr/sdp/current/hbase-client/lib/hbase-server-2.4.18.3.5.7.0-1-SNAPSHOT-tests.jar:/usr/sdp/current/hbase-client/lib/netty-buffer-4.1.100.Final.jar:/usr/sdp/current/hbase-client/lib/commons-compress-1.18.jar:/usr/sdp/current/hbase-client/lib/guice-servlet-4.0.jar:/usr/sdp/current/hbase-client/lib/libthrift-0.14.1.jar:/usr/sdp/current/hbase-client/lib/netty-transport-rxtx-4.1.100.Final.jar:/usr/sdp/current/hbase-client/lib/hadoop-yarn-server-applicationhistoryservice-3.1.3.3.5.7.0-1-20250630.140834-59.jar:/usr/sdp/current/hbase-client/lib/hadoop-common-3.1.3.3.5.7.0-1-20250630.140744-62.jar:/usr/sdp/current/hbase-client/lib/javax.servlet.jsp-2.3.2.jar:/usr/sdp/current/hbase-client/lib/hadoop-auth-3.1.3.3.5.7.0-1-20250630.140729-66.jar:/usr/sdp/current/hbase-client/lib/netty-transport-classes-kqueue-4.1.100.Final.jar:/usr/sdp/current/hbase-client/lib/dnsjava-3.4.0.jar:/usr/sdp/current/hbase-client/lib/netty-codec-haproxy-4.1.100.Final.jar:/usr/sdp/current/hbase-client/lib/re2j-1.1.jar:/usr/sdp/current/hbase-client/lib/hbase-shaded-miscellaneous-4.1.5.jar:/usr/sdp/current/hbase-client/lib/hbase-server-2.4.18.3.5.7.0-1-SNAPSHOT.jar:/usr/sdp/current/hbase-client/lib/checker-qual-3.1.0.jar:/usr/sdp/current/hbase-client/lib/kerb-identity-1.0.1.jar:/usr/sdp/current/hbase-client/lib/hadoop-yarn-api-3.1.3.3.5.7.0-1-20250630.140817-59.jar:/usr/sdp/current/hbase-client/lib/httpclient-4.5.13.jar:/usr/sdp/current/hbase-client/lib/javassist-3.29.2-GA.jar:/usr/sdp/current/hbase-client/lib/jettison-1.5.4.jar:/usr/sdp/current/hbase-client/lib/hbase-shaded-jetty-4.1.5.jar:/usr/sdp/current/hbase-client/lib/hbase-zookeeper-2.4.18.3.5.7.0-1-SNAPSHOT-tests.jar:/usr/sdp/current/hbase-client/lib/aopalliance-1.0.jar:/usr/sdp/current/hbase-client/lib/kerb-simplekdc-1.0.1.jar:/usr/sdp/current/hbase-client/lib/hbase-shell-2.4.18.3.5.7.0.jar:/usr/sdp/current/hbase-client/lib/hbase-replication-2.4.18.3.5.7.0-1-SNAPSHOT.jar:/usr/sdp/current/hbase-client/lib/objenesis-2.6.jar:/usr/sdp/current/hbase-client/lib/hadoop-yarn-common-3.1.3.3.5.7.0-1-20250630.140820-59.jar:/usr/sdp/current/hbase-client/lib/httpcore-4.4.13.jar:/usr/sdp/current/hbase-client/lib/gson-2.2.4.jar:/usr/sdp/current/hbase-client/lib/netty-resolver-4.1.100.Final.jar:/usr/sdp/current/hbase-client/lib/commons-math3-3.6.1.jar:/usr/sdp/current/hbase-client/lib/hbase-annotations-2.4.18.3.5.7.0-1-SNAPSHOT-tests.jar:/usr/sdp/current/hbase-client/lib/netty-codec-redis-4.1.100.Final.jar:/usr/sdp/current/hbase-client/lib/kerb-server-1.0.1.jar:/usr/sdp/current/hbase-client/lib/jul-to-slf4j-1.7.33.jar:/usr/sdp/current/hbase-client/lib/netty-handler-ssl-ocsp-4.1.100.Final.jar:/usr/sdp/current/hbase-client/lib/hadoop-mapreduce-client-jobclient-3.1.3.3.5.7.0-1-20250630.140935-59.jar:/usr/sdp/current/hbase-client/lib/hbase-common-2.4.18.3.5.7.0-1-SNAPSHOT.jar:/usr/sdp/current/hbase-client/lib/jcodings-1.0.55.jar:/usr/sdp/current/hbase-client/lib/netty-codec-mqtt-4.1.100.Final.jar:/usr/sdp/current/hbase-client/lib/hbase-shaded-protobuf-4.1.5.jar:/usr/sdp/current/hbase-client/lib/hbase-endpoint-2.4.18.3.5.7.0.jar:/usr/sdp/current/hbase-client/lib/hbase-hadoop-compat-2.4.18.3.5.7.0.jar:/usr/sdp/current/hbase-client/lib/javax.el-3.0.1-b08.jar:/usr/sdp/current/hbase-client/lib/hbase-hadoop2-compat-2.4.18.3.5.7.0.jar:/usr/sdp/current/hbase-client/lib/hbase-zookeeper-2.4.18.3.5.7.0-1-SNAPSHOT.jar:/usr/sdp/current/hbase-client/lib/netty-codec-4.1.100.Final.jar:/usr/sdp/current/hbase-client/lib/listenablefuture-9999.0-empty-to-avoid-conflict-with-guava.jar:/usr/sdp/current/hbase-client/lib/ranger-hbase-plugin-shim-2.4.0.3.5.7.0-1-SNAPSHOT.jar:/usr/sdp/current/hbase-client/lib/hadoop-distcp-3.1.3.3.5.7.0-1-20250630.141019-57.jar:/usr/sdp/current/hbase-client/lib/javax.servlet.jsp-api-2.3.1.jar:/usr/sdp/current/hbase-client/lib/jcl-over-slf4j-1.7.33.jar:/usr/sdp/current/hbase-client/lib/javax.servlet-api-3.1.0.jar:/usr/sdp/current/hbase-client/lib/jetty-xml-9.3.24.v20180605.jar:/usr/sdp/current/hbase-client/lib/hadoop-annotations-3.1.3.3.5.7.0-1-20250630.140721-65.jar:/usr/sdp/current/hbase-client/lib/hbase-rsgroup-2.4.18.3.5.7.0-1-SNAPSHOT.jar:/usr/sdp/current/hbase-client/lib/geronimo-jcache_1.0_spec-1.0-alpha-1.jar:/usr/sdp/current/hbase-client/lib/hbase-shaded-protobuf.jar:/usr/sdp/current/hbase-client/lib/netty-transport-native-epoll-4.1.100.Final.jar:/usr/sdp/current/hbase-client/lib/hbase-client-2.4.18.3.5.7.0.jar:/usr/sdp/current/hbase-client/lib/failureaccess-1.0.1.jar:/usr/sdp/current/hbase-client/lib/hbase-shaded-jersey-4.1.5.jar:/usr/sdp/current/hbase-client/lib/hbase-examples-2.4.18.3.5.7.0.jar:/usr/sdp/current/hbase-client/lib/commons-io-2.11.0.jar:/usr/sdp/current/hbase-client/lib/hbase-annotations-2.4.18.3.5.7.0.jar:/usr/sdp/current/hbase-client/lib/commons-beanutils-1.9.3.jar:/usr/sdp/current/hbase-client/lib/leveldbjni-all-1.8.jar:/usr/sdp/current/hbase-client/lib/commons-configuration2-2.1.1.jar:/usr/sdp/current/hbase-client/lib/hbase-hadoop2-compat-2.4.18.3.5.7.0-1-SNAPSHOT.jar:/usr/sdp/current/hbase-client/lib/hadoop-mapreduce-client-common-3.1.3.3.5.7.0-1-20250630.140923-59.jar:/usr/sdp/current/hbase-client/lib/hadoop-mapreduce-client-shuffle-3.1.3.3.5.7.0-1-20250630.140926-59.jar:/usr/sdp/current/hbase-client/lib/hbase-shaded-netty.jar:/usr/sdp/current/hbase-client/lib/hbase-shell-2.4.18.3.5.7.0-1-SNAPSHOT.jar:/usr/sdp/current/hbase-client/lib/objenesis-1.0.jar:/usr/sdp/current/hbase-client/lib/hbase-metrics-api-2.4.18.3.5.7.0.jar:/usr/sdp/current/hbase-client/lib/hbase-rest-2.4.18.3.5.7.0.jar:/usr/sdp/current/hbase-client/lib/jetty-util-ajax-9.3.24.v20180605.jar:/usr/sdp/current/hbase-client/lib/hbase-procedure-2.4.18.3.5.7.0-1-SNAPSHOT.jar:/usr/sdp/current/hbase-client/lib/jetty-server-9.3.24.v20180605.jar:/usr/sdp/current/hbase-client/lib/disruptor-3.4.4.jar:/usr/sdp/current/hbase-client/lib/avro-1.7.7.jar:/usr/sdp/current/hbase-client/lib/jakarta.validation-api-2.0.2.jar:/usr/sdp/current/hbase-client/lib/nimbus-jose-jwt-4.41.1.jar:/usr/sdp/current/hbase-client/lib/hbase-unsafe-4.1.5.jar:/usr/sdp/current/hbase-client/lib/hadoop-yarn-server-timelineservice-3.1.3.3.5.7.0-1-20250630.140837-59.jar:/usr/sdp/current/hbase-client/lib/commons-net-3.6.jar:/usr/sdp/current/hbase-client/lib/hbase-hadoop2-compat-2.4.18.3.5.7.0-1-SNAPSHOT-tests.jar:/usr/sdp/current/hbase-client/lib/netty-resolver-dns-native-macos-4.1.100.Final-osx-x86_64.jar:/usr/sdp/current/hbase-client/lib/commons-cli-1.5.0.jar:/usr/sdp/current/hbase-client/lib/hbase-protocol-shaded-2.4.18.3.5.7.0.jar:/usr/sdp/current/hbase-client/lib/hadoop-mapreduce-client-hs-3.1.3.3.5.7.0-1-20250630.140932-59.jar:/usr/sdp/current/hbase-client/lib/zookeeper-3.8.4.jar:/usr/sdp/current/hbase-client/lib/hbase-shaded-miscellaneous.jar:/usr/sdp/current/hbase-client/lib/hbase-logging-2.4.18.3.5.7.0-1-SNAPSHOT.jar:/usr/sdp/current/hbase-client/lib/error_prone_annotations-2.21.1.jar:/usr/sdp/current/hbase-client/lib/netty-transport-sctp-4.1.100.Final.jar:/usr/sdp/current/hbase-client/lib/hbase-metrics-api-2.4.18.3.5.7.0-1-SNAPSHOT.jar:/usr/sdp/current/hbase-client/lib/hbase-testing-util-2.4.18.3.5.7.0-1-SNAPSHOT.jar:/usr/sdp/current/hbase-client/lib/curator-framework-4.2.0.jar:/usr/sdp/current/hbase-client/lib/hadoop-hdfs-3.1.3.3.5.7.0-1-20250630.140802-59.jar:/usr/sdp/current/hbase-client/lib/hbase-shaded-netty-4.1.5.jar:/usr/sdp/current/hbase-client/lib/hadoop-hdfs-client-3.1.3.3.5.7.0-1-20250630.140754-60.jar:/usr/sdp/current/hbase-client/lib/hbase-replication-2.4.18.3.5.7.0.jar:/usr/sdp/current/hbase-client/lib/kerby-util-1.0.1.jar:/usr/sdp/current/hbase-client/lib/netty-resolver-dns-classes-macos-4.1.100.Final.jar:/usr/sdp/current/hbase-client/lib/guava-28.0-jre.jar:/usr/sdp/current/hbase-client/lib/paranamer-2.3.jar:/usr/sdp/current/hbase-client/lib/netty-codec-memcache-4.1.100.Final.jar:/usr/sdp/current/hbase-client/lib/hbase-asyncfs-2.4.18.3.5.7.0-1-SNAPSHOT.jar:/usr/sdp/current/hbase-client/lib/hbase-hbtop-2.4.18.3.5.7.0.jar:/usr/sdp/current/hbase-client/lib/token-provider-1.0.1.jar:/usr/sdp/current/hbase-client/lib/netty-transport-udt-4.1.100.Final.jar:/usr/sdp/current/hbase-client/lib/hbase-protocol-2.4.18.3.5.7.0-1-SNAPSHOT.jar:/usr/sdp/current/hbase-client/lib/netty-codec-http2-4.1.100.Final.jar:/usr/sdp/current/hbase-client/lib/jetty-io-9.3.24.v20180605.jar:/usr/sdp/current/hbase-client/lib/hadoop-yarn-registry-3.1.3.3.5.7.0-1-20250630.140822-59.jar:/usr/sdp/current/hbase-client/lib/hbase-common-2.4.18.3.5.7.0.jar:/usr/sdp/current/hbase-client/lib/hbase-shaded-jackson-jaxrs-json-provider-4.1.5.jar:/usr/sdp/current/hbase-client/lib/hbase-external-blockcache-2.4.18.3.5.7.0-1-SNAPSHOT.jar:/usr/sdp/current/hbase-client/lib/checker-qual-2.8.1.jar:/usr/sdp/current/hbase-client/lib/netty-transport-native-kqueue-4.1.100.Final-osx-x86_64.jar:/usr/sdp/current/hbase-client/lib/netty-transport-classes-epoll-4.1.100.Final.jar:/usr/sdp/current/hbase-client/lib/guice-4.0.jar:/usr/sdp/current/hbase-client/lib/hadoop-mapreduce-client-app-3.1.3.3.5.7.0-1-20250630.140929-59.jar:/usr/sdp/current/hbase-client/lib/netty-resolver-dns-4.1.100.Final.jar:/usr/sdp/current/hbase-client/lib/hbase-hadoop-compat-2.4.18.3.5.7.0-1-SNAPSHOT-tests.jar:/usr/sdp/current/hbase-client/lib/hadoop-yarn-server-nodemanager-3.1.3.3.5.7.0-1-20250630.140829-59.jar:/usr/sdp/current/hbase-client/lib/kerb-client-1.0.1.jar:/usr/sdp/current/hbase-client/lib/hbase-shaded-gson-4.1.5.jar:/usr/sdp/current/hbase-client/lib/jackson-annotations-2.15.2.jar:/usr/sdp/current/hbase-client/lib/hbase-annotations-2.4.18.3.5.7.0-1-SNAPSHOT.jar:/usr/sdp/current/hbase-client/lib/jakarta.inject-2.6.1.jar:/usr/sdp/current/hbase-client/lib/kerby-xdr-1.0.1.jar:/usr/sdp/current/hbase-client/lib/netty-transport-native-epoll-4.1.100.Final-linux-x86_64.jar:/usr/sdp/current/hbase-client/lib/netty-common-4.1.100.Final.jar:/usr/sdp/current/hbase-client/lib/protobuf-java-2.5.0.jar:/usr/sdp/current/hbase-client/lib/jackson-module-jaxb-annotations-2.9.9.jar:/usr/sdp/current/hbase-client/lib/zookeeper-jute-3.8.4.jar:/usr/sdp/current/hbase-client/lib/hbase-client-2.4.18.3.5.7.0-1-SNAPSHOT.jar:/usr/sdp/current/hbase-client/lib/jetty-servlet-9.3.24.v20180605.jar:/usr/sdp/current/hbase-client/lib/hbase-asyncfs-2.4.18.3.5.7.0.jar:/usr/sdp/current/hbase-client/lib/kerb-util-1.0.1.jar:/usr/sdp/current/hbase-client/lib/jackson-mapper-asl-1.9.13.jar:/usr/sdp/current/hbase-client/lib/HikariCP-java7-2.4.12.jar:/usr/sdp/current/hbase-client/lib/hadoop-yarn-client-3.1.3.3.5.7.0-1-20250630.140846-59.jar:/usr/sdp/current/hbase-client/lib/hbase-hbtop-2.4.18.3.5.7.0-1-SNAPSHOT.jar:/usr/sdp/current/hbase-client/lib/hbase-procedure-2.4.18.3.5.7.0.jar:/usr/sdp/current/hbase-client/lib/netty-handler-proxy-4.1.100.Final.jar:/usr/sdp/current/hbase-client/lib/jackson-core-2.15.2.jar:/usr/sdp/current/hbase-client/lib/hbase-mapreduce-2.4.18.3.5.7.0-1-SNAPSHOT.jar:/usr/sdp/current/hbase-client/lib/hbase-zookeeper-2.4.18.3.5.7.0.jar:/usr/sdp/current/hbase-client/lib/kerb-core-1.0.1.jar:/usr/sdp/current/hbase-client/lib/netty-transport-4.1.100.Final.jar:/usr/sdp/current/hbase-client/lib/hbase-shaded-jersey.jar:/usr/sdp/current/hbase-client/lib/jackson-databind-2.15.2.jar:/usr/sdp/current/hbase-client/lib/hbase-shaded-jetty.jar:/usr/sdp/current/hbase-client/lib/java-util-1.9.0.jar:/usr/sdp/current/hbase-client/lib/netty-codec-stomp-4.1.100.Final.jar:/usr/sdp/current/hbase-client/lib/okhttp-2.7.5.jar:/usr/sdp/current/hbase-client/lib/netty-codec-xml-4.1.100.Final.jar:/usr/sdp/current/hbase-client/lib/woodstox-core-5.0.3.jar:/usr/sdp/current/hbase-client/lib/jamon-runtime-2.4.1.jar:/usr/sdp/current/hbase-client/lib/hbase-metrics-2.4.18.3.5.7.0-1-SNAPSHOT.jar:/usr/sdp/current/hbase-client/lib/hbase-metrics-2.4.18.3.5.7.0.jar:/usr/sdp/current/hbase-client/lib/commons-crypto-1.0.0.jar:/usr/sdp/current/hbase-client/lib/j2objc-annotations-1.3.jar:/usr/sdp/current/hbase-client/lib/kerb-admin-1.0.1.jar:/usr/sdp/current/hbase-client/lib/commons-daemon-1.0.13.jar:/usr/sdp/current/hbase-client/lib/netty-resolver-dns-native-macos-4.1.100.Final-osx-aarch_64.jar:/usr/sdp/current/hbase-client/lib/hbase-rsgroup-2.4.18.3.5.7.0.jar:/usr/sdp/current/hbase-client/lib/hbase-asyncfs-2.4.18.3.5.7.0-1-SNAPSHOT-tests.jar:/usr/sdp/current/hbase-client/lib/hbase-it-2.4.18.3.5.7.0-1-SNAPSHOT.jar:/usr/sdp/current/hbase-client/lib/jetty-http-9.3.24.v20180605.jar:/usr/sdp/current/hbase-client/lib/netty-codec-socks-4.1.100.Final.jar:/usr/sdp/current/hbase-client/lib/fst-2.50.jar:/usr/sdp/current/hbase-client/lib/commons-lang-2.6.jar:/usr/sdp/current/hbase-client/lib/hbase-external-blockcache-2.4.18.3.5.7.0.jar:/usr/sdp/current/hbase-client/lib/hbase-hadoop-compat-2.4.18.3.5.7.0-1-SNAPSHOT.jar:/usr/sdp/current/hbase-client/lib/commons-lang3-3.9.jar:/usr/sdp/current/hbase-client/lib/hbase-server-2.4.18.3.5.7.0.jar:/usr/sdp/current/hbase-client/lib/hbase-it-2.4.18.3.5.7.0-1-SNAPSHOT-tests.jar:/usr/sdp/current/hbase-client/lib/hbase-it-2.4.18.3.5.7.0.jar:/usr/sdp/current/hbase-client/lib/jsch-0.1.54.jar:/usr/sdp/current/hbase-client/lib/kerby-config-1.0.1.jar:/usr/sdp/current/hbase-client/lib/hbase-testing-util-2.4.18.3.5.7.0.jar:/usr/sdp/current/hbase-client/lib/spymemcached-2.12.2.jar:/usr/sdp/current/hbase-client/lib/hbase-shaded-jackson-jaxrs-json-provider.jar:/usr/sdp/current/hbase-client/lib/hbase-thrift-2.4.18.3.5.7.0.jar:/usr/sdp/current/hbase-client/lib/jackson-core-asl-1.9.13.jar:/usr/sdp/current/hbase-client/lib/hbase-unsafe.jar:/usr/sdp/current/hbase-client/lib/jackson-jaxrs-json-provider-2.9.9.jar:/usr/sdp/current/hbase-client/lib/netty-codec-smtp-4.1.100.Final.jar:/usr/sdp/current/hbase-client/lib/netty-all-4.1.100.Final.jar:/usr/sdp/current/hbase-client/lib/commons-csv-1.0.jar:/usr/sdp/current/hbase-client/lib/kerby-pkix-1.0.1.jar:/usr/sdp/current/hbase-client/lib/netty-3.10.6.Final.jar:/usr/sdp/current/hbase-client/lib/commons-codec-1.15.jar:/usr/sdp/current/hbase-client/lib/hbase-examples-2.4.18.3.5.7.0-1-SNAPSHOT.jar:/usr/sdp/current/hbase-client/lib/jaxb-impl-2.2.3-1.jar:/usr/sdp/current/hbase-client/lib/jetty-security-9.3.24.v20180605.jar:/usr/sdp/current/hbase-client/lib/hbase-protocol-2.4.18.3.5.7.0.jar:/usr/sdp/current/hbase-client/lib/jcip-annotations-1.0-1.jar:/usr/sdp/current/hbase-client/lib/hbase-http-2.4.18.3.5.7.0-1-SNAPSHOT.jar:/usr/sdp/current/hbase-client/lib/byte-buddy-1.9.10.jar:/usr/sdp/current/hbase-client/lib/byte-buddy-agent-1.9.10.jar:/usr/sdp/current/hbase-client/lib/commons-collections-3.2.2.jar:/usr/sdp/current/hbase-client/lib/javax.annotation-api-1.2.jar:/usr/sdp/current/hbase-client/lib/hadoop-mapreduce-client-core-3.1.3.3.5.7.0-1-20250630.140921-59.jar:/usr/sdp/current/hbase-client/lib/netty-transport-native-kqueue-4.1.100.Final-osx-aarch_64.jar:/usr/sdp/current/hbase-client/lib/hbase-rsgroup-2.4.18.3.5.7.0-1-SNAPSHOT-tests.jar:/usr/sdp/current/hbase-client/lib/hbase-mapreduce-2.4.18.3.5.7.0-1-SNAPSHOT-tests.jar:/usr/sdp/current/hbase-client/lib/animal-sniffer-annotations-1.17.jar:/usr/sdp/current/hbase-client/lib/metrics-core-3.2.6.jar:/usr/sdp/current/hbase-client/lib/hadoop-yarn-server-web-proxy-3.1.3.3.5.7.0-1-20250630.140831-59.jar:/usr/sdp/current/hbase-client/lib/netty-handler-4.1.100.Final.jar:/usr/sdp/current/hbase-client/lib/okio-1.6.0.jar:/usr/sdp/current/hbase-client/lib/hbase-common-2.4.18.3.5.7.0-1-SNAPSHOT-tests.jar:/usr/sdp/current/hbase-client/lib/jackson-jaxrs-base-2.9.9.jar:/usr/sdp/current/hbase-client/lib/joni-2.1.31.jar:/usr/sdp/current/hbase-client/lib/jetty-webapp-9.3.24.v20180605.jar:/usr/sdp/current/hbase-client/lib/kerb-crypto-1.0.1.jar:/usr/sdp/current/hbase-client/lib/hbase-procedure-2.4.18.3.5.7.0-1-SNAPSHOT-tests.jar:/usr/sdp/current/hbase-client/lib/netty-transport-native-epoll-4.1.100.Final-linux-aarch_64.jar:/usr/sdp/current/hbase-client/lib/jackson-module-jaxb-annotations-2.15.2.jar:/usr/sdp/current/hbase-client/lib/kerby-asn1-1.0.1.jar:/usr/sdp/current/hbase-client/lib/netty-codec-http-4.1.100.Final.jar
-26/08/06 11:14:54 INFO ZooKeeper: Client environment:java.library.path=/usr/java/packages/lib/amd64:/usr/lib64:/lib64:/lib:/usr/lib
-26/08/06 11:14:54 INFO ZooKeeper: Client environment:java.io.tmpdir=/tmp
-26/08/06 11:14:54 INFO ZooKeeper: Client environment:java.compiler=<NA>
-26/08/06 11:14:54 INFO ZooKeeper: Client environment:os.name=Linux
-26/08/06 11:14:54 INFO ZooKeeper: Client environment:os.arch=amd64
-26/08/06 11:14:54 INFO ZooKeeper: Client environment:os.version=4.18.0-553.8.1.sl8_10.1.x86_64
-26/08/06 11:14:54 INFO ZooKeeper: Client environment:user.name=abyss_ci
-26/08/06 11:14:54 INFO ZooKeeper: Client environment:user.home=/home/abyss_ci
-26/08/06 11:14:54 INFO ZooKeeper: Client environment:user.dir=/home/abyss_ci
-26/08/06 11:14:54 INFO ZooKeeper: Client environment:os.memory.free=344MB
-26/08/06 11:14:54 INFO ZooKeeper: Client environment:os.memory.max=3561MB
-26/08/06 11:14:54 INFO ZooKeeper: Client environment:os.memory.total=481MB
-26/08/06 11:14:54 INFO ZooKeeper: Initiating client connection, connectString=dev1-abyss-sdp2-ambari-02.opsmon.sbt:2181,dev1-abyss-sdp2-ambari-03.opsmon.sbt:2181,dev1-abyss-sdp2-ambari-01.opsmon.sbt:2181 sessionTimeout=90000 watcher=org.apache.hadoop.hbase.zookeeper.ReadOnlyZKClient$$Lambda$616/1544986368@4c63970
-26/08/06 11:14:54 INFO X509Util: Setting -D jdk.tls.rejectClientInitiatedRenegotiation=true to disable client-initiated TLS renegotiation
-26/08/06 11:14:54 INFO ClientCnxnSocket: jute.maxbuffer value is 1048575 Bytes
-26/08/06 11:14:54 INFO ClientCnxn: zookeeper.request.timeout value is 0. feature enabled=false
-26/08/06 11:14:54 INFO ClientCnxn: Opening socket connection to server dev1-abyss-sdp2-ambari-01.opsmon.sbt/10.21.68.25:2181.
-26/08/06 11:14:54 INFO ClientCnxn: SASL config status: Will not attempt to authenticate using SASL (unknown error)
-26/08/06 11:14:54 INFO ClientCnxn: Socket connection established, initiating session, client: /10.21.68.25:53242, server: dev1-abyss-sdp2-ambari-01.opsmon.sbt/10.21.68.25:2181
-26/08/06 11:14:54 INFO ClientCnxn: Session establishment complete on server dev1-abyss-sdp2-ambari-01.opsmon.sbt/10.21.68.25:2181, session id = 0x101b134cbc22d50, negotiated timeout = 60000
-26/08/06 11:14:58 WARN NettyRpcConnection: Exception encountered while connecting to the server dev1-abyss-sdp2-flink-01.opsmon.sbt:16020
-org.apache.hbase.thirdparty.io.netty.channel.AbstractChannel$AnnotatedConnectException: Connection refused: dev1-abyss-sdp2-flink-01.opsmon.sbt/10.21.68.24:16020
-Caused by: java.net.ConnectException: Connection refused
-	at sun.nio.ch.SocketChannelImpl.checkConnect(Native Method)
-	at sun.nio.ch.SocketChannelImpl.finishConnect(SocketChannelImpl.java:716)
-	at org.apache.hbase.thirdparty.io.netty.channel.socket.nio.NioSocketChannel.doFinishConnect(NioSocketChannel.java:337)
-	at org.apache.hbase.thirdparty.io.netty.channel.nio.AbstractNioChannel$AbstractNioUnsafe.finishConnect(AbstractNioChannel.java:334)
-	at org.apache.hbase.thirdparty.io.netty.channel.nio.NioEventLoop.processSelectedKey(NioEventLoop.java:776)
-	at org.apache.hbase.thirdparty.io.netty.channel.nio.NioEventLoop.processSelectedKeysOptimized(NioEventLoop.java:724)
-	at org.apache.hbase.thirdparty.io.netty.channel.nio.NioEventLoop.processSelectedKeys(NioEventLoop.java:650)
-	at org.apache.hbase.thirdparty.io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:562)
-	at org.apache.hbase.thirdparty.io.netty.util.concurrent.SingleThreadEventExecutor$4.run(SingleThreadEventExecutor.java:997)
-	at org.apache.hbase.thirdparty.io.netty.util.internal.ThreadExecutorMap$2.run(ThreadExecutorMap.java:74)
-	at org.apache.hbase.thirdparty.io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30)
-	at java.lang.Thread.run(Thread.java:750)
-26/08/06 11:15:00 WARN NettyRpcConnection: Exception encountered while connecting to the server dev1-abyss-sdp2-flink-01.opsmon.sbt:16020
-org.apache.hbase.thirdparty.io.netty.channel.AbstractChannel$AnnotatedConnectException: Connection refused: dev1-abyss-sdp2-flink-01.opsmon.sbt/10.21.68.24:16020
-Caused by: java.net.ConnectException: Connection refused
-	at sun.nio.ch.SocketChannelImpl.checkConnect(Native Method)
-	at sun.nio.ch.SocketChannelImpl.finishConnect(SocketChannelImpl.java:716)
-	at org.apache.hbase.thirdparty.io.netty.channel.socket.nio.NioSocketChannel.doFinishConnect(NioSocketChannel.java:337)
-	at org.apache.hbase.thirdparty.io.netty.channel.nio.AbstractNioChannel$AbstractNioUnsafe.finishConnect(AbstractNioChannel.java:334)
-	at org.apache.hbase.thirdparty.io.netty.channel.nio.NioEventLoop.processSelectedKey(NioEventLoop.java:776)
-	at org.apache.hbase.thirdparty.io.netty.channel.nio.NioEventLoop.processSelectedKeysOptimized(NioEventLoop.java:724)
-	at org.apache.hbase.thirdparty.io.netty.channel.nio.NioEventLoop.processSelectedKeys(NioEventLoop.java:650)
-	at org.apache.hbase.thirdparty.io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:562)
-	at org.apache.hbase.thirdparty.io.netty.util.concurrent.SingleThreadEventExecutor$4.run(SingleThreadEventExecutor.java:997)
-	at org.apache.hbase.thirdparty.io.netty.util.internal.ThreadExecutorMap$2.run(ThreadExecutorMap.java:74)
-	at org.apache.hbase.thirdparty.io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30)
-	at java.lang.Thread.run(Thread.java:750)
-26/08/06 11:15:02 WARN NettyRpcConnection: Exception encountered while connecting to the server dev1-abyss-sdp2-flink-01.opsmon.sbt:16020
-org.apache.hbase.thirdparty.io.netty.channel.AbstractChannel$AnnotatedConnectException: Connection refused: dev1-abyss-sdp2-flink-01.opsmon.sbt/10.21.68.24:16020
-Caused by: java.net.ConnectException: Connection refused
-	at sun.nio.ch.SocketChannelImpl.checkConnect(Native Method)
-	at sun.nio.ch.SocketChannelImpl.finishConnect(SocketChannelImpl.java:716)
-	at org.apache.hbase.thirdparty.io.netty.channel.socket.nio.NioSocketChannel.doFinishConnect(NioSocketChannel.java:337)
-	at org.apache.hbase.thirdparty.io.netty.channel.nio.AbstractNioChannel$AbstractNioUnsafe.finishConnect(AbstractNioChannel.java:334)
-	at org.apache.hbase.thirdparty.io.netty.channel.nio.NioEventLoop.processSelectedKey(NioEventLoop.java:776)
-	at org.apache.hbase.thirdparty.io.netty.channel.nio.NioEventLoop.processSelectedKeysOptimized(NioEventLoop.java:724)
-	at org.apache.hbase.thirdparty.io.netty.channel.nio.NioEventLoop.processSelectedKeys(NioEventLoop.java:650)
-	at org.apache.hbase.thirdparty.io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:562)
-	at org.apache.hbase.thirdparty.io.netty.util.concurrent.SingleThreadEventExecutor$4.run(SingleThreadEventExecutor.java:997)
-	at org.apache.hbase.thirdparty.io.netty.util.internal.ThreadExecutorMap$2.run(ThreadExecutorMap.java:74)
-	at org.apache.hbase.thirdparty.io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30)
-	at java.lang.Thread.run(Thread.java:750)
-26/08/06 11:15:02 INFO RpcRetryingCallerImpl: Call exception, tries=6, retries=36, started=5858 ms ago, cancelled=false, msg=Call to address=dev1-abyss-sdp2-flink-01.opsmon.sbt:16020 failed on connection exception: org.apache.hbase.thirdparty.io.netty.channel.AbstractChannel$AnnotatedConnectException: Connection refused: dev1-abyss-sdp2-flink-01.opsmon.sbt/10.21.68.24:16020, details=row '' on table 'hbase:meta' at region=hbase:meta,,1.1588230740, hostname=dev1-abyss-sdp2-flink-01.opsmon.sbt,16020,1771248542808, seqNum=-1, see https://s.apache.org/timeout
-26/08/06 11:15:06 WARN NettyRpcConnection: Exception encountered while connecting to the server dev1-abyss-sdp2-flink-01.opsmon.sbt:16020
-org.apache.hbase.thirdparty.io.netty.channel.AbstractChannel$AnnotatedConnectException: Connection refused: dev1-abyss-sdp2-flink-01.opsmon.sbt/10.21.68.24:16020
-Caused by: java.net.ConnectException: Connection refused
-	at sun.nio.ch.SocketChannelImpl.checkConnect(Native Method)
-	at sun.nio.ch.SocketChannelImpl.finishConnect(SocketChannelImpl.java:716)
-	at org.apache.hbase.thirdparty.io.netty.channel.socket.nio.NioSocketChannel.doFinishConnect(NioSocketChannel.java:337)
-	at org.apache.hbase.thirdparty.io.netty.channel.nio.AbstractNioChannel$AbstractNioUnsafe.finishConnect(AbstractNioChannel.java:334)
-	at org.apache.hbase.thirdparty.io.netty.channel.nio.NioEventLoop.processSelectedKey(NioEventLoop.java:776)
-	at org.apache.hbase.thirdparty.io.netty.channel.nio.NioEventLoop.processSelectedKeysOptimized(NioEventLoop.java:724)
-	at org.apache.hbase.thirdparty.io.netty.channel.nio.NioEventLoop.processSelectedKeys(NioEventLoop.java:650)
-	at org.apache.hbase.thirdparty.io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:562)
-	at org.apache.hbase.thirdparty.io.netty.util.concurrent.SingleThreadEventExecutor$4.run(SingleThreadEventExecutor.java:997)
-	at org.apache.hbase.thirdparty.io.netty.util.internal.ThreadExecutorMap$2.run(ThreadExecutorMap.java:74)
-	at org.apache.hbase.thirdparty.io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30)
-	at java.lang.Thread.run(Thread.java:750)
-26/08/06 11:15:06 INFO RpcRetryingCallerImpl: Call exception, tries=7, retries=36, started=9880 ms ago, cancelled=false, msg=Call to address=dev1-abyss-sdp2-flink-01.opsmon.sbt:16020 failed on connection exception: org.apache.hbase.thirdparty.io.netty.channel.AbstractChannel$AnnotatedConnectException: Connection refused: dev1-abyss-sdp2-flink-01.opsmon.sbt/10.21.68.24:16020, details=row '' on table 'hbase:meta' at region=hbase:meta,,1.1588230740, hostname=dev1-abyss-sdp2-flink-01.opsmon.sbt,16020,1771248542808, seqNum=-1, see https://s.apache.org/timeout
-26/08/06 11:15:16 WARN NettyRpcConnection: Exception encountered while connecting to the server dev1-abyss-sdp2-flink-01.opsmon.sbt:16020
-org.apache.hbase.thirdparty.io.netty.channel.AbstractChannel$AnnotatedConnectException: Connection refused: dev1-abyss-sdp2-flink-01.opsmon.sbt/10.21.68.24:16020
-Caused by: java.net.ConnectException: Connection refused
-	at sun.nio.ch.SocketChannelImpl.checkConnect(Native Method)
-	at sun.nio.ch.SocketChannelImpl.finishConnect(SocketChannelImpl.java:716)
-	at org.apache.hbase.thirdparty.io.netty.channel.socket.nio.NioSocketChannel.doFinishConnect(NioSocketChannel.java:337)
-	at org.apache.hbase.thirdparty.io.netty.channel.nio.AbstractNioChannel$AbstractNioUnsafe.finishConnect(AbstractNioChannel.java:334)
-	at org.apache.hbase.thirdparty.io.netty.channel.nio.NioEventLoop.processSelectedKey(NioEventLoop.java:776)
-	at org.apache.hbase.thirdparty.io.netty.channel.nio.NioEventLoop.processSelectedKeysOptimized(NioEventLoop.java:724)
-	at org.apache.hbase.thirdparty.io.netty.channel.nio.NioEventLoop.processSelectedKeys(NioEventLoop.java:650)
-	at org.apache.hbase.thirdparty.io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:562)
-	at org.apache.hbase.thirdparty.io.netty.util.concurrent.SingleThreadEventExecutor$4.run(SingleThreadEventExecutor.java:997)
-	at org.apache.hbase.thirdparty.io.netty.util.internal.ThreadExecutorMap$2.run(ThreadExecutorMap.java:74)
-	at org.apache.hbase.thirdparty.io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30)
-	at java.lang.Thread.run(Thread.java:750)
-26/08/06 11:15:16 INFO RpcRetryingCallerImpl: Call exception, tries=8, retries=36, started=19966 ms ago, cancelled=false, msg=Call to address=dev1-abyss-sdp2-flink-01.opsmon.sbt:16020 failed on connection exception: org.apache.hbase.thirdparty.io.netty.channel.AbstractChannel$AnnotatedConnectException: Connection refused: dev1-abyss-sdp2-flink-01.opsmon.sbt/10.21.68.24:16020, details=row '' on table 'hbase:meta' at region=hbase:meta,,1.1588230740, hostname=dev1-abyss-sdp2-flink-01.opsmon.sbt,16020,1771248542808, seqNum=-1, see https://s.apache.org/timeout
-26/08/06 11:15:26 WARN NettyRpcConnection: Exception encountered while connecting to the server dev1-abyss-sdp2-flink-01.opsmon.sbt:16020
-org.apache.hbase.thirdparty.io.netty.channel.AbstractChannel$AnnotatedConnectException: Connection refused: dev1-abyss-sdp2-flink-01.opsmon.sbt/10.21.68.24:16020
-Caused by: java.net.ConnectException: Connection refused
-	at sun.nio.ch.SocketChannelImpl.checkConnect(Native Method)
-	at sun.nio.ch.SocketChannelImpl.finishConnect(SocketChannelImpl.java:716)
-	at org.apache.hbase.thirdparty.io.netty.channel.socket.nio.NioSocketChannel.doFinishConnect(NioSocketChannel.java:337)
-	at org.apache.hbase.thirdparty.io.netty.channel.nio.AbstractNioChannel$AbstractNioUnsafe.finishConnect(AbstractNioChannel.java:334)
-	at org.apache.hbase.thirdparty.io.netty.channel.nio.NioEventLoop.processSelectedKey(NioEventLoop.java:776)
-	at org.apache.hbase.thirdparty.io.netty.channel.nio.NioEventLoop.processSelectedKeysOptimized(NioEventLoop.java:724)
-	at org.apache.hbase.thirdparty.io.netty.channel.nio.NioEventLoop.processSelectedKeys(NioEventLoop.java:650)
-	at org.apache.hbase.thirdparty.io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:562)
-	at org.apache.hbase.thirdparty.io.netty.util.concurrent.SingleThreadEventExecutor$4.run(SingleThreadEventExecutor.java:997)
-	at org.apache.hbase.thirdparty.io.netty.util.internal.ThreadExecutorMap$2.run(ThreadExecutorMap.java:74)
-	at org.apache.hbase.thirdparty.io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30)
-	at java.lang.Thread.run(Thread.java:750)
-26/08/06 11:15:26 INFO RpcRetryingCallerImpl: Call exception, tries=9, retries=36, started=29983 ms ago, cancelled=false, msg=Call to address=dev1-abyss-sdp2-flink-01.opsmon.sbt:16020 failed on connection exception: org.apache.hbase.thirdparty.io.netty.channel.AbstractChannel$AnnotatedConnectException: Connection refused: dev1-abyss-sdp2-flink-01.opsmon.sbt/10.21.68.24:16020, details=row '' on table 'hbase:meta' at region=hbase:meta,,1.1588230740, hostname=dev1-abyss-sdp2-flink-01.opsmon.sbt,16020,1771248542808, seqNum=-1, see https://s.apache.org/timeout
-26/08/06 11:15:36 WARN NettyRpcConnection: Exception encountered while connecting to the server dev1-abyss-sdp2-flink-01.opsmon.sbt:16020
-org.apache.hbase.thirdparty.io.netty.channel.AbstractChannel$AnnotatedConnectException: Connection refused: dev1-abyss-sdp2-flink-01.opsmon.sbt/10.21.68.24:16020
-Caused by: java.net.ConnectException: Connection refused
-	at sun.nio.ch.SocketChannelImpl.checkConnect(Native Method)
-	at sun.nio.ch.SocketChannelImpl.finishConnect(SocketChannelImpl.java:716)
-	at org.apache.hbase.thirdparty.io.netty.channel.socket.nio.NioSocketChannel.doFinishConnect(NioSocketChannel.java:337)
-	at org.apache.hbase.thirdparty.io.netty.channel.nio.AbstractNioChannel$AbstractNioUnsafe.finishConnect(AbstractNioChannel.java:334)
-	at org.apache.hbase.thirdparty.io.netty.channel.nio.NioEventLoop.processSelectedKey(NioEventLoop.java:776)
-	at org.apache.hbase.thirdparty.io.netty.channel.nio.NioEventLoop.processSelectedKeysOptimized(NioEventLoop.java:724)
-	at org.apache.hbase.thirdparty.io.netty.channel.nio.NioEventLoop.processSelectedKeys(NioEventLoop.java:650)
-	at org.apache.hbase.thirdparty.io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:562)
-	at org.apache.hbase.thirdparty.io.netty.util.concurrent.SingleThreadEventExecutor$4.run(SingleThreadEventExecutor.java:997)
-	at org.apache.hbase.thirdparty.io.netty.util.internal.ThreadExecutorMap$2.run(ThreadExecutorMap.java:74)
-	at org.apache.hbase.thirdparty.io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30)
-	at java.lang.Thread.run(Thread.java:750)
-26/08/06 11:15:36 INFO RpcRetryingCallerImpl: Call exception, tries=10, retries=36, started=39989 ms ago, cancelled=false, msg=Call to address=dev1-abyss-sdp2-flink-01.opsmon.sbt:16020 failed on connection exception: org.apache.hbase.thirdparty.io.netty.channel.AbstractChannel$AnnotatedConnectException: Connection refused: dev1-abyss-sdp2-flink-01.opsmon.sbt/10.21.68.24:16020, details=row '' on table 'hbase:meta' at region=hbase:meta,,1.1588230740, hostname=dev1-abyss-sdp2-flink-01.opsmon.sbt,16020,1771248542808, seqNum=-1, see https://s.apache.org/timeout
-26/08/06 11:15:46 WARN NettyRpcConnection: Exception encountered while connecting to the server dev1-abyss-sdp2-flink-01.opsmon.sbt:16020
-org.apache.hbase.thirdparty.io.netty.channel.AbstractChannel$AnnotatedConnectException: Connection refused: dev1-abyss-sdp2-flink-01.opsmon.sbt/10.21.68.24:16020
-Caused by: java.net.ConnectException: Connection refused
-	at sun.nio.ch.SocketChannelImpl.checkConnect(Native Method)
-	at sun.nio.ch.SocketChannelImpl.finishConnect(SocketChannelImpl.java:716)
-	at org.apache.hbase.thirdparty.io.netty.channel.socket.nio.NioSocketChannel.doFinishConnect(NioSocketChannel.java:337)
-	at org.apache.hbase.thirdparty.io.netty.channel.nio.AbstractNioChannel$AbstractNioUnsafe.finishConnect(AbstractNioChannel.java:334)
-	at org.apache.hbase.thirdparty.io.netty.channel.nio.NioEventLoop.processSelectedKey(NioEventLoop.java:776)
-	at org.apache.hbase.thirdparty.io.netty.channel.nio.NioEventLoop.processSelectedKeysOptimized(NioEventLoop.java:724)
-	at org.apache.hbase.thirdparty.io.netty.channel.nio.NioEventLoop.processSelectedKeys(NioEventLoop.java:650)
-	at org.apache.hbase.thirdparty.io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:562)
-	at org.apache.hbase.thirdparty.io.netty.util.concurrent.SingleThreadEventExecutor$4.run(SingleThreadEventExecutor.java:997)
-	at org.apache.hbase.thirdparty.io.netty.util.internal.ThreadExecutorMap$2.run(ThreadExecutorMap.java:74)
-	at org.apache.hbase.thirdparty.io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30)
-	at java.lang.Thread.run(Thread.java:750)
-26/08/06 11:15:46 INFO RpcRetryingCallerImpl: Call exception, tries=11, retries=36, started=50070 ms ago, cancelled=false, msg=Call to address=dev1-abyss-sdp2-flink-01.opsmon.sbt:16020 failed on connection exception: org.apache.hbase.thirdparty.io.netty.channel.AbstractChannel$AnnotatedConnectException: Connection refused: dev1-abyss-sdp2-flink-01.opsmon.sbt/10.21.68.24:16020, details=row '' on table 'hbase:meta' at region=hbase:meta,,1.1588230740, hostname=dev1-abyss-sdp2-flink-01.opsmon.sbt,16020,1771248542808, seqNum=-1, see https://s.apache.org/timeout
-26/08/06 11:16:06 WARN NettyRpcConnection: Exception encountered while connecting to the server dev1-abyss-sdp2-flink-01.opsmon.sbt:16020
-org.apache.hbase.thirdparty.io.netty.channel.AbstractChannel$AnnotatedConnectException: Connection refused: dev1-abyss-sdp2-flink-01.opsmon.sbt/10.21.68.24:16020
-Caused by: java.net.ConnectException: Connection refused
-	at sun.nio.ch.SocketChannelImpl.checkConnect(Native Method)
-	at sun.nio.ch.SocketChannelImpl.finishConnect(SocketChannelImpl.java:716)
-	at org.apache.hbase.thirdparty.io.netty.channel.socket.nio.NioSocketChannel.doFinishConnect(NioSocketChannel.java:337)
-	at org.apache.hbase.thirdparty.io.netty.channel.nio.AbstractNioChannel$AbstractNioUnsafe.finishConnect(AbstractNioChannel.java:334)
-	at org.apache.hbase.thirdparty.io.netty.channel.nio.NioEventLoop.processSelectedKey(NioEventLoop.java:776)
-	at org.apache.hbase.thirdparty.io.netty.channel.nio.NioEventLoop.processSelectedKeysOptimized(NioEventLoop.java:724)
-	at org.apache.hbase.thirdparty.io.netty.channel.nio.NioEventLoop.processSelectedKeys(NioEventLoop.java:650)
-	at org.apache.hbase.thirdparty.io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:562)
-	at org.apache.hbase.thirdparty.io.netty.util.concurrent.SingleThreadEventExecutor$4.run(SingleThreadEventExecutor.java:997)
-	at org.apache.hbase.thirdparty.io.netty.util.internal.ThreadExecutorMap$2.run(ThreadExecutorMap.java:74)
-	at org.apache.hbase.thirdparty.io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30)
-	at java.lang.Thread.run(Thread.java:750)
-26/08/06 11:16:06 INFO RpcRetryingCallerImpl: Call exception, tries=12, retries=36, started=70214 ms ago, cancelled=false, msg=Call to address=dev1-abyss-sdp2-flink-01.opsmon.sbt:16020 failed on connection exception: org.apache.hbase.thirdparty.io.netty.channel.AbstractChannel$AnnotatedConnectException: Connection refused: dev1-abyss-sdp2-flink-01.opsmon.sbt/10.21.68.24:16020, details=row '' on table 'hbase:meta' at region=hbase:meta,,1.1588230740, hostname=dev1-abyss-sdp2-flink-01.opsmon.sbt,16020,1771248542808, seqNum=-1, see https://s.apache.org/timeout
-26/08/06 11:16:26 WARN NettyRpcConnection: Exception encountered while connecting to the server dev1-abyss-sdp2-flink-01.opsmon.sbt:16020
-org.apache.hbase.thirdparty.io.netty.channel.AbstractChannel$AnnotatedConnectException: Connection refused: dev1-abyss-sdp2-flink-01.opsmon.sbt/10.21.68.24:16020
-Caused by: java.net.ConnectException: Connection refused
-	at sun.nio.ch.SocketChannelImpl.checkConnect(Native Method)
-	at sun.nio.ch.SocketChannelImpl.finishConnect(SocketChannelImpl.java:716)
-	at org.apache.hbase.thirdparty.io.netty.channel.socket.nio.NioSocketChannel.doFinishConnect(NioSocketChannel.java:337)
-	at org.apache.hbase.thirdparty.io.netty.channel.nio.AbstractNioChannel$AbstractNioUnsafe.finishConnect(AbstractNioChannel.java:334)
-	at org.apache.hbase.thirdparty.io.netty.channel.nio.NioEventLoop.processSelectedKey(NioEventLoop.java:776)
-	at org.apache.hbase.thirdparty.io.netty.channel.nio.NioEventLoop.processSelectedKeysOptimized(NioEventLoop.java:724)
-	at org.apache.hbase.thirdparty.io.netty.channel.nio.NioEventLoop.processSelectedKeys(NioEventLoop.java:650)
-	at org.apache.hbase.thirdparty.io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:562)
-	at org.apache.hbase.thirdparty.io.netty.util.concurrent.SingleThreadEventExecutor$4.run(SingleThreadEventExecutor.java:997)
-	at org.apache.hbase.thirdparty.io.netty.util.internal.ThreadExecutorMap$2.run(ThreadExecutorMap.java:74)
-	at org.apache.hbase.thirdparty.io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30)
-	at java.lang.Thread.run(Thread.java:750)
-26/08/06 11:16:26 INFO RpcRetryingCallerImpl: Call exception, tries=13, retries=36, started=90401 ms ago, cancelled=false, msg=Call to address=dev1-abyss-sdp2-flink-01.opsmon.sbt:16020 failed on connection exception: org.apache.hbase.thirdparty.io.netty.channel.AbstractChannel$AnnotatedConnectException: Connection refused: dev1-abyss-sdp2-flink-01.opsmon.sbt/10.21.68.24:16020, details=row '' on table 'hbase:meta' at region=hbase:meta,,1.1588230740, hostname=dev1-abyss-sdp2-flink-01.opsmon.sbt,16020,1771248542808, seqNum=-1, see https://s.apache.org/timeout
-26/08/06 11:16:46 WARN NettyRpcConnection: Exception encountered while connecting to the server dev1-abyss-sdp2-flink-01.opsmon.sbt:16020
-org.apache.hbase.thirdparty.io.netty.channel.AbstractChannel$AnnotatedConnectException: Connection refused: dev1-abyss-sdp2-flink-01.opsmon.sbt/10.21.68.24:16020
-Caused by: java.net.ConnectException: Connection refused
-	at sun.nio.ch.SocketChannelImpl.checkConnect(Native Method)
-	at sun.nio.ch.SocketChannelImpl.finishConnect(SocketChannelImpl.java:716)
-	at org.apache.hbase.thirdparty.io.netty.channel.socket.nio.NioSocketChannel.doFinishConnect(NioSocketChannel.java:337)
-	at org.apache.hbase.thirdparty.io.netty.channel.nio.AbstractNioChannel$AbstractNioUnsafe.finishConnect(AbstractNioChannel.java:334)
-	at org.apache.hbase.thirdparty.io.netty.channel.nio.NioEventLoop.processSelectedKey(NioEventLoop.java:776)
-	at org.apache.hbase.thirdparty.io.netty.channel.nio.NioEventLoop.processSelectedKeysOptimized(NioEventLoop.java:724)
-	at org.apache.hbase.thirdparty.io.netty.channel.nio.NioEventLoop.processSelectedKeys(NioEventLoop.java:650)
-	at org.apache.hbase.thirdparty.io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:562)
-	at org.apache.hbase.thirdparty.io.netty.util.concurrent.SingleThreadEventExecutor$4.run(SingleThreadEventExecutor.java:997)
-	at org.apache.hbase.thirdparty.io.netty.util.internal.ThreadExecutorMap$2.run(ThreadExecutorMap.java:74)
-	at org.apache.hbase.thirdparty.io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30)
-	at java.lang.Thread.run(Thread.java:750)
-26/08/06 11:16:46 INFO RpcRetryingCallerImpl: Call exception, tries=14, retries=36, started=110440 ms ago, cancelled=false, msg=Call to address=dev1-abyss-sdp2-flink-01.opsmon.sbt:16020 failed on connection exception: org.apache.hbase.thirdparty.io.netty.channel.AbstractChannel$AnnotatedConnectException: Connection refused: dev1-abyss-sdp2-flink-01.opsmon.sbt/10.21.68.24:16020, details=row '' on table 'hbase:meta' at region=hbase:meta,,1.1588230740, hostname=dev1-abyss-sdp2-flink-01.opsmon.sbt,16020,1771248542808, seqNum=-1, see https://s.apache.org/timeout
-26/08/06 11:17:07 WARN NettyRpcConnection: Exception encountered while connecting to the server dev1-abyss-sdp2-flink-01.opsmon.sbt:16020
-org.apache.hbase.thirdparty.io.netty.channel.AbstractChannel$AnnotatedConnectException: Connection refused: dev1-abyss-sdp2-flink-01.opsmon.sbt/10.21.68.24:16020
-Caused by: java.net.ConnectException: Connection refused
-	at sun.nio.ch.SocketChannelImpl.checkConnect(Native Method)
-	at sun.nio.ch.SocketChannelImpl.finishConnect(SocketChannelImpl.java:716)
-	at org.apache.hbase.thirdparty.io.netty.channel.socket.nio.NioSocketChannel.doFinishConnect(NioSocketChannel.java:337)
-	at org.apache.hbase.thirdparty.io.netty.channel.nio.AbstractNioChannel$AbstractNioUnsafe.finishConnect(AbstractNioChannel.java:334)
-	at org.apache.hbase.thirdparty.io.netty.channel.nio.NioEventLoop.processSelectedKey(NioEventLoop.java:776)
-	at org.apache.hbase.thirdparty.io.netty.channel.nio.NioEventLoop.processSelectedKeysOptimized(NioEventLoop.java:724)
-	at org.apache.hbase.thirdparty.io.netty.channel.nio.NioEventLoop.processSelectedKeys(NioEventLoop.java:650)
-	at org.apache.hbase.thirdparty.io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:562)
-	at org.apache.hbase.thirdparty.io.netty.util.concurrent.SingleThreadEventExecutor$4.run(SingleThreadEventExecutor.java:997)
-	at org.apache.hbase.thirdparty.io.netty.util.internal.ThreadExecutorMap$2.run(ThreadExecutorMap.java:74)
-	at org.apache.hbase.thirdparty.io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30)
-	at java.lang.Thread.run(Thread.java:750)
-26/08/06 11:17:07 INFO RpcRetryingCallerImpl: Call exception, tries=15, retries=36, started=130630 ms ago, cancelled=false, msg=Call to address=dev1-abyss-sdp2-flink-01.opsmon.sbt:16020 failed on connection exception: org.apache.hbase.thirdparty.io.netty.channel.AbstractChannel$AnnotatedConnectException: Connection refused: dev1-abyss-sdp2-flink-01.opsmon.sbt/10.21.68.24:16020, details=row '' on table 'hbase:meta' at region=hbase:meta,,1.1588230740, hostname=dev1-abyss-sdp2-flink-01.opsmon.sbt,16020,1771248542808, seqNum=-1, see https://s.apache.org/timeout
-26/08/06 11:17:27 WARN NettyRpcConnection: Exception encountered while connecting to the server dev1-abyss-sdp2-flink-01.opsmon.sbt:16020
-org.apache.hbase.thirdparty.io.netty.channel.AbstractChannel$AnnotatedConnectException: Connection refused: dev1-abyss-sdp2-flink-01.opsmon.sbt/10.21.68.24:16020
-Caused by: java.net.ConnectException: Connection refused
-	at sun.nio.ch.SocketChannelImpl.checkConnect(Native Method)
-	at sun.nio.ch.SocketChannelImpl.finishConnect(SocketChannelImpl.java:716)
-	at org.apache.hbase.thirdparty.io.netty.channel.socket.nio.NioSocketChannel.doFinishConnect(NioSocketChannel.java:337)
-	at org.apache.hbase.thirdparty.io.netty.channel.nio.AbstractNioChannel$AbstractNioUnsafe.finishConnect(AbstractNioChannel.java:334)
-	at org.apache.hbase.thirdparty.io.netty.channel.nio.NioEventLoop.processSelectedKey(NioEventLoop.java:776)
-	at org.apache.hbase.thirdparty.io.netty.channel.nio.NioEventLoop.processSelectedKeysOptimized(NioEventLoop.java:724)
-	at org.apache.hbase.thirdparty.io.netty.channel.nio.NioEventLoop.processSelectedKeys(NioEventLoop.java:650)
-	at org.apache.hbase.thirdparty.io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:562)
-	at org.apache.hbase.thirdparty.io.netty.util.concurrent.SingleThreadEventExecutor$4.run(SingleThreadEventExecutor.java:997)
-	at org.apache.hbase.thirdparty.io.netty.util.internal.ThreadExecutorMap$2.run(ThreadExecutorMap.java:74)
-	at org.apache.hbase.thirdparty.io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30)
-	at java.lang.Thread.run(Thread.java:750)
-26/08/06 11:17:27 INFO RpcRetryingCallerImpl: Call exception, tries=16, retries=36, started=150767 ms ago, cancelled=false, msg=Call to address=dev1-abyss-sdp2-flink-01.opsmon.sbt:16020 failed on connection exception: org.apache.hbase.thirdparty.io.netty.channel.AbstractChannel$AnnotatedConnectException: Connection refused: dev1-abyss-sdp2-flink-01.opsmon.sbt/10.21.68.24:16020, details=row '' on table 'hbase:meta' at region=hbase:meta,,1.1588230740, hostname=dev1-abyss-sdp2-flink-01.opsmon.sbt,16020,1771248542808, seqNum=-1, see https://s.apache.org/timeout
-26/08/06 11:17:47 WARN NettyRpcConnection: Exception encountered while connecting to the server dev1-abyss-sdp2-flink-01.opsmon.sbt:16020
-org.apache.hbase.thirdparty.io.netty.channel.AbstractChannel$AnnotatedConnectException: Connection refused: dev1-abyss-sdp2-flink-01.opsmon.sbt/10.21.68.24:16020
-Caused by: java.net.ConnectException: Connection refused
-	at sun.nio.ch.SocketChannelImpl.checkConnect(Native Method)
-	at sun.nio.ch.SocketChannelImpl.finishConnect(SocketChannelImpl.java:716)
-	at org.apache.hbase.thirdparty.io.netty.channel.socket.nio.NioSocketChannel.doFinishConnect(NioSocketChannel.java:337)
-	at org.apache.hbase.thirdparty.io.netty.channel.nio.AbstractNioChannel$AbstractNioUnsafe.finishConnect(AbstractNioChannel.java:334)
-	at org.apache.hbase.thirdparty.io.netty.channel.nio.NioEventLoop.processSelectedKey(NioEventLoop.java:776)
-	at org.apache.hbase.thirdparty.io.netty.channel.nio.NioEventLoop.processSelectedKeysOptimized(NioEventLoop.java:724)
-	at org.apache.hbase.thirdparty.io.netty.channel.nio.NioEventLoop.processSelectedKeys(NioEventLoop.java:650)
-	at org.apache.hbase.thirdparty.io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:562)
-	at org.apache.hbase.thirdparty.io.netty.util.concurrent.SingleThreadEventExecutor$4.run(SingleThreadEventExecutor.java:997)
-	at org.apache.hbase.thirdparty.io.netty.util.internal.ThreadExecutorMap$2.run(ThreadExecutorMap.java:74)
-	at org.apache.hbase.thirdparty.io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30)
-	at java.lang.Thread.run(Thread.java:750)
-26/08/06 11:17:47 INFO RpcRetryingCallerImpl: Call exception, tries=17, retries=36, started=170949 ms ago, cancelled=false, msg=Call to address=dev1-abyss-sdp2-flink-01.opsmon.sbt:16020 failed on connection exception: org.apache.hbase.thirdparty.io.netty.channel.AbstractChannel$AnnotatedConnectException: Connection refused: dev1-abyss-sdp2-flink-01.opsmon.sbt/10.21.68.24:16020, details=row '' on table 'hbase:meta' at region=hbase:meta,,1.1588230740, hostname=dev1-abyss-sdp2-flink-01.opsmon.sbt,16020,1771248542808, seqNum=-1, see https://s.apache.org/timeout
-26/08/06 11:18:07 WARN NettyRpcConnection: Exception encountered while connecting to the server dev1-abyss-sdp2-flink-01.opsmon.sbt:16020
-org.apache.hbase.thirdparty.io.netty.channel.AbstractChannel$AnnotatedConnectException: Connection refused: dev1-abyss-sdp2-flink-01.opsmon.sbt/10.21.68.24:16020
-Caused by: java.net.ConnectException: Connection refused
-	at sun.nio.ch.SocketChannelImpl.checkConnect(Native Method)
-	at sun.nio.ch.SocketChannelImpl.finishConnect(SocketChannelImpl.java:716)
-	at org.apache.hbase.thirdparty.io.netty.channel.socket.nio.NioSocketChannel.doFinishConnect(NioSocketChannel.java:337)
-	at org.apache.hbase.thirdparty.io.netty.channel.nio.AbstractNioChannel$AbstractNioUnsafe.finishConnect(AbstractNioChannel.java:334)
-	at org.apache.hbase.thirdparty.io.netty.channel.nio.NioEventLoop.processSelectedKey(NioEventLoop.java:776)
-	at org.apache.hbase.thirdparty.io.netty.channel.nio.NioEventLoop.processSelectedKeysOptimized(NioEventLoop.java:724)
-	at org.apache.hbase.thirdparty.io.netty.channel.nio.NioEventLoop.processSelectedKeys(NioEventLoop.java:650)
-	at org.apache.hbase.thirdparty.io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:562)
-	at org.apache.hbase.thirdparty.io.netty.util.concurrent.SingleThreadEventExecutor$4.run(SingleThreadEventExecutor.java:997)
-	at org.apache.hbase.thirdparty.io.netty.util.internal.ThreadExecutorMap$2.run(ThreadExecutorMap.java:74)
-	at org.apache.hbase.thirdparty.io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30)
-	at java.lang.Thread.run(Thread.java:750)
-26/08/06 11:18:07 INFO RpcRetryingCallerImpl: Call exception, tries=18, retries=36, started=191127 ms ago, cancelled=false, msg=Call to address=dev1-abyss-sdp2-flink-01.opsmon.sbt:16020 failed on connection exception: org.apache.hbase.thirdparty.io.netty.channel.AbstractChannel$AnnotatedConnectException: Connection refused: dev1-abyss-sdp2-flink-01.opsmon.sbt/10.21.68.24:16020, details=row '' on table 'hbase:meta' at region=hbase:meta,,1.1588230740, hostname=dev1-abyss-sdp2-flink-01.opsmon.sbt,16020,1771248542808, seqNum=-1, see https://s.apache.org/timeout
+26/08/06 16:37:03 ERROR ApplicationMaster: Uncaught exception: 
+org.apache.spark.SparkException: Exception thrown in awaitResult: 
+	at org.apache.spark.util.ThreadUtils$.awaitResult(ThreadUtils.scala:301)
+	at org.apache.spark.deploy.yarn.ApplicationMaster.runDriver(ApplicationMaster.scala:509)
+	at org.apache.spark.deploy.yarn.ApplicationMaster.run(ApplicationMaster.scala:273)
+	at org.apache.spark.deploy.yarn.ApplicationMaster$$anon$3.run(ApplicationMaster.scala:913)
+	at org.apache.spark.deploy.yarn.ApplicationMaster$$anon$3.run(ApplicationMaster.scala:912)
+	at java.security.AccessController.doPrivileged(Native Method)
+	at javax.security.auth.Subject.doAs(Subject.java:422)
+	at org.apache.hadoop.security.UserGroupInformation.doAs(UserGroupInformation.java:1878)
+	at org.apache.spark.deploy.yarn.ApplicationMaster$.main(ApplicationMaster.scala:912)
+	at org.apache.spark.deploy.yarn.ApplicationMaster.main(ApplicationMaster.scala)
+Caused by: java.lang.IllegalArgumentException: Invalid numeric argument for --target-size-tb: 0.01
+	at ru.sber.orcbench.config.ArgParser.parsePositiveLong(ArgParser.java:52)
+	at ru.sber.orcbench.config.AppConfig.parseLong(AppConfig.java:283)
+	at ru.sber.orcbench.config.AppConfig.fromArgs(AppConfig.java:141)
+	at ru.sber.orcbench.AppMain.main(AppMain.java:22)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.spark.deploy.yarn.ApplicationMaster$$anon$2.run(ApplicationMaster.scala:737)
+Caused by: java.lang.NumberFormatException: For input string: "0.01"
+	at java.lang.NumberFormatException.forInputString(NumberFormatException.java:65)
+	at java.lang.Long.parseLong(Long.java:589)
+	at java.lang.Long.parseLong(Long.java:631)
+	at ru.sber.orcbench.config.ArgParser.parsePositiveLong(ArgParser.java:46)
+	... 8 more
+26/08/06 16:37:03 INFO ApplicationMaster: Deleting staging directory hdfs://sdp-dzo-dev/user/hdfs_migration_user/.sparkStaging/application_1785928909888_0005
+26/08/06 16:37:03 INFO ShutdownHookManager: Shutdown hook called
+
+
+[2026-08-06 16:37:04.014]Container exited with a non-zero exit code 13. Error file: prelaunch.err.
+Last 4096 bytes of prelaunch.err :
+Last 4096 bytes of stderr :
+.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.spark.deploy.yarn.ApplicationMaster$$anon$2.run(ApplicationMaster.scala:737)
+Caused by: java.lang.NumberFormatException: For input string: "0.01"
+	at java.lang.NumberFormatException.forInputString(NumberFormatException.java:65)
+	at java.lang.Long.parseLong(Long.java:589)
+	at java.lang.Long.parseLong(Long.java:631)
+	at ru.sber.orcbench.config.ArgParser.parsePositiveLong(ArgParser.java:46)
+	... 8 more
+26/08/06 16:37:03 INFO ApplicationMaster: Final app status: FAILED, exitCode: 13, (reason: User class threw exception: java.lang.IllegalArgumentException: Invalid numeric argument for --target-size-tb: 0.01
+	at ru.sber.orcbench.config.ArgParser.parsePositiveLong(ArgParser.java:52)
+	at ru.sber.orcbench.config.AppConfig.parseLong(AppConfig.java:283)
+	at ru.sber.orcbench.config.AppConfig.fromArgs(AppConfig.java:141)
+	at ru.sber.orcbench.AppMain.main(AppMain.java:22)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.spark.deploy.yarn.ApplicationMaster$$anon$2.run(ApplicationMaster.scala:737)
+Caused by: java.lang.NumberFormatException: For input string: "0.01"
+	at java.lang.NumberFormatException.forInputString(NumberFormatException.java:65)
+	at java.lang.Long.parseLong(Long.java:589)
+	at java.lang.Long.parseLong(Long.java:631)
+	at ru.sber.orcbench.config.ArgParser.parsePositiveLong(ArgParser.java:46)
+	... 8 more
+)
+26/08/06 16:37:03 ERROR ApplicationMaster: Uncaught exception: 
+org.apache.spark.SparkException: Exception thrown in awaitResult: 
+	at org.apache.spark.util.ThreadUtils$.awaitResult(ThreadUtils.scala:301)
+	at org.apache.spark.deploy.yarn.ApplicationMaster.runDriver(ApplicationMaster.scala:509)
+	at org.apache.spark.deploy.yarn.ApplicationMaster.run(ApplicationMaster.scala:273)
+	at org.apache.spark.deploy.yarn.ApplicationMaster$$anon$3.run(ApplicationMaster.scala:913)
+	at org.apache.spark.deploy.yarn.ApplicationMaster$$anon$3.run(ApplicationMaster.scala:912)
+	at java.security.AccessController.doPrivileged(Native Method)
+	at javax.security.auth.Subject.doAs(Subject.java:422)
+	at org.apache.hadoop.security.UserGroupInformation.doAs(UserGroupInformation.java:1878)
+	at org.apache.spark.deploy.yarn.ApplicationMaster$.main(ApplicationMaster.scala:912)
+	at org.apache.spark.deploy.yarn.ApplicationMaster.main(ApplicationMaster.scala)
+Caused by: java.lang.IllegalArgumentException: Invalid numeric argument for --target-size-tb: 0.01
+	at ru.sber.orcbench.config.ArgParser.parsePositiveLong(ArgParser.java:52)
+	at ru.sber.orcbench.config.AppConfig.parseLong(AppConfig.java:283)
+	at ru.sber.orcbench.config.AppConfig.fromArgs(AppConfig.java:141)
+	at ru.sber.orcbench.AppMain.main(AppMain.java:22)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.spark.deploy.yarn.ApplicationMaster$$anon$2.run(ApplicationMaster.scala:737)
+Caused by: java.lang.NumberFormatException: For input string: "0.01"
+	at java.lang.NumberFormatException.forInputString(NumberFormatException.java:65)
+	at java.lang.Long.parseLong(Long.java:589)
+	at java.lang.Long.parseLong(Long.java:631)
+	at ru.sber.orcbench.config.ArgParser.parsePositiveLong(ArgParser.java:46)
+	... 8 more
+26/08/06 16:37:03 INFO ApplicationMaster: Deleting staging directory hdfs://sdp-dzo-dev/user/hdfs_migration_user/.sparkStaging/application_1785928909888_0005
+26/08/06 16:37:03 INFO ShutdownHookManager: Shutdown hook called
+
+
+For more detailed output, check the application tracking page: https://dev1-abyss-sdp2-ambari-03.opsmon.sbt:8090/cluster/app/application_1785928909888_0005 Then click on links to logs of each attempt.
+. Failing the application.
+	 ApplicationMaster host: N/A
+	 ApplicationMaster RPC port: -1
+	 queue: default
+	 start time: 1786023367934
+	 final status: FAILED
+	 tracking URL: https://dev1-abyss-sdp2-ambari-03.opsmon.sbt:8090/cluster/app/application_1785928909888_0005
+	 user: hdfs_migration_user
+26/08/06 16:37:04 ERROR Client: Application diagnostics message: Application application_1785928909888_0005 failed 2 times due to AM Container for appattempt_1785928909888_0005_000002 exited with  exitCode: 13
+Failing this attempt.Diagnostics: [2026-08-06 16:37:04.002]Exception from container-launch.
+Container id: container_e16_1785928909888_0005_02_000001
+Exit code: 13
+Exception message: Launch container failed
+Shell output: main : command provided 1
+main : run as user is hdfs_migration_user
+main : requested yarn user is hdfs_migration_user
+Getting exit code file...
+Creating script paths...
+Writing pid file...
+Writing to tmp file /data/yarn/local/nmPrivate/application_1785928909888_0005/container_e16_1785928909888_0005_02_000001/container_e16_1785928909888_0005_02_000001.pid.tmp
+Writing to cgroup task files...
+Creating local dirs...
+Launching container...
+
+
+[2026-08-06 16:37:04.013]Container exited with a non-zero exit code 13. Error file: prelaunch.err.
+Last 4096 bytes of prelaunch.err :
+Last 4096 bytes of stderr :
+.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.spark.deploy.yarn.ApplicationMaster$$anon$2.run(ApplicationMaster.scala:737)
+Caused by: java.lang.NumberFormatException: For input string: "0.01"
+	at java.lang.NumberFormatException.forInputString(NumberFormatException.java:65)
+	at java.lang.Long.parseLong(Long.java:589)
+	at java.lang.Long.parseLong(Long.java:631)
+	at ru.sber.orcbench.config.ArgParser.parsePositiveLong(ArgParser.java:46)
+	... 8 more
+26/08/06 16:37:03 INFO ApplicationMaster: Final app status: FAILED, exitCode: 13, (reason: User class threw exception: java.lang.IllegalArgumentException: Invalid numeric argument for --target-size-tb: 0.01
+	at ru.sber.orcbench.config.ArgParser.parsePositiveLong(ArgParser.java:52)
+	at ru.sber.orcbench.config.AppConfig.parseLong(AppConfig.java:283)
+	at ru.sber.orcbench.config.AppConfig.fromArgs(AppConfig.java:141)
+	at ru.sber.orcbench.AppMain.main(AppMain.java:22)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.spark.deploy.yarn.ApplicationMaster$$anon$2.run(ApplicationMaster.scala:737)
+Caused by: java.lang.NumberFormatException: For input string: "0.01"
+	at java.lang.NumberFormatException.forInputString(NumberFormatException.java:65)
+	at java.lang.Long.parseLong(Long.java:589)
+	at java.lang.Long.parseLong(Long.java:631)
+	at ru.sber.orcbench.config.ArgParser.parsePositiveLong(ArgParser.java:46)
+	... 8 more
+)
+26/08/06 16:37:03 ERROR ApplicationMaster: Uncaught exception: 
+org.apache.spark.SparkException: Exception thrown in awaitResult: 
+	at org.apache.spark.util.ThreadUtils$.awaitResult(ThreadUtils.scala:301)
+	at org.apache.spark.deploy.yarn.ApplicationMaster.runDriver(ApplicationMaster.scala:509)
+	at org.apache.spark.deploy.yarn.ApplicationMaster.run(ApplicationMaster.scala:273)
+	at org.apache.spark.deploy.yarn.ApplicationMaster$$anon$3.run(ApplicationMaster.scala:913)
+	at org.apache.spark.deploy.yarn.ApplicationMaster$$anon$3.run(ApplicationMaster.scala:912)
+	at java.security.AccessController.doPrivileged(Native Method)
+	at javax.security.auth.Subject.doAs(Subject.java:422)
+	at org.apache.hadoop.security.UserGroupInformation.doAs(UserGroupInformation.java:1878)
+	at org.apache.spark.deploy.yarn.ApplicationMaster$.main(ApplicationMaster.scala:912)
+	at org.apache.spark.deploy.yarn.ApplicationMaster.main(ApplicationMaster.scala)
+Caused by: java.lang.IllegalArgumentException: Invalid numeric argument for --target-size-tb: 0.01
+	at ru.sber.orcbench.config.ArgParser.parsePositiveLong(ArgParser.java:52)
+	at ru.sber.orcbench.config.AppConfig.parseLong(AppConfig.java:283)
+	at ru.sber.orcbench.config.AppConfig.fromArgs(AppConfig.java:141)
+	at ru.sber.orcbench.AppMain.main(AppMain.java:22)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.spark.deploy.yarn.ApplicationMaster$$anon$2.run(ApplicationMaster.scala:737)
+Caused by: java.lang.NumberFormatException: For input string: "0.01"
+	at java.lang.NumberFormatException.forInputString(NumberFormatException.java:65)
+	at java.lang.Long.parseLong(Long.java:589)
+	at java.lang.Long.parseLong(Long.java:631)
+	at ru.sber.orcbench.config.ArgParser.parsePositiveLong(ArgParser.java:46)
+	... 8 more
+26/08/06 16:37:03 INFO ApplicationMaster: Deleting staging directory hdfs://sdp-dzo-dev/user/hdfs_migration_user/.sparkStaging/application_1785928909888_0005
+26/08/06 16:37:03 INFO ShutdownHookManager: Shutdown hook called
+
+
+[2026-08-06 16:37:04.014]Container exited with a non-zero exit code 13. Error file: prelaunch.err.
+Last 4096 bytes of prelaunch.err :
+Last 4096 bytes of stderr :
+.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.spark.deploy.yarn.ApplicationMaster$$anon$2.run(ApplicationMaster.scala:737)
+Caused by: java.lang.NumberFormatException: For input string: "0.01"
+	at java.lang.NumberFormatException.forInputString(NumberFormatException.java:65)
+	at java.lang.Long.parseLong(Long.java:589)
+	at java.lang.Long.parseLong(Long.java:631)
+	at ru.sber.orcbench.config.ArgParser.parsePositiveLong(ArgParser.java:46)
+	... 8 more
+26/08/06 16:37:03 INFO ApplicationMaster: Final app status: FAILED, exitCode: 13, (reason: User class threw exception: java.lang.IllegalArgumentException: Invalid numeric argument for --target-size-tb: 0.01
+	at ru.sber.orcbench.config.ArgParser.parsePositiveLong(ArgParser.java:52)
+	at ru.sber.orcbench.config.AppConfig.parseLong(AppConfig.java:283)
+	at ru.sber.orcbench.config.AppConfig.fromArgs(AppConfig.java:141)
+	at ru.sber.orcbench.AppMain.main(AppMain.java:22)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.spark.deploy.yarn.ApplicationMaster$$anon$2.run(ApplicationMaster.scala:737)
+Caused by: java.lang.NumberFormatException: For input string: "0.01"
+	at java.lang.NumberFormatException.forInputString(NumberFormatException.java:65)
+	at java.lang.Long.parseLong(Long.java:589)
+	at java.lang.Long.parseLong(Long.java:631)
+	at ru.sber.orcbench.config.ArgParser.parsePositiveLong(ArgParser.java:46)
+	... 8 more
+)
+26/08/06 16:37:03 ERROR ApplicationMaster: Uncaught exception: 
+org.apache.spark.SparkException: Exception thrown in awaitResult: 
+	at org.apache.spark.util.ThreadUtils$.awaitResult(ThreadUtils.scala:301)
+	at org.apache.spark.deploy.yarn.ApplicationMaster.runDriver(ApplicationMaster.scala:509)
+	at org.apache.spark.deploy.yarn.ApplicationMaster.run(ApplicationMaster.scala:273)
+	at org.apache.spark.deploy.yarn.ApplicationMaster$$anon$3.run(ApplicationMaster.scala:913)
+	at org.apache.spark.deploy.yarn.ApplicationMaster$$anon$3.run(ApplicationMaster.scala:912)
+	at java.security.AccessController.doPrivileged(Native Method)
+	at javax.security.auth.Subject.doAs(Subject.java:422)
+	at org.apache.hadoop.security.UserGroupInformation.doAs(UserGroupInformation.java:1878)
+	at org.apache.spark.deploy.yarn.ApplicationMaster$.main(ApplicationMaster.scala:912)
+	at org.apache.spark.deploy.yarn.ApplicationMaster.main(ApplicationMaster.scala)
+Caused by: java.lang.IllegalArgumentException: Invalid numeric argument for --target-size-tb: 0.01
+	at ru.sber.orcbench.config.ArgParser.parsePositiveLong(ArgParser.java:52)
+	at ru.sber.orcbench.config.AppConfig.parseLong(AppConfig.java:283)
+	at ru.sber.orcbench.config.AppConfig.fromArgs(AppConfig.java:141)
+	at ru.sber.orcbench.AppMain.main(AppMain.java:22)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.spark.deploy.yarn.ApplicationMaster$$anon$2.run(ApplicationMaster.scala:737)
+Caused by: java.lang.NumberFormatException: For input string: "0.01"
+	at java.lang.NumberFormatException.forInputString(NumberFormatException.java:65)
+	at java.lang.Long.parseLong(Long.java:589)
+	at java.lang.Long.parseLong(Long.java:631)
+	at ru.sber.orcbench.config.ArgParser.parsePositiveLong(ArgParser.java:46)
+	... 8 more
+26/08/06 16:37:03 INFO ApplicationMaster: Deleting staging directory hdfs://sdp-dzo-dev/user/hdfs_migration_user/.sparkStaging/application_1785928909888_0005
+26/08/06 16:37:03 INFO ShutdownHookManager: Shutdown hook called
+
+
+For more detailed output, check the application tracking page: https://dev1-abyss-sdp2-ambari-03.opsmon.sbt:8090/cluster/app/application_1785928909888_0005 Then click on links to logs of each attempt.
+. Failing the application.
+Exception in thread "main" org.apache.spark.SparkException: Application application_1785928909888_0005 finished with failed status
+	at org.apache.spark.deploy.yarn.Client.run(Client.scala:1300)
+	at org.apache.spark.deploy.yarn.YarnClusterApplication.start(Client.scala:1694)
+	at org.apache.spark.deploy.SparkSubmit.org$apache$spark$deploy$SparkSubmit$$runMain(SparkSubmit.scala:968)
+	at org.apache.spark.deploy.SparkSubmit.doRunMain$1(SparkSubmit.scala:180)
+	at org.apache.spark.deploy.SparkSubmit.submit(SparkSubmit.scala:203)
+	at org.apache.spark.deploy.SparkSubmit.doSubmit(SparkSubmit.scala:90)
+	at org.apache.spark.deploy.SparkSubmit$$anon$2.doSubmit(SparkSubmit.scala:1056)
+	at org.apache.spark.deploy.SparkSubmit$.main(SparkSubmit.scala:1065)
+	at org.apache.spark.deploy.SparkSubmit.main(SparkSubmit.scala)
+26/08/06 16:37:04 INFO ShutdownHookManager: Shutdown hook called
+26/08/06 16:37:04 INFO ShutdownHookManager: Deleting directory /tmp/spark-4617369c-3f92-4df1-a12c-9eae205b66fc
+26/08/06 16:37:04 INFO ShutdownHookManager: Deleting directory /tmp/spark-ce5c0c3d-8c88-4fd0-9d73-d68b6ddebca9
