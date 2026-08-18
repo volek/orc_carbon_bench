@@ -55,9 +55,16 @@ hdfs dfs -ls "$BASE" || hdfs dfs -mkdir -p "$BASE"
 
 Не используйте дефолт `--target-size-tb=5`. Smoke: `0.01`.
 
+Статические Carbon-конфиги (Spark 3.2 не даёт менять их после создания сессии):
+
+```bash
+export CARBON_CONF="--conf spark.sql.extensions=org.apache.spark.sql.CarbonExtensions --conf spark.sql.catalog.spark_catalog=org.apache.spark.sql.CarbonSessionCatalog"
+```
+
 ```bash
 # generate ~0.01 TB
 spark-submit --master yarn --deploy-mode cluster \
+  $CARBON_CONF \
   --class ru.sber.orcbench.AppMain "$JAR" \
   --mode=generate \
   --base-path="$BASE" \
@@ -70,6 +77,7 @@ spark-submit --master yarn --deploy-mode cluster \
 
 # validate
 spark-submit --master yarn --deploy-mode cluster \
+  $CARBON_CONF \
   --class ru.sber.orcbench.AppMain "$JAR" \
   --mode=validate \
   --base-path="$BASE" \
@@ -77,6 +85,7 @@ spark-submit --master yarn --deploy-mode cluster \
 
 # короткий benchmark
 spark-submit --master yarn --deploy-mode cluster \
+  $CARBON_CONF \
   --class ru.sber.orcbench.AppMain "$JAR" \
   --mode=benchmark \
   --base-path="$BASE" \
@@ -271,6 +280,8 @@ echo "status" | hbase shell
 
 ```bash
 spark-submit --master yarn --deploy-mode cluster \
+  --conf spark.sql.extensions=org.apache.spark.sql.CarbonExtensions \
+  --conf spark.sql.catalog.spark_catalog=org.apache.spark.sql.CarbonSessionCatalog \
   --conf spark.security.credentials.hive.enabled=false \
   --conf spark.security.credentials.hbase.enabled=false \
   --class ru.sber.orcbench.AppMain "$JAR" \
@@ -327,3 +338,28 @@ Input to function element_at should have been array followed by a int, but it's 
 **Смысл:** в Spark 3.2 индекс для `element_at` должен быть **int**, а генератор передавал **bigint** (результат `pmod` от `global_id`).
 
 **Что делать:** использовать fat JAR с фиксом (`.cast(IntegerType)` для индекса в `elementAtDictionary`). Обхода через CLI нет.
+
+---
+
+### 6.9. `Cannot modify the value of a static config: spark.sql.extensions`
+
+**Симптом:** AM стартует (часто RUNNING → ACCEPTED → RUNNING — рестарт AM), затем:
+
+```text
+AnalysisException: Cannot modify the value of a static config: spark.sql.extensions
+  at CarbonWriter.setIfMissing
+  at SparkConfigurator.configure
+  at AppMain.main
+```
+
+**Смысл:** в Spark 3.2 `spark.sql.extensions` нельзя менять через `spark.conf().set()` после создания `SparkSession`. Старые JAR пытались выставить CarbonExtensions в runtime.
+
+**Что делать:**
+
+1. Использовать fat JAR, который задаёт Carbon-конфиги на `SparkSession.Builder` до `getOrCreate()`.
+2. На submit всё равно передать (на случай, если контекст уже создан платформой):
+
+```bash
+--conf spark.sql.extensions=org.apache.spark.sql.CarbonExtensions \
+--conf spark.sql.catalog.spark_catalog=org.apache.spark.sql.CarbonSessionCatalog
+```

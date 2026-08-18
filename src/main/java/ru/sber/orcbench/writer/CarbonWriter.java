@@ -17,9 +17,29 @@ public final class CarbonWriter {
     private CarbonWriter() {
     }
 
-    public static void configureSpark(SparkSession spark) {
-        setIfMissing(spark, "spark.sql.extensions", "org.apache.spark.sql.CarbonExtensions");
-        setIfMissing(spark, "spark.sql.catalog.spark_catalog", "org.apache.spark.sql.CarbonSessionCatalog");
+    static final String SQL_EXTENSIONS = "org.apache.spark.sql.CarbonExtensions";
+    static final String SESSION_CATALOG = "org.apache.spark.sql.CarbonSessionCatalog";
+
+    public static SparkSession.Builder configureBuilder(SparkSession.Builder builder) {
+        return builder
+                .config("spark.sql.extensions", SQL_EXTENSIONS)
+                .config("spark.sql.catalog.spark_catalog", SESSION_CATALOG);
+    }
+
+    /**
+     * {@code spark.sql.extensions} is static in Spark 3.2+: it cannot be changed after
+     * {@code SparkSession} exists. Fail with a submit hint instead of {@code AnalysisException}.
+     */
+    public static void requireConfigured(SparkSession spark) {
+        String extensions = spark.conf().get("spark.sql.extensions", "");
+        if (extensions == null || !extensions.contains("CarbonExtensions")) {
+            throw new IllegalStateException(
+                    "spark.sql.extensions is a static Spark config and was not set to CarbonExtensions "
+                            + "before SparkSession creation. Re-submit with:\n"
+                            + "  --conf spark.sql.extensions=" + SQL_EXTENSIONS + "\n"
+                            + "  --conf spark.sql.catalog.spark_catalog=" + SESSION_CATALOG
+            );
+        }
     }
 
     public static void write(
@@ -29,7 +49,7 @@ public final class CarbonWriter {
             CarbonWriteSettings settings,
             String saveMode
     ) {
-        configureSpark(spark);
+        requireConfigured(spark);
 
         Dataset<Row> toWrite = settings.hasExplicitWritePartitions()
                 ? dataset.repartition(settings.writePartitions())
@@ -103,13 +123,6 @@ public final class CarbonWriter {
         }
 
         return metrics;
-    }
-
-    private static void setIfMissing(SparkSession spark, String key, String value) {
-        String current = spark.conf().get(key, "");
-        if (current == null || current.trim().isEmpty()) {
-            spark.conf().set(key, value);
-        }
     }
 
     private static String sanitizeIndexName(String raw) {

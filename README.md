@@ -141,17 +141,12 @@ generate  →  validate  →  benchmark  →  index-experiment  →  report
 
 ### Конфигурация Spark
 
-Приложение автоматически выставляет:
+ORC-настройки выставляются в runtime (`spark.conf().set`).  
+CarbonData-расширения — **статические** в Spark 3.2: их нельзя менять после `SparkSession`. Приложение задаёт их на `SparkSession.Builder` до `getOrCreate()`. На YARN cluster дополнительно передайте:
 
-```properties
-# ORC
-spark.sql.orc.filterPushdown=true
-spark.sql.orc.enableVectorizedReader=true
-spark.sql.orc.block.size=<orc-stripe-size-mb * 1024^2>
-
-# CarbonData
-spark.sql.extensions=org.apache.spark.sql.CarbonExtensions
-spark.sql.catalog.spark_catalog=org.apache.spark.sql.CarbonSessionCatalog
+```bash
+--conf spark.sql.extensions=org.apache.spark.sql.CarbonExtensions \
+--conf spark.sql.catalog.spark_catalog=org.apache.spark.sql.CarbonSessionCatalog
 ```
 
 CarbonData уже внутри fat JAR — **не** передавайте `--packages`.

@@ -21,9 +21,10 @@ public final class AppMain {
     public static void main(String[] args) {
         AppConfig config = AppConfig.fromArgs(args);
 
-        SparkSession spark = SparkSession.builder()
-                .appName("orc-carbon-bench")
-                .getOrCreate();
+        SparkSession spark = SparkConfigurator.configureBuilder(
+                SparkSession.builder().appName("orc-carbon-bench"),
+                config
+        ).getOrCreate();
         SparkConfigurator.configure(spark, config);
         try {
             LOG.info(
