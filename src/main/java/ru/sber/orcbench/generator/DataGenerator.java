@@ -128,7 +128,10 @@ public final class DataGenerator {
         for (int i = 0; i < values.length; i++) {
             literals[i] = lit(values[i]);
         }
-        return element_at(array(literals), pmod(idColumn.plus(lit(seed)), lit(values.length)).plus(lit(1)));
+        return element_at(
+                array(literals),
+                pmod(idColumn.plus(lit(seed)), lit(values.length)).plus(lit(1)).cast(DataTypes.IntegerType)
+        );
     }
 
     private static Column mediumCardinalityId(Column idColumn, long seed, long cardinality) {

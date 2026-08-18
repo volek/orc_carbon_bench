@@ -312,3 +312,18 @@ NumberFormatException: For input string: "0.01"
 **Смысл:** старые сборки парсили `--target-size-tb` как `long`. Нужен fat JAR с поддержкой дробных ТБ (`double`).
 
 **Что делать:** использовать актуальный `orc-carbon-bench-0.1.0-SNAPSHOT-all.jar` (после фикса) и снова `--target-size-tb=0.01`.
+
+---
+
+### 6.8. `element_at` … data type mismatch: `[array<string>, bigint]`
+
+**Симптом:** generate падает в `DataGenerator.generateChunk`:
+
+```text
+AnalysisException: cannot resolve 'element_at(array(...), (pmod(...) + 1))'
+Input to function element_at should have been array followed by a int, but it's [array<string>, bigint]
+```
+
+**Смысл:** в Spark 3.2 индекс для `element_at` должен быть **int**, а генератор передавал **bigint** (результат `pmod` от `global_id`).
+
+**Что делать:** использовать fat JAR с фиксом (`.cast(IntegerType)` для индекса в `elementAtDictionary`). Обхода через CLI нет.
