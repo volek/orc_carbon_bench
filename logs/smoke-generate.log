@@ -1,190 +1,122 @@
 SPARK_MAJOR_VERSION is set to 3, using Spark3
-26/08/18 13:14:42 WARN NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
-26/08/18 13:14:42 INFO ConfiguredRMFailoverProxyProvider: Failing over to rm2
-26/08/18 13:14:42 INFO Client: Requesting a new application from cluster with 7 NodeManagers
-26/08/18 13:14:43 WARN DomainSocketFactory: The short-circuit local reads feature cannot be used because libhadoop cannot be loaded.
-26/08/18 13:14:43 INFO Configuration: found resource resource-types.xml at file:/etc/hadoop/3.5.7.0-1/0/resource-types.xml
-26/08/18 13:14:43 INFO Client: Verifying our application has not requested more than the maximum memory capability of the cluster (9216 MB per container)
-26/08/18 13:14:43 INFO Client: Will allocate AM container, with 1408 MB memory including 384 MB overhead
-26/08/18 13:14:43 INFO Client: Setting up container launch context for our AM
-26/08/18 13:14:43 INFO Client: Setting up the launch environment for our AM container
-26/08/18 13:14:43 INFO Client: Preparing resources for our AM container
-26/08/18 13:14:43 WARN Client: Neither spark.yarn.jars nor spark.yarn.archive is set, falling back to uploading libraries under SPARK_HOME.
-26/08/18 13:14:45 INFO Client: Uploading resource file:/tmp/spark-d99229cf-3392-4740-bdee-60a9cbd730b4/__spark_libs__5246063812685644595.zip -> hdfs://sdp-dzo-dev/user/hdfs_migration_user/.sparkStaging/application_1785928909888_0009/__spark_libs__5246063812685644595.zip
-26/08/18 13:14:49 INFO Client: Uploading resource file:/home/abyss_ci/orc-carbon-bench-0.1.0-SNAPSHOT-all.jar -> hdfs://sdp-dzo-dev/user/hdfs_migration_user/.sparkStaging/application_1785928909888_0009/orc-carbon-bench-0.1.0-SNAPSHOT-all.jar
-26/08/18 13:14:51 INFO Client: Uploading resource file:/tmp/spark-d99229cf-3392-4740-bdee-60a9cbd730b4/__spark_conf__1017679946000671938.zip -> hdfs://sdp-dzo-dev/user/hdfs_migration_user/.sparkStaging/application_1785928909888_0009/__spark_conf__.zip
-26/08/18 13:14:51 INFO SecurityManager: Changing view acls to: abyss_ci,hdfs_migration_user
-26/08/18 13:14:51 INFO SecurityManager: Changing modify acls to: abyss_ci,hdfs_migration_user
-26/08/18 13:14:51 INFO SecurityManager: Changing view acls groups to: 
-26/08/18 13:14:51 INFO SecurityManager: Changing modify acls groups to: 
-26/08/18 13:14:51 INFO SecurityManager: SecurityManager: authentication disabled; ui acls enabled; users  with view permissions: Set(abyss_ci, hdfs_migration_user); groups with view permissions: Set(); users  with modify permissions: Set(abyss_ci, hdfs_migration_user); groups with modify permissions: Set()
-26/08/18 13:14:51 INFO HadoopDelegationTokenManager: Attempting to load user's ticket cache.
-26/08/18 13:14:51 INFO HadoopFSDelegationTokenProvider: getting token for: DFS[DFSClient[clientName=DFSClient_NONMAPREDUCE_-1414563164_1, ugi=hdfs_migration_user@OPSMON.SBT (auth:KERBEROS)]] with renewer rm/dev1-abyss-sdp2-ambari-02.opsmon.sbt@OPSMON.SBT
-26/08/18 13:14:51 INFO DFSClient: Created token for hdfs_migration_user: HDFS_DELEGATION_TOKEN owner=hdfs_migration_user@OPSMON.SBT, renewer=yarn, realUser=, issueDate=1787048091536, maxDate=1787652891536, sequenceNumber=175, masterKeyId=136 on ha-hdfs:sdp2-dzo-dev1
-26/08/18 13:14:51 INFO HadoopFSDelegationTokenProvider: getting token for: DFS[DFSClient[clientName=DFSClient_NONMAPREDUCE_54754867_1, ugi=hdfs_migration_user@OPSMON.SBT (auth:KERBEROS)]] with renewer rm/dev1-abyss-sdp2-ambari-02.opsmon.sbt@OPSMON.SBT
-26/08/18 13:14:51 INFO DFSClient: Created token for hdfs_migration_user: HDFS_DELEGATION_TOKEN owner=hdfs_migration_user@OPSMON.SBT, renewer=yarn, realUser=, issueDate=1787048091649, maxDate=1787652891649, sequenceNumber=2636, masterKeyId=830 on ha-hdfs:sdp-dzo-dev
-26/08/18 13:14:51 INFO HadoopFSDelegationTokenProvider: getting token for: DFS[DFSClient[clientName=DFSClient_NONMAPREDUCE_-1414563164_1, ugi=hdfs_migration_user@OPSMON.SBT (auth:KERBEROS)]] with renewer hdfs_migration_user@OPSMON.SBT
-26/08/18 13:14:51 INFO DFSClient: Created token for hdfs_migration_user: HDFS_DELEGATION_TOKEN owner=hdfs_migration_user@OPSMON.SBT, renewer=hdfs_migration_user, realUser=, issueDate=1787048091657, maxDate=1787652891657, sequenceNumber=176, masterKeyId=136 on ha-hdfs:sdp2-dzo-dev1
-26/08/18 13:14:51 INFO HadoopFSDelegationTokenProvider: getting token for: DFS[DFSClient[clientName=DFSClient_NONMAPREDUCE_54754867_1, ugi=hdfs_migration_user@OPSMON.SBT (auth:KERBEROS)]] with renewer hdfs_migration_user@OPSMON.SBT
-26/08/18 13:14:51 INFO DFSClient: Created token for hdfs_migration_user: HDFS_DELEGATION_TOKEN owner=hdfs_migration_user@OPSMON.SBT, renewer=hdfs_migration_user, realUser=, issueDate=1787048091661, maxDate=1787652891661, sequenceNumber=2637, masterKeyId=830 on ha-hdfs:sdp-dzo-dev
-26/08/18 13:14:51 INFO HadoopFSDelegationTokenProvider: Renewal interval is 86400023 for token HDFS_DELEGATION_TOKEN
-26/08/18 13:14:51 INFO HadoopFSDelegationTokenProvider: Renewal interval is 86400044 for token HDFS_DELEGATION_TOKEN
-26/08/18 13:14:51 INFO Client: Submitting application application_1785928909888_0009 to ResourceManager
-26/08/18 13:14:51 INFO YarnClientImpl: Submitted application application_1785928909888_0009
-26/08/18 13:14:52 INFO Client: Application report for application_1785928909888_0009 (state: ACCEPTED)
-26/08/18 13:14:53 INFO Client: 
+26/08/18 13:29:07 WARN NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
+26/08/18 13:29:08 INFO ConfiguredRMFailoverProxyProvider: Failing over to rm2
+26/08/18 13:29:08 INFO Client: Requesting a new application from cluster with 7 NodeManagers
+26/08/18 13:29:08 WARN DomainSocketFactory: The short-circuit local reads feature cannot be used because libhadoop cannot be loaded.
+26/08/18 13:29:08 INFO Configuration: found resource resource-types.xml at file:/etc/hadoop/3.5.7.0-1/0/resource-types.xml
+26/08/18 13:29:08 INFO Client: Verifying our application has not requested more than the maximum memory capability of the cluster (9216 MB per container)
+26/08/18 13:29:08 INFO Client: Will allocate AM container, with 1408 MB memory including 384 MB overhead
+26/08/18 13:29:08 INFO Client: Setting up container launch context for our AM
+26/08/18 13:29:08 INFO Client: Setting up the launch environment for our AM container
+26/08/18 13:29:08 INFO Client: Preparing resources for our AM container
+26/08/18 13:29:09 WARN Client: Neither spark.yarn.jars nor spark.yarn.archive is set, falling back to uploading libraries under SPARK_HOME.
+26/08/18 13:29:11 INFO Client: Uploading resource file:/tmp/spark-b37509e0-6213-47a2-a894-6e2706196397/__spark_libs__6399564926264276907.zip -> hdfs://sdp-dzo-dev/user/hdfs_migration_user/.sparkStaging/application_1785928909888_0010/__spark_libs__6399564926264276907.zip
+26/08/18 13:29:15 INFO Client: Uploading resource file:/home/abyss_ci/orc-carbon-bench-0.1.0-SNAPSHOT-all.jar -> hdfs://sdp-dzo-dev/user/hdfs_migration_user/.sparkStaging/application_1785928909888_0010/orc-carbon-bench-0.1.0-SNAPSHOT-all.jar
+26/08/18 13:29:16 INFO Client: Uploading resource file:/tmp/spark-b37509e0-6213-47a2-a894-6e2706196397/__spark_conf__7694459949559291926.zip -> hdfs://sdp-dzo-dev/user/hdfs_migration_user/.sparkStaging/application_1785928909888_0010/__spark_conf__.zip
+26/08/18 13:29:17 INFO SecurityManager: Changing view acls to: abyss_ci,hdfs_migration_user
+26/08/18 13:29:17 INFO SecurityManager: Changing modify acls to: abyss_ci,hdfs_migration_user
+26/08/18 13:29:17 INFO SecurityManager: Changing view acls groups to: 
+26/08/18 13:29:17 INFO SecurityManager: Changing modify acls groups to: 
+26/08/18 13:29:17 INFO SecurityManager: SecurityManager: authentication disabled; ui acls enabled; users  with view permissions: Set(abyss_ci, hdfs_migration_user); groups with view permissions: Set(); users  with modify permissions: Set(abyss_ci, hdfs_migration_user); groups with modify permissions: Set()
+26/08/18 13:29:17 INFO HadoopDelegationTokenManager: Attempting to load user's ticket cache.
+26/08/18 13:29:17 INFO HadoopFSDelegationTokenProvider: getting token for: DFS[DFSClient[clientName=DFSClient_NONMAPREDUCE_1878016151_1, ugi=hdfs_migration_user@OPSMON.SBT (auth:KERBEROS)]] with renewer rm/dev1-abyss-sdp2-ambari-02.opsmon.sbt@OPSMON.SBT
+26/08/18 13:29:17 INFO DFSClient: Created token for hdfs_migration_user: HDFS_DELEGATION_TOKEN owner=hdfs_migration_user@OPSMON.SBT, renewer=yarn, realUser=, issueDate=1787048957153, maxDate=1787653757153, sequenceNumber=177, masterKeyId=136 on ha-hdfs:sdp2-dzo-dev1
+26/08/18 13:29:17 INFO HadoopFSDelegationTokenProvider: getting token for: DFS[DFSClient[clientName=DFSClient_NONMAPREDUCE_1691435523_1, ugi=hdfs_migration_user@OPSMON.SBT (auth:KERBEROS)]] with renewer rm/dev1-abyss-sdp2-ambari-02.opsmon.sbt@OPSMON.SBT
+26/08/18 13:29:17 INFO DFSClient: Created token for hdfs_migration_user: HDFS_DELEGATION_TOKEN owner=hdfs_migration_user@OPSMON.SBT, renewer=yarn, realUser=, issueDate=1787048957220, maxDate=1787653757220, sequenceNumber=2638, masterKeyId=830 on ha-hdfs:sdp-dzo-dev
+26/08/18 13:29:17 INFO HadoopFSDelegationTokenProvider: getting token for: DFS[DFSClient[clientName=DFSClient_NONMAPREDUCE_1878016151_1, ugi=hdfs_migration_user@OPSMON.SBT (auth:KERBEROS)]] with renewer hdfs_migration_user@OPSMON.SBT
+26/08/18 13:29:17 INFO DFSClient: Created token for hdfs_migration_user: HDFS_DELEGATION_TOKEN owner=hdfs_migration_user@OPSMON.SBT, renewer=hdfs_migration_user, realUser=, issueDate=1787048957231, maxDate=1787653757231, sequenceNumber=178, masterKeyId=136 on ha-hdfs:sdp2-dzo-dev1
+26/08/18 13:29:17 INFO HadoopFSDelegationTokenProvider: getting token for: DFS[DFSClient[clientName=DFSClient_NONMAPREDUCE_1691435523_1, ugi=hdfs_migration_user@OPSMON.SBT (auth:KERBEROS)]] with renewer hdfs_migration_user@OPSMON.SBT
+26/08/18 13:29:17 INFO DFSClient: Created token for hdfs_migration_user: HDFS_DELEGATION_TOKEN owner=hdfs_migration_user@OPSMON.SBT, renewer=hdfs_migration_user, realUser=, issueDate=1787048957239, maxDate=1787653757239, sequenceNumber=2639, masterKeyId=830 on ha-hdfs:sdp-dzo-dev
+26/08/18 13:29:17 INFO HadoopFSDelegationTokenProvider: Renewal interval is 86400024 for token HDFS_DELEGATION_TOKEN
+26/08/18 13:29:17 INFO HadoopFSDelegationTokenProvider: Renewal interval is 86400047 for token HDFS_DELEGATION_TOKEN
+26/08/18 13:29:17 INFO Client: Submitting application application_1785928909888_0010 to ResourceManager
+26/08/18 13:29:17 INFO YarnClientImpl: Submitted application application_1785928909888_0010
+26/08/18 13:29:18 INFO Client: Application report for application_1785928909888_0010 (state: ACCEPTED)
+26/08/18 13:29:18 INFO Client: 
 	 client token: Token { kind: YARN_CLIENT_TOKEN, service:  }
 	 diagnostics: AM container is launched, waiting for AM container to Register with RM
 	 ApplicationMaster host: N/A
 	 ApplicationMaster RPC port: -1
 	 queue: default
-	 start time: 1787048091753
+	 start time: 1787048957336
 	 final status: UNDEFINED
-	 tracking URL: https://dev1-abyss-sdp2-ambari-03.opsmon.sbt:8090/proxy/application_1785928909888_0009/
+	 tracking URL: https://dev1-abyss-sdp2-ambari-03.opsmon.sbt:8090/proxy/application_1785928909888_0010/
 	 user: hdfs_migration_user
-26/08/18 13:14:54 INFO Client: Application report for application_1785928909888_0009 (state: ACCEPTED)
-26/08/18 13:14:55 INFO Client: Application report for application_1785928909888_0009 (state: ACCEPTED)
-26/08/18 13:14:56 INFO Client: Application report for application_1785928909888_0009 (state: ACCEPTED)
-26/08/18 13:14:57 INFO Client: Application report for application_1785928909888_0009 (state: ACCEPTED)
-26/08/18 13:14:58 INFO Client: Application report for application_1785928909888_0009 (state: ACCEPTED)
-26/08/18 13:14:59 INFO Client: Application report for application_1785928909888_0009 (state: ACCEPTED)
-26/08/18 13:15:00 INFO Client: Application report for application_1785928909888_0009 (state: ACCEPTED)
-26/08/18 13:15:01 INFO Client: Application report for application_1785928909888_0009 (state: ACCEPTED)
-26/08/18 13:15:02 INFO Client: Application report for application_1785928909888_0009 (state: ACCEPTED)
-26/08/18 13:15:03 INFO Client: Application report for application_1785928909888_0009 (state: RUNNING)
-26/08/18 13:15:03 INFO Client: 
-	 client token: Token { kind: YARN_CLIENT_TOKEN, service:  }
-	 diagnostics: N/A
-	 ApplicationMaster host: dev1-abyss-sdp2-druid-02.opsmon.sbt
-	 ApplicationMaster RPC port: 44969
-	 queue: default
-	 start time: 1787048091753
-	 final status: UNDEFINED
-	 tracking URL: https://dev1-abyss-sdp2-ambari-03.opsmon.sbt:8090/proxy/application_1785928909888_0009/
-	 user: hdfs_migration_user
-26/08/18 13:15:04 INFO Client: Application report for application_1785928909888_0009 (state: RUNNING)
-26/08/18 13:15:05 INFO Client: Application report for application_1785928909888_0009 (state: RUNNING)
-26/08/18 13:15:06 INFO Client: Application report for application_1785928909888_0009 (state: RUNNING)
-26/08/18 13:15:07 INFO Client: Application report for application_1785928909888_0009 (state: RUNNING)
-26/08/18 13:15:08 INFO Client: Application report for application_1785928909888_0009 (state: RUNNING)
-26/08/18 13:15:09 INFO Client: Application report for application_1785928909888_0009 (state: RUNNING)
-26/08/18 13:15:10 INFO Client: Application report for application_1785928909888_0009 (state: RUNNING)
-26/08/18 13:15:11 INFO Client: Application report for application_1785928909888_0009 (state: RUNNING)
-26/08/18 13:15:12 INFO Client: Application report for application_1785928909888_0009 (state: RUNNING)
-26/08/18 13:15:13 INFO Client: Application report for application_1785928909888_0009 (state: RUNNING)
-26/08/18 13:15:14 INFO Client: Application report for application_1785928909888_0009 (state: RUNNING)
-26/08/18 13:15:15 INFO Client: Application report for application_1785928909888_0009 (state: RUNNING)
-26/08/18 13:15:16 INFO Client: Application report for application_1785928909888_0009 (state: RUNNING)
-26/08/18 13:15:17 INFO Client: Application report for application_1785928909888_0009 (state: RUNNING)
-26/08/18 13:15:18 INFO Client: Application report for application_1785928909888_0009 (state: RUNNING)
-26/08/18 13:15:19 INFO Client: Application report for application_1785928909888_0009 (state: RUNNING)
-26/08/18 13:15:20 INFO Client: Application report for application_1785928909888_0009 (state: ACCEPTED)
-26/08/18 13:15:20 INFO Client: 
-	 client token: Token { kind: YARN_CLIENT_TOKEN, service:  }
-	 diagnostics: AM container is launched, waiting for AM container to Register with RM
-	 ApplicationMaster host: N/A
-	 ApplicationMaster RPC port: -1
-	 queue: default
-	 start time: 1787048091753
-	 final status: UNDEFINED
-	 tracking URL: https://dev1-abyss-sdp2-ambari-03.opsmon.sbt:8090/proxy/application_1785928909888_0009/
-	 user: hdfs_migration_user
-26/08/18 13:15:21 INFO Client: Application report for application_1785928909888_0009 (state: ACCEPTED)
-26/08/18 13:15:22 INFO Client: Application report for application_1785928909888_0009 (state: ACCEPTED)
-26/08/18 13:15:23 INFO Client: Application report for application_1785928909888_0009 (state: ACCEPTED)
-26/08/18 13:15:24 INFO Client: Application report for application_1785928909888_0009 (state: ACCEPTED)
-26/08/18 13:15:25 INFO Client: Application report for application_1785928909888_0009 (state: ACCEPTED)
-26/08/18 13:15:26 INFO Client: Application report for application_1785928909888_0009 (state: ACCEPTED)
-26/08/18 13:15:27 INFO Client: Application report for application_1785928909888_0009 (state: ACCEPTED)
-26/08/18 13:15:28 INFO Client: Application report for application_1785928909888_0009 (state: ACCEPTED)
-26/08/18 13:15:29 INFO Client: Application report for application_1785928909888_0009 (state: ACCEPTED)
-26/08/18 13:15:30 INFO Client: Application report for application_1785928909888_0009 (state: ACCEPTED)
-26/08/18 13:15:31 INFO Client: Application report for application_1785928909888_0009 (state: ACCEPTED)
-26/08/18 13:15:32 INFO Client: Application report for application_1785928909888_0009 (state: RUNNING)
-26/08/18 13:15:32 INFO Client: 
+26/08/18 13:29:19 INFO Client: Application report for application_1785928909888_0010 (state: ACCEPTED)
+26/08/18 13:29:20 INFO Client: Application report for application_1785928909888_0010 (state: ACCEPTED)
+26/08/18 13:29:21 INFO Client: Application report for application_1785928909888_0010 (state: ACCEPTED)
+26/08/18 13:29:22 INFO Client: Application report for application_1785928909888_0010 (state: ACCEPTED)
+26/08/18 13:29:23 INFO Client: Application report for application_1785928909888_0010 (state: ACCEPTED)
+26/08/18 13:29:24 INFO Client: Application report for application_1785928909888_0010 (state: ACCEPTED)
+26/08/18 13:29:25 INFO Client: Application report for application_1785928909888_0010 (state: ACCEPTED)
+26/08/18 13:29:26 INFO Client: Application report for application_1785928909888_0010 (state: ACCEPTED)
+26/08/18 13:29:27 INFO Client: Application report for application_1785928909888_0010 (state: ACCEPTED)
+26/08/18 13:29:28 INFO Client: Application report for application_1785928909888_0010 (state: RUNNING)
+26/08/18 13:29:28 INFO Client: 
 	 client token: Token { kind: YARN_CLIENT_TOKEN, service:  }
 	 diagnostics: N/A
 	 ApplicationMaster host: dev1-abyss-sdp2-druid-01.opsmon.sbt
-	 ApplicationMaster RPC port: 40991
+	 ApplicationMaster RPC port: 37083
 	 queue: default
-	 start time: 1787048091753
+	 start time: 1787048957336
 	 final status: UNDEFINED
-	 tracking URL: https://dev1-abyss-sdp2-ambari-03.opsmon.sbt:8090/proxy/application_1785928909888_0009/
+	 tracking URL: https://dev1-abyss-sdp2-ambari-03.opsmon.sbt:8090/proxy/application_1785928909888_0010/
 	 user: hdfs_migration_user
-26/08/18 13:15:33 INFO Client: Application report for application_1785928909888_0009 (state: RUNNING)
-26/08/18 13:15:34 INFO Client: Application report for application_1785928909888_0009 (state: RUNNING)
-26/08/18 13:15:35 INFO Client: Application report for application_1785928909888_0009 (state: RUNNING)
-26/08/18 13:15:36 INFO Client: Application report for application_1785928909888_0009 (state: RUNNING)
-26/08/18 13:15:37 INFO Client: Application report for application_1785928909888_0009 (state: RUNNING)
-26/08/18 13:15:38 INFO Client: Application report for application_1785928909888_0009 (state: RUNNING)
-26/08/18 13:15:39 INFO Client: Application report for application_1785928909888_0009 (state: RUNNING)
-26/08/18 13:15:40 INFO Client: Application report for application_1785928909888_0009 (state: FINISHED)
-26/08/18 13:15:40 INFO Client: 
+26/08/18 13:29:29 INFO Client: Application report for application_1785928909888_0010 (state: RUNNING)
+26/08/18 13:29:30 INFO Client: Application report for application_1785928909888_0010 (state: RUNNING)
+26/08/18 13:29:31 INFO Client: Application report for application_1785928909888_0010 (state: RUNNING)
+26/08/18 13:29:32 INFO Client: Application report for application_1785928909888_0010 (state: RUNNING)
+26/08/18 13:29:33 INFO Client: Application report for application_1785928909888_0010 (state: RUNNING)
+26/08/18 13:29:34 INFO Client: Application report for application_1785928909888_0010 (state: RUNNING)
+26/08/18 13:29:35 INFO Client: Application report for application_1785928909888_0010 (state: RUNNING)
+26/08/18 13:29:36 INFO Client: Application report for application_1785928909888_0010 (state: RUNNING)
+26/08/18 13:29:37 INFO Client: Application report for application_1785928909888_0010 (state: RUNNING)
+26/08/18 13:29:38 INFO Client: Application report for application_1785928909888_0010 (state: ACCEPTED)
+26/08/18 13:29:38 INFO Client: 
+	 client token: Token { kind: YARN_CLIENT_TOKEN, service:  }
+	 diagnostics: AM container is launched, waiting for AM container to Register with RM
+	 ApplicationMaster host: N/A
+	 ApplicationMaster RPC port: -1
+	 queue: default
+	 start time: 1787048957336
+	 final status: UNDEFINED
+	 tracking URL: https://dev1-abyss-sdp2-ambari-03.opsmon.sbt:8090/proxy/application_1785928909888_0010/
+	 user: hdfs_migration_user
+26/08/18 13:29:39 INFO Client: Application report for application_1785928909888_0010 (state: ACCEPTED)
+26/08/18 13:29:40 INFO Client: Application report for application_1785928909888_0010 (state: ACCEPTED)
+26/08/18 13:29:41 INFO Client: Application report for application_1785928909888_0010 (state: ACCEPTED)
+26/08/18 13:29:42 INFO Client: Application report for application_1785928909888_0010 (state: RUNNING)
+26/08/18 13:29:42 INFO Client: 
+	 client token: Token { kind: YARN_CLIENT_TOKEN, service:  }
+	 diagnostics: N/A
+	 ApplicationMaster host: dev1-abyss-sdp2-druid-01.opsmon.sbt
+	 ApplicationMaster RPC port: 39637
+	 queue: default
+	 start time: 1787048957336
+	 final status: UNDEFINED
+	 tracking URL: https://dev1-abyss-sdp2-ambari-03.opsmon.sbt:8090/proxy/application_1785928909888_0010/
+	 user: hdfs_migration_user
+26/08/18 13:29:43 INFO Client: Application report for application_1785928909888_0010 (state: RUNNING)
+26/08/18 13:29:44 INFO Client: Application report for application_1785928909888_0010 (state: RUNNING)
+26/08/18 13:29:45 INFO Client: Application report for application_1785928909888_0010 (state: RUNNING)
+26/08/18 13:29:46 INFO Client: Application report for application_1785928909888_0010 (state: RUNNING)
+26/08/18 13:29:47 INFO Client: Application report for application_1785928909888_0010 (state: RUNNING)
+26/08/18 13:29:48 INFO Client: Application report for application_1785928909888_0010 (state: RUNNING)
+26/08/18 13:29:49 INFO Client: Application report for application_1785928909888_0010 (state: RUNNING)
+26/08/18 13:29:50 INFO Client: Application report for application_1785928909888_0010 (state: RUNNING)
+26/08/18 13:29:51 INFO Client: Application report for application_1785928909888_0010 (state: RUNNING)
+26/08/18 13:29:52 INFO Client: Application report for application_1785928909888_0010 (state: RUNNING)
+26/08/18 13:29:53 INFO Client: Application report for application_1785928909888_0010 (state: FINISHED)
+26/08/18 13:29:53 INFO Client: 
 	 client token: N/A
-	 diagnostics: User class threw exception: org.apache.spark.sql.AnalysisException: cannot resolve 'element_at(array('RU', 'US', 'DE', 'FR', 'GB', 'CN', 'JP', 'IN', 'BR', 'CA', 'AU', 'IT', 'ES', 'NL', 'SE', 'NO', 'FI', 'PL', 'TR', 'MX', 'KR', 'SG', 'AE', 'SA', 'ZA', 'AR', 'CL', 'CO', 'ID', 'MY', 'TH', 'VN', 'PH', 'NZ', 'CH', 'AT', 'BE', 'DK', 'IE', 'PT', 'CZ', 'RO', 'HU', 'GR', 'IL', 'EG', 'NG', 'KE', 'PK', 'BD'), (pmod((global_id + 42L), CAST(50 AS BIGINT)) + CAST(1 AS BIGINT)))' due to data type mismatch: Input to function element_at should have been array followed by a int, but it's [array<string>, bigint].;
-'Project [row_idx#2L, global_id#4L, event_id#7, user_id#11L, session_id#16, element_at(array(RU, US, DE, FR, GB, CN, JP, IN, BR, CA, AU, IT, ES, NL, SE, NO, FI, PL, TR, MX, KR, SG, AE, SA, ... 26 more fields), (pmod((global_id#4L + 42), cast(50 as bigint)) + cast(1 as bigint)), false) AS country_code#22]
-+- Project [row_idx#2L, global_id#4L, event_id#7, user_id#11L, concat(sess-, cast(pmod(((global_id#4L * 12345) + 42), 100000000) as string)) AS session_id#16]
-   +- Project [row_idx#2L, global_id#4L, event_id#7, pmod(((global_id#4L * 1103515245) + 42), 50000000) AS user_id#11L]
-      +- Project [row_idx#2L, global_id#4L, concat(evt-, sha2(cast(cast(global_id#4L as string) as binary), 256)) AS event_id#7]
-         +- Project [row_idx#2L, (row_idx#2L + 0) AS global_id#4L]
-            +- Project [id#0L AS row_idx#2L]
-               +- Range (0, 58675, step=1, splits=Some(2000))
-
-	at org.apache.spark.sql.catalyst.analysis.package$AnalysisErrorAt.failAnalysis(package.scala:42)
-	at org.apache.spark.sql.catalyst.analysis.CheckAnalysis$$anonfun$$nestedInanonfun$checkAnalysis$1$2.applyOrElse(CheckAnalysis.scala:190)
-	at org.apache.spark.sql.catalyst.analysis.CheckAnalysis$$anonfun$$nestedInanonfun$checkAnalysis$1$2.applyOrElse(CheckAnalysis.scala:175)
-	at org.apache.spark.sql.catalyst.trees.TreeNode.$anonfun$transformUpWithPruning$2(TreeNode.scala:535)
-	at org.apache.spark.sql.catalyst.trees.CurrentOrigin$.withOrigin(TreeNode.scala:82)
-	at org.apache.spark.sql.catalyst.trees.TreeNode.transformUpWithPruning(TreeNode.scala:535)
-	at org.apache.spark.sql.catalyst.trees.TreeNode.$anonfun$transformUpWithPruning$1(TreeNode.scala:532)
-	at org.apache.spark.sql.catalyst.trees.UnaryLike.mapChildren(TreeNode.scala:1122)
-	at org.apache.spark.sql.catalyst.trees.UnaryLike.mapChildren$(TreeNode.scala:1121)
-	at org.apache.spark.sql.catalyst.expressions.UnaryExpression.mapChildren(Expression.scala:467)
-	at org.apache.spark.sql.catalyst.trees.TreeNode.transformUpWithPruning(TreeNode.scala:532)
-	at org.apache.spark.sql.catalyst.plans.QueryPlan.$anonfun$transformExpressionsUpWithPruning$1(QueryPlan.scala:181)
-	at org.apache.spark.sql.catalyst.plans.QueryPlan.$anonfun$mapExpressions$1(QueryPlan.scala:193)
-	at org.apache.spark.sql.catalyst.trees.CurrentOrigin$.withOrigin(TreeNode.scala:82)
-	at org.apache.spark.sql.catalyst.plans.QueryPlan.transformExpression$1(QueryPlan.scala:193)
-	at org.apache.spark.sql.catalyst.plans.QueryPlan.recursiveTransform$1(QueryPlan.scala:204)
-	at org.apache.spark.sql.catalyst.plans.QueryPlan.$anonfun$mapExpressions$3(QueryPlan.scala:209)
-	at scala.collection.TraversableLike.$anonfun$map$1(TraversableLike.scala:286)
-	at scala.collection.immutable.List.foreach(List.scala:431)
-	at scala.collection.TraversableLike.map(TraversableLike.scala:286)
-	at scala.collection.TraversableLike.map$(TraversableLike.scala:279)
-	at scala.collection.immutable.List.map(List.scala:305)
-	at org.apache.spark.sql.catalyst.plans.QueryPlan.recursiveTransform$1(QueryPlan.scala:209)
-	at org.apache.spark.sql.catalyst.plans.QueryPlan.$anonfun$mapExpressions$4(QueryPlan.scala:214)
-	at org.apache.spark.sql.catalyst.trees.TreeNode.mapProductIterator(TreeNode.scala:323)
-	at org.apache.spark.sql.catalyst.plans.QueryPlan.mapExpressions(QueryPlan.scala:214)
-	at org.apache.spark.sql.catalyst.plans.QueryPlan.transformExpressionsUpWithPruning(QueryPlan.scala:181)
-	at org.apache.spark.sql.catalyst.plans.QueryPlan.transformExpressionsUp(QueryPlan.scala:161)
-	at org.apache.spark.sql.catalyst.analysis.CheckAnalysis.$anonfun$checkAnalysis$1(CheckAnalysis.scala:175)
-	at org.apache.spark.sql.catalyst.analysis.CheckAnalysis.$anonfun$checkAnalysis$1$adapted(CheckAnalysis.scala:94)
-	at org.apache.spark.sql.catalyst.trees.TreeNode.foreachUp(TreeNode.scala:263)
-	at org.apache.spark.sql.catalyst.analysis.CheckAnalysis.checkAnalysis(CheckAnalysis.scala:94)
-	at org.apache.spark.sql.catalyst.analysis.CheckAnalysis.checkAnalysis$(CheckAnalysis.scala:91)
-	at org.apache.spark.sql.catalyst.analysis.Analyzer.checkAnalysis(Analyzer.scala:182)
-	at org.apache.spark.sql.catalyst.analysis.Analyzer.$anonfun$executeAndCheck$1(Analyzer.scala:205)
-	at org.apache.spark.sql.catalyst.plans.logical.AnalysisHelper$.markInAnalyzer(AnalysisHelper.scala:330)
-	at org.apache.spark.sql.catalyst.analysis.Analyzer.executeAndCheck(Analyzer.scala:202)
-	at org.apache.spark.sql.execution.QueryExecution.$anonfun$analyzed$1(QueryExecution.scala:88)
-	at org.apache.spark.sql.catalyst.QueryPlanningTracker.measurePhase(QueryPlanningTracker.scala:111)
-	at org.apache.spark.sql.execution.QueryExecution.$anonfun$executePhase$1(QueryExecution.scala:196)
-	at org.apache.spark.sql.SparkSession.withActive(SparkSession.scala:775)
-	at org.apache.spark.sql.execution.QueryExecution.executePhase(QueryExecution.scala:196)
-	at org.apache.spark.sql.execution.QueryExecution.analyzed$lzycompute(QueryExecution.scala:88)
-	at org.apache.spark.sql.execution.QueryExecution.analyzed(QueryExecution.scala:86)
-	at org.apache.spark.sql.execution.QueryExecution.assertAnalyzed(QueryExecution.scala:78)
-	at org.apache.spark.sql.Dataset$.$anonfun$ofRows$1(Dataset.scala:90)
-	at org.apache.spark.sql.SparkSession.withActive(SparkSession.scala:775)
-	at org.apache.spark.sql.Dataset$.ofRows(Dataset.scala:88)
-	at org.apache.spark.sql.Dataset.withPlan(Dataset.scala:3734)
-	at org.apache.spark.sql.Dataset.select(Dataset.scala:1454)
-	at org.apache.spark.sql.Dataset.withColumns(Dataset.scala:2417)
-	at org.apache.spark.sql.Dataset.withColumn(Dataset.scala:2384)
-	at ru.sber.orcbench.generator.DataGenerator.generateChunk(DataGenerator.java:76)
-	at ru.sber.orcbench.generator.GenerateRunner.run(GenerateRunner.java:67)
-	at ru.sber.orcbench.AppMain.main(AppMain.java:42)
+	 diagnostics: User class threw exception: org.apache.spark.sql.AnalysisException: Cannot modify the value of a static config: spark.sql.extensions
+	at org.apache.spark.sql.errors.QueryCompilationErrors$.cannotModifyValueOfStaticConfigError(QueryCompilationErrors.scala:2317)
+	at org.apache.spark.sql.RuntimeConfig.requireNonStaticConf(RuntimeConfig.scala:153)
+	at org.apache.spark.sql.RuntimeConfig.set(RuntimeConfig.scala:41)
+	at ru.sber.orcbench.writer.CarbonWriter.setIfMissing(CarbonWriter.java:111)
+	at ru.sber.orcbench.writer.CarbonWriter.configureSpark(CarbonWriter.java:21)
+	at ru.sber.orcbench.writer.SparkConfigurator.configure(SparkConfigurator.java:20)
+	at ru.sber.orcbench.AppMain.main(AppMain.java:27)
 	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
 	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
 	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
@@ -192,83 +124,27 @@ SPARK_MAJOR_VERSION is set to 3, using Spark3
 	at org.apache.spark.deploy.yarn.ApplicationMaster$$anon$2.run(ApplicationMaster.scala:737)
 
 	 ApplicationMaster host: dev1-abyss-sdp2-druid-01.opsmon.sbt
-	 ApplicationMaster RPC port: 40991
+	 ApplicationMaster RPC port: 39637
 	 queue: default
-	 start time: 1787048091753
+	 start time: 1787048957336
 	 final status: FAILED
-	 tracking URL: https://dev1-abyss-sdp2-ambari-03.opsmon.sbt:8090/proxy/application_1785928909888_0009/
+	 tracking URL: https://dev1-abyss-sdp2-ambari-03.opsmon.sbt:8090/proxy/application_1785928909888_0010/
 	 user: hdfs_migration_user
-26/08/18 13:15:40 ERROR Client: Application diagnostics message: User class threw exception: org.apache.spark.sql.AnalysisException: cannot resolve 'element_at(array('RU', 'US', 'DE', 'FR', 'GB', 'CN', 'JP', 'IN', 'BR', 'CA', 'AU', 'IT', 'ES', 'NL', 'SE', 'NO', 'FI', 'PL', 'TR', 'MX', 'KR', 'SG', 'AE', 'SA', 'ZA', 'AR', 'CL', 'CO', 'ID', 'MY', 'TH', 'VN', 'PH', 'NZ', 'CH', 'AT', 'BE', 'DK', 'IE', 'PT', 'CZ', 'RO', 'HU', 'GR', 'IL', 'EG', 'NG', 'KE', 'PK', 'BD'), (pmod((global_id + 42L), CAST(50 AS BIGINT)) + CAST(1 AS BIGINT)))' due to data type mismatch: Input to function element_at should have been array followed by a int, but it's [array<string>, bigint].;
-'Project [row_idx#2L, global_id#4L, event_id#7, user_id#11L, session_id#16, element_at(array(RU, US, DE, FR, GB, CN, JP, IN, BR, CA, AU, IT, ES, NL, SE, NO, FI, PL, TR, MX, KR, SG, AE, SA, ... 26 more fields), (pmod((global_id#4L + 42), cast(50 as bigint)) + cast(1 as bigint)), false) AS country_code#22]
-+- Project [row_idx#2L, global_id#4L, event_id#7, user_id#11L, concat(sess-, cast(pmod(((global_id#4L * 12345) + 42), 100000000) as string)) AS session_id#16]
-   +- Project [row_idx#2L, global_id#4L, event_id#7, pmod(((global_id#4L * 1103515245) + 42), 50000000) AS user_id#11L]
-      +- Project [row_idx#2L, global_id#4L, concat(evt-, sha2(cast(cast(global_id#4L as string) as binary), 256)) AS event_id#7]
-         +- Project [row_idx#2L, (row_idx#2L + 0) AS global_id#4L]
-            +- Project [id#0L AS row_idx#2L]
-               +- Range (0, 58675, step=1, splits=Some(2000))
-
-	at org.apache.spark.sql.catalyst.analysis.package$AnalysisErrorAt.failAnalysis(package.scala:42)
-	at org.apache.spark.sql.catalyst.analysis.CheckAnalysis$$anonfun$$nestedInanonfun$checkAnalysis$1$2.applyOrElse(CheckAnalysis.scala:190)
-	at org.apache.spark.sql.catalyst.analysis.CheckAnalysis$$anonfun$$nestedInanonfun$checkAnalysis$1$2.applyOrElse(CheckAnalysis.scala:175)
-	at org.apache.spark.sql.catalyst.trees.TreeNode.$anonfun$transformUpWithPruning$2(TreeNode.scala:535)
-	at org.apache.spark.sql.catalyst.trees.CurrentOrigin$.withOrigin(TreeNode.scala:82)
-	at org.apache.spark.sql.catalyst.trees.TreeNode.transformUpWithPruning(TreeNode.scala:535)
-	at org.apache.spark.sql.catalyst.trees.TreeNode.$anonfun$transformUpWithPruning$1(TreeNode.scala:532)
-	at org.apache.spark.sql.catalyst.trees.UnaryLike.mapChildren(TreeNode.scala:1122)
-	at org.apache.spark.sql.catalyst.trees.UnaryLike.mapChildren$(TreeNode.scala:1121)
-	at org.apache.spark.sql.catalyst.expressions.UnaryExpression.mapChildren(Expression.scala:467)
-	at org.apache.spark.sql.catalyst.trees.TreeNode.transformUpWithPruning(TreeNode.scala:532)
-	at org.apache.spark.sql.catalyst.plans.QueryPlan.$anonfun$transformExpressionsUpWithPruning$1(QueryPlan.scala:181)
-	at org.apache.spark.sql.catalyst.plans.QueryPlan.$anonfun$mapExpressions$1(QueryPlan.scala:193)
-	at org.apache.spark.sql.catalyst.trees.CurrentOrigin$.withOrigin(TreeNode.scala:82)
-	at org.apache.spark.sql.catalyst.plans.QueryPlan.transformExpression$1(QueryPlan.scala:193)
-	at org.apache.spark.sql.catalyst.plans.QueryPlan.recursiveTransform$1(QueryPlan.scala:204)
-	at org.apache.spark.sql.catalyst.plans.QueryPlan.$anonfun$mapExpressions$3(QueryPlan.scala:209)
-	at scala.collection.TraversableLike.$anonfun$map$1(TraversableLike.scala:286)
-	at scala.collection.immutable.List.foreach(List.scala:431)
-	at scala.collection.TraversableLike.map(TraversableLike.scala:286)
-	at scala.collection.TraversableLike.map$(TraversableLike.scala:279)
-	at scala.collection.immutable.List.map(List.scala:305)
-	at org.apache.spark.sql.catalyst.plans.QueryPlan.recursiveTransform$1(QueryPlan.scala:209)
-	at org.apache.spark.sql.catalyst.plans.QueryPlan.$anonfun$mapExpressions$4(QueryPlan.scala:214)
-	at org.apache.spark.sql.catalyst.trees.TreeNode.mapProductIterator(TreeNode.scala:323)
-	at org.apache.spark.sql.catalyst.plans.QueryPlan.mapExpressions(QueryPlan.scala:214)
-	at org.apache.spark.sql.catalyst.plans.QueryPlan.transformExpressionsUpWithPruning(QueryPlan.scala:181)
-	at org.apache.spark.sql.catalyst.plans.QueryPlan.transformExpressionsUp(QueryPlan.scala:161)
-	at org.apache.spark.sql.catalyst.analysis.CheckAnalysis.$anonfun$checkAnalysis$1(CheckAnalysis.scala:175)
-	at org.apache.spark.sql.catalyst.analysis.CheckAnalysis.$anonfun$checkAnalysis$1$adapted(CheckAnalysis.scala:94)
-	at org.apache.spark.sql.catalyst.trees.TreeNode.foreachUp(TreeNode.scala:263)
-	at org.apache.spark.sql.catalyst.analysis.CheckAnalysis.checkAnalysis(CheckAnalysis.scala:94)
-	at org.apache.spark.sql.catalyst.analysis.CheckAnalysis.checkAnalysis$(CheckAnalysis.scala:91)
-	at org.apache.spark.sql.catalyst.analysis.Analyzer.checkAnalysis(Analyzer.scala:182)
-	at org.apache.spark.sql.catalyst.analysis.Analyzer.$anonfun$executeAndCheck$1(Analyzer.scala:205)
-	at org.apache.spark.sql.catalyst.plans.logical.AnalysisHelper$.markInAnalyzer(AnalysisHelper.scala:330)
-	at org.apache.spark.sql.catalyst.analysis.Analyzer.executeAndCheck(Analyzer.scala:202)
-	at org.apache.spark.sql.execution.QueryExecution.$anonfun$analyzed$1(QueryExecution.scala:88)
-	at org.apache.spark.sql.catalyst.QueryPlanningTracker.measurePhase(QueryPlanningTracker.scala:111)
-	at org.apache.spark.sql.execution.QueryExecution.$anonfun$executePhase$1(QueryExecution.scala:196)
-	at org.apache.spark.sql.SparkSession.withActive(SparkSession.scala:775)
-	at org.apache.spark.sql.execution.QueryExecution.executePhase(QueryExecution.scala:196)
-	at org.apache.spark.sql.execution.QueryExecution.analyzed$lzycompute(QueryExecution.scala:88)
-	at org.apache.spark.sql.execution.QueryExecution.analyzed(QueryExecution.scala:86)
-	at org.apache.spark.sql.execution.QueryExecution.assertAnalyzed(QueryExecution.scala:78)
-	at org.apache.spark.sql.Dataset$.$anonfun$ofRows$1(Dataset.scala:90)
-	at org.apache.spark.sql.SparkSession.withActive(SparkSession.scala:775)
-	at org.apache.spark.sql.Dataset$.ofRows(Dataset.scala:88)
-	at org.apache.spark.sql.Dataset.withPlan(Dataset.scala:3734)
-	at org.apache.spark.sql.Dataset.select(Dataset.scala:1454)
-	at org.apache.spark.sql.Dataset.withColumns(Dataset.scala:2417)
-	at org.apache.spark.sql.Dataset.withColumn(Dataset.scala:2384)
-	at ru.sber.orcbench.generator.DataGenerator.generateChunk(DataGenerator.java:76)
-	at ru.sber.orcbench.generator.GenerateRunner.run(GenerateRunner.java:67)
-	at ru.sber.orcbench.AppMain.main(AppMain.java:42)
+26/08/18 13:29:53 ERROR Client: Application diagnostics message: User class threw exception: org.apache.spark.sql.AnalysisException: Cannot modify the value of a static config: spark.sql.extensions
+	at org.apache.spark.sql.errors.QueryCompilationErrors$.cannotModifyValueOfStaticConfigError(QueryCompilationErrors.scala:2317)
+	at org.apache.spark.sql.RuntimeConfig.requireNonStaticConf(RuntimeConfig.scala:153)
+	at org.apache.spark.sql.RuntimeConfig.set(RuntimeConfig.scala:41)
+	at ru.sber.orcbench.writer.CarbonWriter.setIfMissing(CarbonWriter.java:111)
+	at ru.sber.orcbench.writer.CarbonWriter.configureSpark(CarbonWriter.java:21)
+	at ru.sber.orcbench.writer.SparkConfigurator.configure(SparkConfigurator.java:20)
+	at ru.sber.orcbench.AppMain.main(AppMain.java:27)
 	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
 	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
 	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
 	at java.lang.reflect.Method.invoke(Method.java:498)
 	at org.apache.spark.deploy.yarn.ApplicationMaster$$anon$2.run(ApplicationMaster.scala:737)
 
-Exception in thread "main" org.apache.spark.SparkException: Application application_1785928909888_0009 finished with failed status
+Exception in thread "main" org.apache.spark.SparkException: Application application_1785928909888_0010 finished with failed status
 	at org.apache.spark.deploy.yarn.Client.run(Client.scala:1300)
 	at org.apache.spark.deploy.yarn.YarnClusterApplication.start(Client.scala:1694)
 	at org.apache.spark.deploy.SparkSubmit.org$apache$spark$deploy$SparkSubmit$$runMain(SparkSubmit.scala:968)
@@ -278,6 +154,6 @@ Exception in thread "main" org.apache.spark.SparkException: Application applicat
 	at org.apache.spark.deploy.SparkSubmit$$anon$2.doSubmit(SparkSubmit.scala:1056)
 	at org.apache.spark.deploy.SparkSubmit$.main(SparkSubmit.scala:1065)
 	at org.apache.spark.deploy.SparkSubmit.main(SparkSubmit.scala)
-26/08/18 13:15:40 INFO ShutdownHookManager: Shutdown hook called
-26/08/18 13:15:40 INFO ShutdownHookManager: Deleting directory /tmp/spark-aea0e2ed-67b7-4103-ac7f-3107ad9c48a0
-26/08/18 13:15:40 INFO ShutdownHookManager: Deleting directory /tmp/spark-d99229cf-3392-4740-bdee-60a9cbd730b4
+26/08/18 13:29:53 INFO ShutdownHookManager: Shutdown hook called
+26/08/18 13:29:53 INFO ShutdownHookManager: Deleting directory /tmp/spark-a02d96a8-513d-40c3-95be-75399f194ea7
+26/08/18 13:29:53 INFO ShutdownHookManager: Deleting directory /tmp/spark-b37509e0-6213-47a2-a894-6e2706196397
