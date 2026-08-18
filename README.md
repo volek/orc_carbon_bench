@@ -149,12 +149,12 @@ spark.sql.orc.filterPushdown=true
 spark.sql.orc.enableVectorizedReader=true
 spark.sql.orc.block.size=<orc-stripe-size-mb * 1024^2>
 
-# CarbonData (static — при создании SparkSession)
+# CarbonData
 spark.sql.extensions=org.apache.spark.sql.CarbonExtensions
 spark.sql.catalog.spark_catalog=org.apache.spark.sql.CarbonSessionCatalog
 ```
 
-CarbonData уже внутри fat JAR — **не** передавайте `--packages`. Параметры Carbon задаются в `SparkSession.builder()` до `getOrCreate()` (в Spark 3.2+ их нельзя менять в runtime).
+CarbonData уже внутри fat JAR — **не** передавайте `--packages`.
 
 ### Расчёты
 
