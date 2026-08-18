@@ -312,3 +312,18 @@ NumberFormatException: For input string: "0.01"
 **Смысл:** старые сборки парсили `--target-size-tb` как `long`. Нужен fat JAR с поддержкой дробных ТБ (`double`).
 
 **Что делать:** использовать актуальный `orc-carbon-bench-0.1.0-SNAPSHOT-all.jar` (после фикса) и снова `--target-size-tb=0.01`.
+
+---
+
+### 6.8. `Cannot modify the value of a static config: spark.sql.extensions`
+
+**Симптом:** job доходит до `AppMain`, затем:
+
+```text
+AnalysisException: Cannot modify the value of a static config: spark.sql.extensions
+at ru.sber.orcbench.writer.CarbonWriter…
+```
+
+**Смысл:** в Spark 3.2+ `spark.sql.extensions` и `spark.sql.catalog.spark_catalog` — **static**; их нужно задавать до `SparkSession.getOrCreate()`, а не через `spark.conf().set()` после старта сессии.
+
+**Что делать:** использовать актуальный fat JAR (Carbon-конфиг перенесён в `SparkSession.builder()`). Если на кластере эти параметры уже заданы в `spark-defaults.conf` — убедиться, что там указаны CarbonExtensions / CarbonSessionCatalog, иначе конфликт catalog.

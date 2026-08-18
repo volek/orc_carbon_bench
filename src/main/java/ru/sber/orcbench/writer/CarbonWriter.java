@@ -17,11 +17,6 @@ public final class CarbonWriter {
     private CarbonWriter() {
     }
 
-    public static void configureSpark(SparkSession spark) {
-        setIfMissing(spark, "spark.sql.extensions", "org.apache.spark.sql.CarbonExtensions");
-        setIfMissing(spark, "spark.sql.catalog.spark_catalog", "org.apache.spark.sql.CarbonSessionCatalog");
-    }
-
     public static void write(
             SparkSession spark,
             Dataset<Row> dataset,
@@ -29,8 +24,6 @@ public final class CarbonWriter {
             CarbonWriteSettings settings,
             String saveMode
     ) {
-        configureSpark(spark);
-
         Dataset<Row> toWrite = settings.hasExplicitWritePartitions()
                 ? dataset.repartition(settings.writePartitions())
                 : dataset;
@@ -103,13 +96,6 @@ public final class CarbonWriter {
         }
 
         return metrics;
-    }
-
-    private static void setIfMissing(SparkSession spark, String key, String value) {
-        String current = spark.conf().get(key, "");
-        if (current == null || current.trim().isEmpty()) {
-            spark.conf().set(key, value);
-        }
     }
 
     private static String sanitizeIndexName(String raw) {
