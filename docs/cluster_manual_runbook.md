@@ -58,7 +58,7 @@ hdfs dfs -ls "$BASE" || hdfs dfs -mkdir -p "$BASE"
 Статические Carbon-конфиги (Spark 3.2 не даёт менять их после создания сессии):
 
 ```bash
-export CARBON_CONF="--conf spark.sql.extensions=org.apache.spark.sql.CarbonExtensions --conf spark.sql.catalog.spark_catalog=org.apache.spark.sql.CarbonSessionCatalog"
+export CARBON_CONF="--conf spark.sql.extensions=org.apache.spark.sql.CarbonExtensions --conf spark.sql.session.state.builder=org.apache.spark.sql.hive.CarbonSessionStateBuilder"
 ```
 
 ```bash
@@ -281,7 +281,7 @@ echo "status" | hbase shell
 ```bash
 spark-submit --master yarn --deploy-mode cluster \
   --conf spark.sql.extensions=org.apache.spark.sql.CarbonExtensions \
-  --conf spark.sql.catalog.spark_catalog=org.apache.spark.sql.CarbonSessionCatalog \
+  --conf spark.sql.session.state.builder=org.apache.spark.sql.hive.CarbonSessionStateBuilder \
   --conf spark.security.credentials.hive.enabled=false \
   --conf spark.security.credentials.hbase.enabled=false \
   --class ru.sber.orcbench.AppMain "$JAR" \
@@ -361,8 +361,10 @@ AnalysisException: Cannot modify the value of a static config: spark.sql.extensi
 
 ```bash
 --conf spark.sql.extensions=org.apache.spark.sql.CarbonExtensions \
---conf spark.sql.catalog.spark_catalog=org.apache.spark.sql.CarbonSessionCatalog
+--conf spark.sql.session.state.builder=org.apache.spark.sql.hive.CarbonSessionStateBuilder
 ```
+
+**Не используйте** `spark.sql.catalog.spark_catalog=org.apache.spark.sql.CarbonSessionCatalog` — такого plugin-класса нет (см. §6.12).
 
 ---
 
@@ -399,3 +401,24 @@ VerifyError: Bad type on operand stack
 **Что делать:** fat JAR с no-op shim-классом `CarbonSecondaryIndexOptimizer` (legacy SI rewrite отключён; Bloom/Lucene индексы работают). Обхода через CLI нет.
 
 **Ограничение:** secondary-index plan rewrite CarbonData на Spark 3.2 не используется — для bench это не требуется.
+
+---
+
+### 6.12. `Cannot find catalog plugin class … CarbonSessionCatalog`
+
+**Симптом:**
+
+```text
+SparkException: Cannot find catalog plugin class for catalog 'spark_catalog':
+  org.apache.spark.sql.CarbonSessionCatalog
+  at OrcWriter.write / DataFrameWriter.orc
+```
+
+**Смысл:** в submit передали неверный `--conf spark.sql.catalog.spark_catalog=org.apache.spark.sql.CarbonSessionCatalog`. Это **не** V2 catalog plugin (реальный класс — `org.apache.spark.sql.hive.CarbonHiveSessionCatalog`, подключается через `CarbonSessionStateBuilder`).
+
+**Что делать:** убрать `spark.sql.catalog.spark_catalog=…` и использовать:
+
+```bash
+--conf spark.sql.extensions=org.apache.spark.sql.CarbonExtensions \
+--conf spark.sql.session.state.builder=org.apache.spark.sql.hive.CarbonSessionStateBuilder
+```

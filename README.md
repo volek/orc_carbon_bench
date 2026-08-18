@@ -147,7 +147,7 @@ CarbonData-расширения — **статические** в Spark 3.2: и�
 
 ```bash
 --conf spark.sql.extensions=org.apache.spark.sql.CarbonExtensions \
---conf spark.sql.catalog.spark_catalog=org.apache.spark.sql.CarbonSessionCatalog
+--conf spark.sql.session.state.builder=org.apache.spark.sql.hive.CarbonSessionStateBuilder
 ```
 
 CarbonData уже внутри fat JAR — **не** передавайте `--packages`.

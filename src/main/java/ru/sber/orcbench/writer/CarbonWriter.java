@@ -18,12 +18,13 @@ public final class CarbonWriter {
     }
 
     static final String SQL_EXTENSIONS = "org.apache.spark.sql.CarbonExtensions";
-    static final String SESSION_CATALOG = "org.apache.spark.sql.CarbonSessionCatalog";
+    static final String SESSION_STATE_BUILDER = "org.apache.spark.sql.hive.CarbonSessionStateBuilder";
 
     public static SparkSession.Builder configureBuilder(SparkSession.Builder builder) {
         return builder
+                .enableHiveSupport()
                 .config("spark.sql.extensions", SQL_EXTENSIONS)
-                .config("spark.sql.catalog.spark_catalog", SESSION_CATALOG);
+                .config("spark.sql.session.state.builder", SESSION_STATE_BUILDER);
     }
 
     /**
@@ -37,7 +38,27 @@ public final class CarbonWriter {
                     "spark.sql.extensions is a static Spark config and was not set to CarbonExtensions "
                             + "before SparkSession creation. Re-submit with:\n"
                             + "  --conf spark.sql.extensions=" + SQL_EXTENSIONS + "\n"
-                            + "  --conf spark.sql.catalog.spark_catalog=" + SESSION_CATALOG
+                            + "  --conf spark.sql.session.state.builder=" + SESSION_STATE_BUILDER
+            );
+        }
+
+        String catalog = spark.conf().get("spark.sql.catalog.spark_catalog", "");
+        if (catalog != null && catalog.contains("CarbonSessionCatalog")) {
+            throw new IllegalStateException(
+                    "Invalid spark.sql.catalog.spark_catalog=" + catalog + ". "
+                            + "CarbonData 2.3 does not use a V2 catalog plugin — remove that --conf. "
+                            + "Use instead:\n"
+                            + "  --conf spark.sql.extensions=" + SQL_EXTENSIONS + "\n"
+                            + "  --conf spark.sql.session.state.builder=" + SESSION_STATE_BUILDER
+            );
+        }
+
+        String stateBuilder = spark.conf().get("spark.sql.session.state.builder", "");
+        if (stateBuilder == null || !stateBuilder.contains("CarbonSessionStateBuilder")) {
+            throw new IllegalStateException(
+                    "spark.sql.session.state.builder was not set to CarbonSessionStateBuilder "
+                            + "before SparkSession creation. Re-submit with:\n"
+                            + "  --conf spark.sql.session.state.builder=" + SESSION_STATE_BUILDER
             );
         }
     }
