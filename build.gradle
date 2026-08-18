@@ -26,9 +26,10 @@ dependencies {
         exclude group: 'org.scala-lang'
         exclude group: 'org.scala-lang.modules'
         exclude group: 'io.confluent'
-        exclude module: 'carbondata-streaming_3.1'
         exclude module: 'spark-streaming_2.12'
         exclude module: 'spark-streaming-kafka-0-10_2.12'
+        // Keep carbondata-streaming_3.1: CarbonSource SPI references CarbonStreamException.
+        // Spark instantiates every DataSourceRegister on any write (including ORC).
     }
 
     implementation "org.slf4j:slf4j-api:${slf4jVersion}"

@@ -363,3 +363,19 @@ AnalysisException: Cannot modify the value of a static config: spark.sql.extensi
 --conf spark.sql.extensions=org.apache.spark.sql.CarbonExtensions \
 --conf spark.sql.catalog.spark_catalog=org.apache.spark.sql.CarbonSessionCatalog
 ```
+
+---
+
+### 6.10. `CarbonSource could not be instantiated` / `CarbonStreamException`
+
+**Симптом:** generate доходит до записи (часто даже `.orc()`), затем:
+
+```text
+ServiceConfigurationError: org.apache.spark.sql.sources.DataSourceRegister:
+  Provider org.apache.spark.sql.CarbonSource could not be instantiated
+Caused by: ClassNotFoundException: org.apache.carbondata.streaming.CarbonStreamException
+```
+
+**Смысл:** Spark при любом `DataFrameWriter.save` поднимает все SPI `DataSourceRegister`. `CarbonSource` ссылается на класс из модуля `carbondata-streaming`. Старые fat JAR исключали этот модуль (~52 KB) — падала даже запись ORC.
+
+**Что делать:** использовать fat JAR, куда снова включён `carbondata-streaming_3.1` (без Spark Streaming / Kafka). Обхода через CLI нет.
