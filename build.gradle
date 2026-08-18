@@ -57,6 +57,9 @@ jar {
 shadowJar {
     archiveClassifier.set('all')
     mergeServiceFiles()
+    // Project classes must win over carbondata-spark_3.1 (Spark 3.1 SI optimizer shim).
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    from(sourceSets.main.output)
 
     dependencies {
         exclude(dependency('org.apache.spark:.*'))

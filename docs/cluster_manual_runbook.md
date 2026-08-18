@@ -379,3 +379,23 @@ Caused by: ClassNotFoundException: org.apache.carbondata.streaming.CarbonStreamE
 **Смысл:** Spark при любом `DataFrameWriter.save` поднимает все SPI `DataSourceRegister`. `CarbonSource` ссылается на класс из модуля `carbondata-streaming`. Старые fat JAR исключали этот модуль (~52 KB) — падала даже запись ORC.
 
 **Что делать:** использовать fat JAR, куда снова включён `carbondata-streaming_3.1` (без Spark Streaming / Kafka). Обхода через CLI нет.
+
+---
+
+### 6.11. `VerifyError` в `CarbonSecondaryIndexOptimizer` (Spark 3.2)
+
+**Симптом:** generate падает при первой записи (часто ORC), после загрузки `CarbonExtensions`:
+
+```text
+VerifyError: Bad type on operand stack
+  CarbonSecondaryIndexOptimizer.createIndexFilterDataFrame
+  Type UnaryNode is not assignable to LogicalPlan
+  at CarbonSITransformationRule.<init>
+  at CarbonOptimizer.defaultBatches
+```
+
+**Смысл:** `carbondata-spark_3.1:2.3.0` собран под Spark 3.1; на кластере Spark 3.2.1 байткод SI optimizer не проходит verification. CarbonOptimizer подключается ко **всем** запросам, включая `.orc()`.
+
+**Что делать:** fat JAR с no-op shim-классом `CarbonSecondaryIndexOptimizer` (legacy SI rewrite отключён; Bloom/Lucene индексы работают). Обхода через CLI нет.
+
+**Ограничение:** secondary-index plan rewrite CarbonData на Spark 3.2 не используется — для bench это не требуется.

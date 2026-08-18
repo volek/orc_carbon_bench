@@ -25,7 +25,8 @@ gradlew.bat build
 - `build/libs/orc-carbon-bench-0.1.0-SNAPSHOT.jar` — тонкий JAR
 - `build/libs/orc-carbon-bench-0.1.0-SNAPSHOT-all.jar` — **fat JAR** (приложение + CarbonData 2.3.0 / Spark 3.1 module, без Spark/Hadoop)
 
-Версии сборки: Spark compile `3.2.1`, CarbonData `org.apache.carbondata:carbondata-spark_3.1:2.3.0`.
+Версии сборки: Spark compile `3.2.1`, CarbonData `org.apache.carbondata:carbondata-spark_3.1:2.3.0`.  
+На Spark 3.2+ fat JAR подменяет legacy SI optimizer no-op shim (см. runbook §6.11).
 
 ## Формат аргументов
 
