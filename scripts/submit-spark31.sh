@@ -1,7 +1,28 @@
 #!/usr/bin/env bash
-# Submit orc-carbon-bench with BYOS Spark 3.1.1 on the existing YARN/HDFS cluster.
-# Spark-submit flags go before "--"; application args go after it.
-# If "--" is omitted, all arguments are treated as application args.
+# -----------------------------------------------------------------------------
+# Запуск orc-carbon-bench на BYOS Spark 3.1.1 (YARN cluster, существующий HDFS).
+# Нужен для CarbonData, generate/validate/benchmark/index-experiment/report.
+# Кластерный spark-submit 3.2 здесь не использовать.
+#
+# Запуск:
+#   ./scripts/prepare-spark31.sh
+#   ./scripts/submit-spark31.sh -- --mode=generate --base-path="$BASE"
+#   ./scripts/submit-spark31.sh --driver-memory 8g --num-executors 16 -- \
+#       --mode=benchmark --base-path="$BASE" --seed=42
+#
+# Аргументы:
+#   до "--"     флаги spark-submit (--driver-memory, --num-executors, ...)
+#   после "--"  аргументы приложения (--mode=..., --base-path=..., ...)
+#   без "--"    все аргументы считаются аргументами приложения
+#
+# Переменные окружения:
+#   SPARK31_HOME         каталог Spark 3.1.1 [корень_репо/dist/spark-3.1.1]
+#   JAR31                fat JAR spark31 [build/libs/orc-carbon-bench-spark31-all.jar]
+#   HADOOP_CONF_DIR      клиентский Hadoop conf [/etc/hadoop/conf]
+#   YARN_CONF_DIR        клиентский YARN conf [тот же, что HADOOP_CONF_DIR]
+#   SPARK31_VARIANT      without-hadoop — выставить SPARK_DIST_CLASSPATH
+#   SPARK_DIST_CLASSPATH classpath Hadoop; если пусто — $(hadoop classpath)
+# -----------------------------------------------------------------------------
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"

@@ -1,7 +1,23 @@
 #!/usr/bin/env bash
-# Unpack bundled Apache Spark 3.1.1 (without Hadoop) for BYOS submit.
-# Does not download anything and does not install Spark on the Hadoop cluster.
-# GitHub rejects files >100MB, so the archive is stored as dist/*.tgz.part-NN chunks.
+# -----------------------------------------------------------------------------
+# Подготовка локального Apache Spark 3.1.1 (without-hadoop) на edge-ноде.
+#
+# Склеивает части dist/spark-3.1.1-bin-without-hadoop.tgz.part-NN (лимит GitHub
+# 100 МБ), распаковывает в dist/spark-3.1.1/ и копирует клиентский hive-site.xml.
+# Ничего не скачивает и не ставит Spark в Ambari / SDP.
+#
+# Запуск:
+#   ./scripts/prepare-spark31.sh
+#
+# Переменные окружения:
+#   SPARK31_HOME      каталог Spark после распаковки
+#                     [корень_репо/dist/spark-3.1.1]
+#   SPARK31_DIST_DIR  каталог с архивом и частями [корень_репо/dist]
+#   SPARK31_ARCHIVE   полный путь к уже склеенному .tgz (если есть)
+#   SPARK31_VARIANT   суффикс дистрибутива [without-hadoop]
+#   HIVE_CONF_DIR     откуда брать hive-site.xml [/etc/hive/conf]
+#   HADOOP_CONF_DIR   запасной путь к hive-site.xml [/etc/hadoop/conf]
+# -----------------------------------------------------------------------------
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"

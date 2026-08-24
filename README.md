@@ -30,7 +30,8 @@ gradlew.bat build
 Артефакты (копируются в `build/libs/`):
 - `orc-carbon-bench-spark31-all.jar` — Spark 3.1.1 + CarbonData 2.3.0 (модуль `carbondata-spark_3.1`), без Spark/Hadoop
 - `orc-carbon-bench-spark32-all.jar` — Spark 3.2 ORC-only, без CarbonData
-- `spark-3.1.1-bin-without-hadoop.tgz.part-*` — части дистрибутива Spark 3.1.1 для edge (также в `dist/`)
+
+В `dist/` лежат части дистрибутива Spark 3.1.1 (`spark-3.1.1-bin-without-hadoop.tgz.part-*`) для edge.
 
 `./gradlew build` скачивает полный архив Spark только если его ещё нет в `dist/`, затем режет на части <100 МБ. На edge интернет для Apache не нужен: `prepare-spark31.sh` склеивает `.part-*` и распаковывает.
 

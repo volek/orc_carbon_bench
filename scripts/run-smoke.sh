@@ -1,5 +1,21 @@
 #!/usr/bin/env bash
-# Smoke pipeline on the edge node: Spark 3.1.1 Carbon+ORC, then Spark 3.2 ORC reference, then report.
+# -----------------------------------------------------------------------------
+# Короткий smoke на edge: generate → validate → benchmark (Spark 3.1.1,
+# ORC+Carbon+Bloom/Lucene) → index-experiment → ORC-референс Spark 3.2 → report.
+# Перед запуском: ./scripts/prepare-spark31.sh и доступный YARN/HDFS/Hive Metastore.
+#
+# Запуск:
+#   ./scripts/run-smoke.sh
+#   BASE=hdfs:///user/hdfs_migration_user/carbon_test TARGET_SIZE_TB=0.01 ./scripts/run-smoke.sh
+#
+# Переменные окружения:
+#   BASE            корневой HDFS-путь эксперимента
+#                   [hdfs:///user/hdfs_migration_user/carbon_test]
+#   TARGET_SIZE_TB  объём generate в ТБ [0.01]
+#   SEED            seed генератора [42]
+#
+# Логи шагов пишутся в текущий каталог: smoke-generate.log, smoke-validate.log, ...
+# -----------------------------------------------------------------------------
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"

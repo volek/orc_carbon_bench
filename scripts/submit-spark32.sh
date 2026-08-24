@@ -1,5 +1,23 @@
 #!/usr/bin/env bash
-# Submit ORC-only jobs with the cluster Spark 3.2. Do not use this script for CarbonData.
+# -----------------------------------------------------------------------------
+# Запуск ORC-референса через кластерный Spark 3.2 (YARN cluster).
+# Только ORC: --mode=benchmark --formats=orc (и опционально generate ORC).
+# Для CarbonData этот скрипт не использовать — нужен submit-spark31.sh.
+#
+# Запуск:
+#   ./scripts/submit-spark32.sh -- --mode=benchmark --formats=orc --base-path="$BASE"
+#   ./scripts/submit-spark32.sh --driver-memory 8g --num-executors 16 -- \
+#       --mode=benchmark --formats=orc --base-path="$BASE" --seed=42
+#
+# Аргументы:
+#   до "--"     флаги spark-submit (--driver-memory, --num-executors, ...)
+#   после "--"  аргументы приложения (--mode=..., --base-path=..., ...)
+#   без "--"    все аргументы считаются аргументами приложения
+#
+# Переменные окружения:
+#   JAR32         fat JAR spark32 [build/libs/orc-carbon-bench-spark32-all.jar]
+#   SPARK_SUBMIT  команда submit кластерного Spark 3.2 [spark-submit]
+# -----------------------------------------------------------------------------
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"

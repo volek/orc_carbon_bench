@@ -110,15 +110,6 @@ tasks.register('splitSpark31Archive') {
     }
 }
 
-tasks.register('copySpark31ArchiveToLibs', Copy) {
-    group = 'build'
-    description = 'Copies Spark 3.1.1 split parts next to fat JARs.'
-    dependsOn tasks.named('splitSpark31Archive')
-    from spark31DistDir
-    include "${spark31PartPrefix}*"
-    into rootProject.file('build/libs')
-}
-
 tasks.register('test') {
     group = 'verification'
     description = 'Runs unit tests for both Spark runtimes.'
@@ -127,8 +118,8 @@ tasks.register('test') {
 
 tasks.register('build') {
     group = 'build'
-    description = 'Builds Spark 3.1.1 and Spark 3.2 artifacts and bundles Spark 3.1.1 archive.'
-    dependsOn ':app-spark31:build', ':app-spark32:build', 'copySpark31ArchiveToLibs'
+    description = 'Builds Spark 3.1.1 and Spark 3.2 artifacts.'
+    dependsOn ':app-spark31:build', ':app-spark32:build', 'splitSpark31Archive'
 }
 
 tasks.register('shadowJar') {
