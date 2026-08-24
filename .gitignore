@@ -1,4 +1,9 @@
 .gradle/
-build/
+build/*
 !build/libs/
-!build/libs/orc-carbon-bench-0.1.0-SNAPSHOT-all.jar
+build/libs/*
+!build/libs/orc-carbon-bench-spark31-all.jar
+!build/libs/orc-carbon-bench-spark32-all.jar
+app-spark31/build/
+app-spark32/build/
+dist/
