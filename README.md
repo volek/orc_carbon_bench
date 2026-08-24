@@ -11,7 +11,7 @@ Spark / Java 8 приложение для сравнения форматов �
 - Hive Metastore как уже существующий сервис (нужен CarbonData)
 - Fat JAR `orc-carbon-bench-spark31-all.jar` — приложение + CarbonData 2.3.0 / Spark 3.1
 - Fat JAR `orc-carbon-bench-spark32-all.jar` — приложение без CarbonData, ORC-референс на Spark 3.2
-- Архив Apache Spark **3.1.1** `dist/spark-3.1.1-bin-without-hadoop.tgz` — кладётся в сборку, на edge **не** скачивается
+- Архив Apache Spark **3.1.1** — в git как `dist/spark-3.1.1-bin-without-hadoop.tgz.part-*` (сплит из‑за лимита GitHub 100 МБ); на edge **не** скачивается
 
 Не сабмитьте spark31-JAR через кластерный `spark-submit` 3.2: на classpath окажется Spark 3.2, и CarbonData 2.3.0 (`carbondata-spark_3.1`) будет несовместим.
 
@@ -30,9 +30,9 @@ gradlew.bat build
 Артефакты (копируются в `build/libs/`):
 - `orc-carbon-bench-spark31-all.jar` — Spark 3.1.1 + CarbonData 2.3.0 (модуль `carbondata-spark_3.1`), без Spark/Hadoop
 - `orc-carbon-bench-spark32-all.jar` — Spark 3.2 ORC-only, без CarbonData
-- `spark-3.1.1-bin-without-hadoop.tgz` — дистрибутив Spark 3.1.1 для edge (также в `dist/`)
+- `spark-3.1.1-bin-without-hadoop.tgz.part-*` — части дистрибутива Spark 3.1.1 для edge (также в `dist/`)
 
-`./gradlew build` скачивает архив Spark только если его ещё нет в `dist/`. На edge интернет для Apache не нужен.
+`./gradlew build` скачивает полный архив Spark только если его ещё нет в `dist/`, затем режет на части <100 МБ. На edge интернет для Apache не нужен: `prepare-spark31.sh` склеивает `.part-*` и распаковывает.
 
 Версии сборки: Spark compile `3.1.1` (модуль `app-spark31`) и `3.2.1` (модуль `app-spark32`).
 
@@ -52,19 +52,21 @@ gradlew.bat build
 Подготовка Spark 3.1.1 на edge (один раз, **без скачивания**):
 
 ```bash
-# с машины сборки
-scp dist/spark-3.1.1-bin-without-hadoop.tgz \
+# git clone уже содержит dist/*.tgz.part-*; либо scp с машины сборки:
+scp dist/spark-3.1.1-bin-without-hadoop.tgz.part-* \
     build/libs/orc-carbon-bench-spark31-all.jar \
     build/libs/orc-carbon-bench-spark32-all.jar \
     user@edge-host:~/orc-carbon-bench/
 scp -r scripts user@edge-host:~/orc-carbon-bench/
 
-# на edge: только распаковка бандла + hive-site.xml
+# на edge: склейка частей + распаковка + hive-site.xml
 # если скрипты приехали с Windows: sed -i 's/\r$//' scripts/*.sh
+mkdir -p dist
+mv -n spark-3.1.1-bin-without-hadoop.tgz.part-* dist/ 2>/dev/null || true
 ./scripts/prepare-spark31.sh
 ```
 
-Скрипт распаковывает `spark-3.1.1-bin-without-hadoop.tgz` в `dist/spark-3.1.1/` и копирует клиентский `hive-site.xml`. `SPARK_CONF_DIR` кластерного Spark 3.2 **не** наследуется. Если архива нет — ошибка, а не попытка скачать с Apache.
+Скрипт склеивает `spark-3.1.1-bin-without-hadoop.tgz.part-*` (лимит GitHub 100 МБ), распаковывает в `dist/spark-3.1.1/` и копирует клиентский `hive-site.xml`. `SPARK_CONF_DIR` кластерного Spark 3.2 **не** наследуется. Если частей нет — ошибка, а не попытка скачать с Apache.
 
 `submit-spark31.sh` выставляет `SPARK_DIST_CLASSPATH=$(hadoop classpath)` для варианта without-hadoop.
 

@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Unpack bundled Apache Spark 3.1.1 (without Hadoop) for BYOS submit.
 # Does not download anything and does not install Spark on the Hadoop cluster.
+# GitHub rejects files >100MB, so the archive is stored as dist/*.tgz.part-NN chunks.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -10,6 +11,7 @@ DIST_DIR="${SPARK31_DIST_DIR:-$ROOT/dist}"
 SPARK_HOME="${SPARK31_HOME:-$DIST_DIR/spark-3.1.1}"
 SPARK_VARIANT="${SPARK31_VARIANT:-without-hadoop}"
 ARCHIVE_NAME="spark-3.1.1-bin-${SPARK_VARIANT}.tgz"
+PART_GLOB="${ARCHIVE_NAME}.part-*"
 
 find_archive() {
   local candidate
@@ -31,14 +33,50 @@ find_archive() {
   return 1
 }
 
+find_parts_dir() {
+  local dir
+  for dir in \
+    "$DIST_DIR" \
+    "$ROOT" \
+    "$ROOT/build/libs" \
+    "$SCRIPT_DIR" \
+    "$PWD" \
+    "$PWD/dist" \
+    "$PWD/build/libs"
+  do
+    if compgen -G "$dir/${ARCHIVE_NAME}.part-*" > /dev/null; then
+      echo "$dir"
+      return 0
+    fi
+  done
+  return 1
+}
+
+join_parts() {
+  local parts_dir="$1"
+  local dest="$DIST_DIR/$ARCHIVE_NAME"
+  mkdir -p "$DIST_DIR"
+  echo "Joining Spark archive parts from $parts_dir"
+  # shellcheck disable=SC2086
+  cat "$parts_dir"/$PART_GLOB > "$dest"
+  echo "Joined $dest ($(wc -c < "$dest") bytes)"
+  echo "$dest"
+}
+
 mkdir -p "$DIST_DIR"
 if [[ -x "$SPARK_HOME/bin/spark-submit" ]]; then
   echo "Spark 3.1.1 already present at $SPARK_HOME"
 else
   ARCHIVE="$(find_archive || true)"
   if [[ -z "$ARCHIVE" ]]; then
-    echo "Spark archive $ARCHIVE_NAME not found." >&2
-    echo "Copy it from the build machine (dist/ or build/libs/) into dist/, this directory, or next to this script." >&2
+    PARTS_DIR="$(find_parts_dir || true)"
+    if [[ -n "$PARTS_DIR" ]]; then
+      ARCHIVE="$(join_parts "$PARTS_DIR")"
+    fi
+  fi
+  if [[ -z "${ARCHIVE:-}" ]]; then
+    echo "Spark archive $ARCHIVE_NAME not found (and no $ARCHIVE_NAME.part-* chunks)." >&2
+    echo "Clone the repo (parts live in dist/) or copy them from the build machine." >&2
     echo "Do not download Spark on the edge node." >&2
     exit 1
   fi

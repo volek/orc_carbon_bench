@@ -64,6 +64,8 @@ subprojects {
 def spark31ArchiveName = 'spark-3.1.1-bin-without-hadoop.tgz'
 def spark31ArchiveUrl = 'https://archive.apache.org/dist/spark/spark-3.1.1/spark-3.1.1-bin-without-hadoop.tgz'
 def spark31ArchiveFile = rootProject.file("dist/${spark31ArchiveName}")
+def spark31DistDir = rootProject.file('dist')
+def spark31PartPrefix = "${spark31ArchiveName}.part-"
 
 tasks.register('downloadSpark31') {
     group = 'build'
@@ -86,11 +88,34 @@ tasks.register('downloadSpark31') {
     }
 }
 
+tasks.register('splitSpark31Archive') {
+    group = 'build'
+    description = 'Splits Spark 3.1.1 archive into 90MB chunks for GitHub (100MB file limit).'
+    dependsOn tasks.named('downloadSpark31')
+    doLast {
+        def parts = spark31DistDir.listFiles()?.findAll { it.name.startsWith(spark31PartPrefix) } ?: []
+        if (!parts.isEmpty()) {
+            logger.lifecycle("Spark 3.1.1 parts already present in ${spark31DistDir}")
+            return
+        }
+        if (!spark31ArchiveFile.exists()) {
+            throw new GradleException("Missing ${spark31ArchiveFile}")
+        }
+        exec {
+            commandLine 'split', '-b', '90M', '-d', '-a', '2',
+                    spark31ArchiveFile.absolutePath,
+                    new File(spark31DistDir, spark31PartPrefix).absolutePath
+        }
+        logger.lifecycle("Split ${spark31ArchiveFile.name} into ${spark31PartPrefix}*")
+    }
+}
+
 tasks.register('copySpark31ArchiveToLibs', Copy) {
     group = 'build'
-    description = 'Copies bundled Spark 3.1.1 archive next to fat JARs.'
-    dependsOn tasks.named('downloadSpark31')
-    from spark31ArchiveFile
+    description = 'Copies Spark 3.1.1 split parts next to fat JARs.'
+    dependsOn tasks.named('splitSpark31Archive')
+    from spark31DistDir
+    include "${spark31PartPrefix}*"
     into rootProject.file('build/libs')
 }
 

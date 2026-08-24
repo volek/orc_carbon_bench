@@ -40,7 +40,7 @@ CarbonData уже в spark31 fat JAR — **не** передавайте `--pack
 ```bash
 scp build/libs/orc-carbon-bench-spark31-all.jar \
     build/libs/orc-carbon-bench-spark32-all.jar \
-    dist/spark-3.1.1-bin-without-hadoop.tgz \
+    dist/spark-3.1.1-bin-without-hadoop.tgz.part-* \
   user@edge-host:~/orc-carbon-bench/
 scp -r scripts user@edge-host:~/orc-carbon-bench/
 ```
@@ -56,7 +56,7 @@ hdfs dfs -ls "$BASE" || hdfs dfs -mkdir -p "$BASE"
 sed -i 's/\r$//' scripts/*.sh   # если скрипты приехали с Windows CRLF
 chmod +x scripts/*.sh
 mkdir -p dist
-mv -n spark-3.1.1-bin-without-hadoop.tgz dist/ 2>/dev/null || true
+mv -n spark-3.1.1-bin-without-hadoop.tgz.part-* dist/ 2>/dev/null || true
 
 ./scripts/prepare-spark31.sh
 # ожидание: dist/spark-3.1.1/bin/spark-submit и hive-site.xml в conf/
@@ -64,7 +64,7 @@ mv -n spark-3.1.1-bin-without-hadoop.tgz dist/ 2>/dev/null || true
 
 `scripts/prepare-spark31.sh`:
 - **не** качает Spark с Apache (на edge интернета к archive.apache.org нет);
-- распаковывает бандл `spark-3.1.1-bin-without-hadoop.tgz` из `dist/` или `build/libs/`;
+- склеивает `spark-3.1.1-bin-without-hadoop.tgz.part-*` (GitHub ≤100 МБ) и распаковывает из `dist/` или `build/libs/`;
 - копирует клиентский `hive-site.xml`;
 - **не** выставляет `SPARK_CONF_DIR` на конфиг SDP Spark 3.2 (`spark.yarn.archive` иначе подменит Spark).
 
