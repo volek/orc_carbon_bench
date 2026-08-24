@@ -76,7 +76,7 @@ public final class AppConfig {
             throw new IllegalArgumentException("--timestamp-end must be greater than --timestamp-start");
         }
 
-        String basePath = kv.getOrDefault("base-path", "/bench/orc-carbon");
+        String basePath = kv.getOrDefault("base-path", "hdfs:///user/hdfs_migration_user/carbon_test");
         StoragePaths paths = StoragePaths.from(
                 basePath,
                 kv.get("orc-path"),

@@ -3,7 +3,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-BASE="${BASE:-hdfs://dev1-abyss-sdp2-ambari-02.opsmon.sbt:50470/bench/orc-carbon}"
+BASE="${BASE:-hdfs:///user/hdfs_migration_user/carbon_test}"
 TARGET_SIZE_TB="${TARGET_SIZE_TB:-0.01}"
 SEED="${SEED:-42}"
 

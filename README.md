@@ -11,7 +11,7 @@ Spark / Java 8 приложение для сравнения форматов �
 - Hive Metastore как уже существующий сервис (нужен CarbonData)
 - Fat JAR `orc-carbon-bench-spark31-all.jar` — приложение + CarbonData 2.3.0 / Spark 3.1
 - Fat JAR `orc-carbon-bench-spark32-all.jar` — приложение без CarbonData, ORC-референс на Spark 3.2
-- Apache Spark **3.1.1** на edge-ноде (`./scripts/prepare-spark31.sh`) — не ставить в Ambari
+- Архив Apache Spark **3.1.1** `dist/spark-3.1.1-bin-without-hadoop.tgz` — кладётся в сборку, на edge **не** скачивается
 
 Не сабмитьте spark31-JAR через кластерный `spark-submit` 3.2: на classpath окажется Spark 3.2, и CarbonData 2.3.0 (`carbondata-spark_3.1`) будет несовместим.
 
@@ -30,6 +30,9 @@ gradlew.bat build
 Артефакты (копируются в `build/libs/`):
 - `orc-carbon-bench-spark31-all.jar` — Spark 3.1.1 + CarbonData 2.3.0 (модуль `carbondata-spark_3.1`), без Spark/Hadoop
 - `orc-carbon-bench-spark32-all.jar` — Spark 3.2 ORC-only, без CarbonData
+- `spark-3.1.1-bin-without-hadoop.tgz` — дистрибутив Spark 3.1.1 для edge (также в `dist/`)
+
+`./gradlew build` скачивает архив Spark только если его ещё нет в `dist/`. На edge интернет для Apache не нужен.
 
 Версии сборки: Spark compile `3.1.1` (модуль `app-spark31`) и `3.2.1` (модуль `app-spark32`).
 
@@ -46,19 +49,24 @@ gradlew.bat build
 | Spark 3.1.1 BYOS | `./scripts/submit-spark31.sh` | `orc-carbon-bench-spark31-all.jar` | `generate`, `validate`, `benchmark`, `index-experiment`, `report` |
 | Spark 3.2 кластера | `./scripts/submit-spark32.sh` | `orc-carbon-bench-spark32-all.jar` | `benchmark --formats=orc`, опционально `generate --output-formats=orc`, `report` |
 
-Подготовка Spark 3.1.1 на edge (один раз):
+Подготовка Spark 3.1.1 на edge (один раз, **без скачивания**):
 
 ```bash
+# с машины сборки
+scp dist/spark-3.1.1-bin-without-hadoop.tgz \
+    build/libs/orc-carbon-bench-spark31-all.jar \
+    build/libs/orc-carbon-bench-spark32-all.jar \
+    user@edge-host:~/orc-carbon-bench/
+scp -r scripts user@edge-host:~/orc-carbon-bench/
+
+# на edge: только распаковка бандла + hive-site.xml
+# если скрипты приехали с Windows: sed -i 's/\r$//' scripts/*.sh
 ./scripts/prepare-spark31.sh
 ```
 
-Скрипт качает `spark-3.1.1-bin-without-hadoop` в `dist/spark-3.1.1/`, выставляет `SPARK_DIST_CLASSPATH=$(hadoop classpath)` и копирует клиентский `hive-site.xml`. `SPARK_CONF_DIR` кластерного Spark 3.2 **не** наследуется.
+Скрипт распаковывает `spark-3.1.1-bin-without-hadoop.tgz` в `dist/spark-3.1.1/` и копирует клиентский `hive-site.xml`. `SPARK_CONF_DIR` кластерного Spark 3.2 **не** наследуется. Если архива нет — ошибка, а не попытка скачать с Apache.
 
-Если `hadoop classpath` конфликтует с SDP-артефактами:
-
-```bash
-SPARK31_VARIANT=hadoop3.2 ./scripts/prepare-spark31.sh
-```
+`submit-spark31.sh` выставляет `SPARK_DIST_CLASSPATH=$(hadoop classpath)` для варианта without-hadoop.
 
 Флаги `spark-submit` передаются до `--`, аргументы приложения — после:
 
@@ -99,7 +107,7 @@ generate (spark31) → validate (spark31) → benchmark (spark31)
 
 | Параметр | По умолчанию | Описание |
 |---|---|---|
-| `--base-path` | `/bench/orc-carbon` | Корневой путь эксперимента |
+| `--base-path` | `hdfs:///user/hdfs_migration_user/carbon_test` | Корневой путь эксперимента |
 | `--orc-path` | `<base-path>/orc` | Путь для ORC-данных |
 | `--carbon-path` | `<base-path>/carbon` | Путь для CarbonData |
 | `--reports-path` | `<base-path>/reports` | Путь для отчётов бенчмарков |
@@ -107,10 +115,10 @@ generate (spark31) → validate (spark31) → benchmark (spark31)
 Пример для целевого кластера:
 
 ```bash
---base-path=hdfs://dev1-abyss-sdp2-ambari-02.opsmon.sbt:50470/bench/orc-carbon \
---orc-path=hdfs://dev1-abyss-sdp2-ambari-02.opsmon.sbt:50470/bench/orc-carbon/orc \
---carbon-path=hdfs://dev1-abyss-sdp2-ambari-02.opsmon.sbt:50470/bench/orc-carbon/carbon \
---reports-path=hdfs://dev1-abyss-sdp2-ambari-02.opsmon.sbt:50470/bench/orc-carbon/reports
+--base-path=hdfs:///user/hdfs_migration_user/carbon_test \
+--orc-path=hdfs:///user/hdfs_migration_user/carbon_test/orc \
+--carbon-path=hdfs:///user/hdfs_migration_user/carbon_test/carbon \
+--reports-path=hdfs:///user/hdfs_migration_user/carbon_test/reports
 ```
 
 Структура каталогов:
@@ -133,7 +141,7 @@ Raw parquet содержит поля `spark_version` и `spark_runtime` (`spark
 | Параметр | Обязательный | По умолчанию | Описание |
 |---|---|---|---|
 | `--mode` | да | — | Режим: `generate`, `validate`, `benchmark`, `index-experiment`, `report` |
-| `--base-path` | нет | `/bench/orc-carbon` | Корневой путь (используется для вычисления путей по умолчанию) |
+| `--base-path` | нет | `hdfs:///user/hdfs_migration_user/carbon_test` | Корневой путь (используется для вычисления путей по умолчанию) |
 | `--orc-path` | нет | `<base-path>/orc` | Абсолютный HDFS-путь для ORC |
 | `--carbon-path` | нет | `<base-path>/carbon` | Абсолютный HDFS-путь для CarbonData |
 | `--reports-path` | нет | `<base-path>/reports` | Абсолютный HDFS-путь для отчётов |
@@ -153,7 +161,7 @@ Raw parquet содержит поля `spark_version` и `spark_runtime` (`spark
 | Параметр | Обязательный | По умолчанию | Описание |
 |---|---|---|---|
 | `--mode` | да | — | `generate` |
-| `--base-path` | нет | `/bench/orc-carbon` | Корневой путь |
+| `--base-path` | нет | `hdfs:///user/hdfs_migration_user/carbon_test` | Корневой путь |
 | `--orc-path` | нет | `<base-path>/orc` | HDFS-путь для ORC |
 | `--carbon-path` | нет | `<base-path>/carbon` | HDFS-путь для CarbonData |
 | `--output-formats` | нет | `orc,carbon` | Форматы записи: `orc`, `carbon` или оба через запятую |
@@ -237,7 +245,7 @@ write_partitions   = ceil(chunk_rows * avg_row_bytes / target_file_size_mb / 102
 ```bash
 ./scripts/submit-spark31.sh -- \
   --mode=generate \
-  --base-path=hdfs://dev1-abyss-sdp2-ambari-02.opsmon.sbt:50470/bench/orc-carbon \
+  --base-path=hdfs:///user/hdfs_migration_user/carbon_test \
   --target-size-tb=5 \
   --seed=42 \
   --output-formats=orc,carbon \
@@ -251,7 +259,7 @@ write_partitions   = ceil(chunk_rows * avg_row_bytes / target_file_size_mb / 102
 ```bash
 ./scripts/submit-spark31.sh -- \
   --mode=generate \
-  --base-path=hdfs://dev1-abyss-sdp2-ambari-02.opsmon.sbt:50470/bench/orc-carbon \
+  --base-path=hdfs:///user/hdfs_migration_user/carbon_test \
   --output-formats=orc \
   --target-size-tb=1 \
   --orc-compression=zstd
@@ -262,7 +270,7 @@ write_partitions   = ceil(chunk_rows * avg_row_bytes / target_file_size_mb / 102
 ```bash
 ./scripts/submit-spark31.sh -- \
   --mode=generate \
-  --base-path=hdfs://dev1-abyss-sdp2-ambari-02.opsmon.sbt:50470/bench/orc-carbon \
+  --base-path=hdfs:///user/hdfs_migration_user/carbon_test \
   --output-formats=carbon \
   --target-size-tb=1 \
   --enable-bloom-index=true \
@@ -319,7 +327,7 @@ write_partitions   = ceil(chunk_rows * avg_row_bytes / target_file_size_mb / 102
 | Параметр | Обязательный | По умолчанию | Описание |
 |---|---|---|---|
 | `--mode` | да | — | `benchmark` |
-| `--base-path` | нет | `/bench/orc-carbon` | Корневой путь |
+| `--base-path` | нет | `hdfs:///user/hdfs_migration_user/carbon_test` | Корневой путь |
 | `--orc-path` | нет | `<base-path>/orc` | HDFS-путь к ORC-данным |
 | `--carbon-path` | нет | `<base-path>/carbon` | HDFS-путь к CarbonData |
 | `--reports-path` | нет | `<base-path>/reports` | HDFS-путь для отчётов |
@@ -337,7 +345,7 @@ Spark 3.1.1, ORC + Carbon:
 ```bash
 ./scripts/submit-spark31.sh -- \
   --mode=benchmark \
-  --base-path=hdfs://dev1-abyss-sdp2-ambari-02.opsmon.sbt:50470/bench/orc-carbon \
+  --base-path=hdfs:///user/hdfs_migration_user/carbon_test \
   --seed=42
 ```
 
@@ -346,7 +354,7 @@ Spark 3.1.1, ORC + Carbon:
 ```bash
 ./scripts/submit-spark32.sh -- \
   --mode=benchmark \
-  --base-path=hdfs://dev1-abyss-sdp2-ambari-02.opsmon.sbt:50470/bench/orc-carbon \
+  --base-path=hdfs:///user/hdfs_migration_user/carbon_test \
   --formats=orc \
   --seed=42
 ```
@@ -418,11 +426,11 @@ Spark 3.1.1, ORC + Carbon:
 ```bash
 ./scripts/submit-spark31.sh -- \
   --mode=index-experiment \
-  --base-path=hdfs://dev1-abyss-sdp2-ambari-02.opsmon.sbt:50470/bench/orc-carbon \
-  --carbon-baseline-path=hdfs://dev1-abyss-sdp2-ambari-02.opsmon.sbt:50470/bench/orc-carbon/carbon-baseline \
-  --carbon-bloom-path=hdfs://dev1-abyss-sdp2-ambari-02.opsmon.sbt:50470/bench/orc-carbon/carbon-bloom \
-  --carbon-lucene-path=hdfs://dev1-abyss-sdp2-ambari-02.opsmon.sbt:50470/bench/orc-carbon/carbon-lucene \
-  --carbon-bloom-lucene-path=hdfs://dev1-abyss-sdp2-ambari-02.opsmon.sbt:50470/bench/orc-carbon/carbon-bloom-lucene \
+  --base-path=hdfs:///user/hdfs_migration_user/carbon_test \
+  --carbon-baseline-path=hdfs:///user/hdfs_migration_user/carbon_test/carbon-baseline \
+  --carbon-bloom-path=hdfs:///user/hdfs_migration_user/carbon_test/carbon-bloom \
+  --carbon-lucene-path=hdfs:///user/hdfs_migration_user/carbon_test/carbon-lucene \
+  --carbon-bloom-lucene-path=hdfs:///user/hdfs_migration_user/carbon_test/carbon-bloom-lucene \
   --index-profiles=baseline,bloom,lucene,bloom_lucene \
   --seed=42
 ```
@@ -464,7 +472,7 @@ Spark 3.1.1, ORC + Carbon:
 ```bash
 ./scripts/submit-spark31.sh -- \
   --mode=validate \
-  --base-path=hdfs://dev1-abyss-sdp2-ambari-02.opsmon.sbt:50470/bench/orc-carbon \
+  --base-path=hdfs:///user/hdfs_migration_user/carbon_test \
   --validation-checks=all \
   --validation-sample-fraction=0.01
 ```
@@ -503,7 +511,7 @@ Markdown содержит:
 ```bash
 ./scripts/submit-spark31.sh -- \
   --mode=report \
-  --base-path=hdfs://dev1-abyss-sdp2-ambari-02.opsmon.sbt:50470/bench/orc-carbon
+  --base-path=hdfs:///user/hdfs_migration_user/carbon_test
 ```
 
 ---
@@ -514,7 +522,7 @@ Markdown содержит:
 Перед ТБ-прогоном сделайте smoke: `./scripts/run-smoke.sh` (`--target-size-tb=0.01`).
 
 ```bash
-BASE=hdfs://dev1-abyss-sdp2-ambari-02.opsmon.sbt:50470/bench/orc-carbon
+export BASE=hdfs:///user/hdfs_migration_user/carbon_test
 
 ./scripts/prepare-spark31.sh
 

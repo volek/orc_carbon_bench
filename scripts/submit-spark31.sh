@@ -22,7 +22,7 @@ fi
 # Never inherit cluster Spark 3.2 conf (spark.yarn.archive / extraClassPath).
 unset SPARK_CONF_DIR || true
 export SPARK_HOME HADOOP_CONF_DIR YARN_CONF_DIR
-        if [[ "${SPARK31_VARIANT:-without-hadoop}" == "without-hadoop" && -z "${SPARK_DIST_CLASSPATH:-}" ]]; then
+if [[ "${SPARK31_VARIANT:-without-hadoop}" == "without-hadoop" && -z "${SPARK_DIST_CLASSPATH:-}" ]]; then
   if command -v hadoop >/dev/null 2>&1; then
     SPARK_DIST_CLASSPATH="$(hadoop classpath)"
     export SPARK_DIST_CLASSPATH

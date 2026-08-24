@@ -17,14 +17,15 @@
 | JVM | OpenJDK `1.8.0_472` |
 | Hadoop | `3.1.3.3.5.7.0-1-SNAPSHOT` |
 | Артефакты | `orc-carbon-bench-spark31-all.jar`, `orc-carbon-bench-spark32-all.jar` |
+| BASE | `hdfs:///user/hdfs_migration_user/carbon_test` |
 
 ```bash
-export BASE=hdfs://dev1-abyss-sdp2-ambari-02.opsmon.sbt:50470/bench/orc-carbon
+export BASE=hdfs:///user/hdfs_migration_user/carbon_test
 export JAR31=~/orc-carbon-bench/orc-carbon-bench-spark31-all.jar
 export JAR32=~/orc-carbon-bench/orc-carbon-bench-spark32-all.jar
 ```
 
-Если нет прав на `/bench/...`, используйте `/user/$USER/bench/orc-carbon`.
+Путь использует default FS из `core-site.xml` (`hdfs:///...`).
 
 CarbonData уже в spark31 fat JAR — **не** передавайте `--packages`.
 
@@ -39,6 +40,7 @@ CarbonData уже в spark31 fat JAR — **не** передавайте `--pack
 ```bash
 scp build/libs/orc-carbon-bench-spark31-all.jar \
     build/libs/orc-carbon-bench-spark32-all.jar \
+    dist/spark-3.1.1-bin-without-hadoop.tgz \
   user@edge-host:~/orc-carbon-bench/
 scp -r scripts user@edge-host:~/orc-carbon-bench/
 ```
@@ -51,21 +53,22 @@ java -version          # ожидается 1.8.x
 spark-submit --version # кластерный Spark 3.2.1.x — только для ORC-референса
 hdfs dfs -ls "$BASE" || hdfs dfs -mkdir -p "$BASE"
 
+sed -i 's/\r$//' scripts/*.sh   # если скрипты приехали с Windows CRLF
+chmod +x scripts/*.sh
+mkdir -p dist
+mv -n spark-3.1.1-bin-without-hadoop.tgz dist/ 2>/dev/null || true
+
 ./scripts/prepare-spark31.sh
 # ожидание: dist/spark-3.1.1/bin/spark-submit и hive-site.xml в conf/
 ```
 
-`prepare-spark31.sh`:
-- качает Apache `spark-3.1.1-bin-without-hadoop` (не ставит Spark в Ambari);
-- берёт Hadoop-клиент кластера через `SPARK_DIST_CLASSPATH=$(hadoop classpath)`;
+`scripts/prepare-spark31.sh`:
+- **не** качает Spark с Apache (на edge интернета к archive.apache.org нет);
+- распаковывает бандл `spark-3.1.1-bin-without-hadoop.tgz` из `dist/` или `build/libs/`;
 - копирует клиентский `hive-site.xml`;
 - **не** выставляет `SPARK_CONF_DIR` на конфиг SDP Spark 3.2 (`spark.yarn.archive` иначе подменит Spark).
 
-Fallback при конфликтах `hadoop classpath`:
-
-```bash
-SPARK31_VARIANT=hadoop3.2 ./scripts/prepare-spark31.sh
-```
+`submit-spark31.sh` берёт Hadoop-клиент кластера через `SPARK_DIST_CLASSPATH=$(hadoop classpath)`.
 
 При известных квотах YARN добавьте флаги до `--`:
 
@@ -84,7 +87,7 @@ SPARK31_VARIANT=hadoop3.2 ./scripts/prepare-spark31.sh
 Короткий путь:
 
 ```bash
-export BASE=hdfs://dev1-abyss-sdp2-ambari-02.opsmon.sbt:50470/bench/orc-carbon
+export BASE=hdfs:///user/hdfs_migration_user/carbon_test
 export JAR31=~/orc-carbon-bench/orc-carbon-bench-spark31-all.jar
 export JAR32=~/orc-carbon-bench/orc-carbon-bench-spark32-all.jar
 ./scripts/run-smoke.sh

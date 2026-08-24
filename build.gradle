@@ -61,6 +61,39 @@ subprojects {
     }
 }
 
+def spark31ArchiveName = 'spark-3.1.1-bin-without-hadoop.tgz'
+def spark31ArchiveUrl = 'https://archive.apache.org/dist/spark/spark-3.1.1/spark-3.1.1-bin-without-hadoop.tgz'
+def spark31ArchiveFile = rootProject.file("dist/${spark31ArchiveName}")
+
+tasks.register('downloadSpark31') {
+    group = 'build'
+    description = 'Downloads Apache Spark 3.1.1 without-hadoop archive into dist/ (skipped if already present).'
+    outputs.file spark31ArchiveFile
+    outputs.upToDateWhen { spark31ArchiveFile.exists() && spark31ArchiveFile.length() > 0 }
+    doLast {
+        if (spark31ArchiveFile.exists() && spark31ArchiveFile.length() > 0) {
+            logger.lifecycle("Spark 3.1.1 archive already present: ${spark31ArchiveFile}")
+            return
+        }
+        spark31ArchiveFile.parentFile.mkdirs()
+        logger.lifecycle("Downloading ${spark31ArchiveUrl}")
+        spark31ArchiveFile.withOutputStream { os ->
+            new URI(spark31ArchiveUrl).toURL().openStream().withStream { is ->
+                os << is
+            }
+        }
+        logger.lifecycle("Saved ${spark31ArchiveFile} (${spark31ArchiveFile.length()} bytes)")
+    }
+}
+
+tasks.register('copySpark31ArchiveToLibs', Copy) {
+    group = 'build'
+    description = 'Copies bundled Spark 3.1.1 archive next to fat JARs.'
+    dependsOn tasks.named('downloadSpark31')
+    from spark31ArchiveFile
+    into rootProject.file('build/libs')
+}
+
 tasks.register('test') {
     group = 'verification'
     description = 'Runs unit tests for both Spark runtimes.'
@@ -69,8 +102,8 @@ tasks.register('test') {
 
 tasks.register('build') {
     group = 'build'
-    description = 'Builds Spark 3.1.1 and Spark 3.2 artifacts.'
-    dependsOn ':app-spark31:build', ':app-spark32:build'
+    description = 'Builds Spark 3.1.1 and Spark 3.2 artifacts and bundles Spark 3.1.1 archive.'
+    dependsOn ':app-spark31:build', ':app-spark32:build', 'copySpark31ArchiveToLibs'
 }
 
 tasks.register('shadowJar') {
