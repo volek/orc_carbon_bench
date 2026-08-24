@@ -60,6 +60,10 @@ public final class StoragePaths {
         return joinPath(reportsRawPath(), "validation");
     }
 
+    public String reportsSpark32OrcPath() {
+        return joinPath(reportsRawPath(), "spark32-orc");
+    }
+
     public String reportsSummaryPath() {
         return joinPath(reportsPath, "summary");
     }

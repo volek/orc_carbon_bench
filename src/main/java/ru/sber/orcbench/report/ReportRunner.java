@@ -3,6 +3,7 @@ package ru.sber.orcbench.report;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.spark.sql.Column;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
@@ -10,10 +11,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.sber.orcbench.config.ReportFormat;
 import ru.sber.orcbench.config.ReportSettings;
+import ru.sber.orcbench.config.SparkRuntime;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -32,7 +35,7 @@ public final class ReportRunner {
     }
 
     public static void run(SparkSession spark, ReportSettings settings, String reportsRawPath,
-                           String reportsIndexPath, String reportsIndexBuildPath,
+                           String reportsSpark32OrcPath, String reportsIndexPath, String reportsIndexBuildPath,
                            String reportsValidationPath, String reportsSummaryPath) {
         LOG.info("Building report name={} formats={} summaryPath={}",
                 settings.reportName(), settings.formats(), reportsSummaryPath);
@@ -41,6 +44,11 @@ public final class ReportRunner {
 
         loadParquet(spark, reportsRawPath).ifPresent(raw -> {
             LOG.info("Loaded benchmark raw data from {}", reportsRawPath);
+            summaryParts.add(aggregateBenchmark(raw, "benchmark"));
+        });
+
+        loadParquet(spark, reportsSpark32OrcPath).ifPresent(raw -> {
+            LOG.info("Loaded Spark 3.2 ORC reference data from {}", reportsSpark32OrcPath);
             summaryParts.add(aggregateBenchmark(raw, "benchmark"));
         });
 
@@ -93,7 +101,12 @@ public final class ReportRunner {
             LOG.warn("Report input path not found: {}", path);
             return Optional.empty();
         }
-        return Optional.of(spark.read().parquet(path));
+        try {
+            return Optional.of(spark.read().option("recursiveFileLookup", "false").parquet(path));
+        } catch (Exception ex) {
+            LOG.warn("Failed to read parquet at {}: {}", path, ex.getMessage());
+            return Optional.empty();
+        }
     }
 
     private static boolean pathExists(SparkSession spark, String path) {
@@ -107,12 +120,38 @@ public final class ReportRunner {
         }
     }
 
-    private static Dataset<Row> aggregateBenchmark(Dataset<Row> raw, String source) {
-        Dataset<Row> measured = raw.columns().length > 0 && java.util.Arrays.asList(raw.columns()).contains("warmup")
-                ? raw.filter(col("warmup").equalTo(false))
-                : raw;
+    private static Dataset<Row> withRuntime(Dataset<Row> raw) {
+        if (hasColumn(raw, "spark_runtime")) {
+            return raw;
+        }
+        return raw.withColumn("spark_runtime", lit(SparkRuntime.SPARK31_CARBON));
+    }
 
-        return measured.groupBy(lit(source).alias("source"), col("scenario"), col("format"))
+    private static Dataset<Row> withSparkVersion(Dataset<Row> raw) {
+        if (hasColumn(raw, "spark_version")) {
+            return raw;
+        }
+        return raw.withColumn("spark_version", lit(null).cast("string"));
+    }
+
+    private static boolean hasColumn(Dataset<Row> raw, String name) {
+        return Arrays.asList(raw.columns()).contains(name);
+    }
+
+    private static Dataset<Row> aggregateBenchmark(Dataset<Row> raw, String source) {
+        Dataset<Row> prepared = withSparkVersion(withRuntime(raw));
+        Dataset<Row> measured = hasColumn(prepared, "warmup")
+                ? prepared.filter(col("warmup").equalTo(false))
+                : prepared;
+
+        Column sparkVersionAgg = max("spark_version").alias("spark_version");
+
+        return measured.groupBy(
+                        lit(source).alias("source"),
+                        col("scenario"),
+                        col("format"),
+                        col("spark_runtime")
+                )
                 .agg(
                         count(lit(1)).alias("runs"),
                         avg("duration_ms").alias("avg_duration_ms"),
@@ -120,7 +159,8 @@ public final class ReportRunner {
                         expr("percentile_approx(duration_ms, 0.95)").alias("p95_duration_ms"),
                         min("duration_ms").alias("min_duration_ms"),
                         max("duration_ms").alias("max_duration_ms"),
-                        avg("selectivity").alias("avg_selectivity")
+                        avg("selectivity").alias("avg_selectivity"),
+                        sparkVersionAgg
                 )
                 .withColumn("index_profile", lit(null).cast("string"))
                 .withColumn("log_format", lit(null).cast("string"))
@@ -128,12 +168,14 @@ public final class ReportRunner {
     }
 
     private static Dataset<Row> aggregateIndexExperiments(Dataset<Row> raw) {
-        return raw.groupBy(
+        Dataset<Row> prepared = withSparkVersion(withRuntime(raw));
+        return prepared.groupBy(
                         lit("index_experiment").alias("source"),
                         col("scenario"),
                         col("format"),
                         col("index_profile"),
-                        col("log_format")
+                        col("log_format"),
+                        col("spark_runtime")
                 )
                 .agg(
                         count(lit(1)).alias("runs"),
@@ -142,20 +184,29 @@ public final class ReportRunner {
                         expr("percentile_approx(duration_ms, 0.95)").alias("p95_duration_ms"),
                         min("duration_ms").alias("min_duration_ms"),
                         max("duration_ms").alias("max_duration_ms"),
-                        avg("selectivity").alias("avg_selectivity")
+                        avg("selectivity").alias("avg_selectivity"),
+                        max("spark_version").alias("spark_version")
                 )
                 .withColumn("passed", lit(null).cast("boolean"));
     }
 
     private static Dataset<Row> aggregateIndexBuild(Dataset<Row> raw) {
-        return raw.groupBy(lit("index_build").alias("source"), col("index_profile"), col("index_type"), col("column_name"))
+        Dataset<Row> prepared = withSparkVersion(withRuntime(raw));
+        return prepared.groupBy(
+                        lit("index_build").alias("source"),
+                        col("index_profile"),
+                        col("index_type"),
+                        col("column_name"),
+                        col("spark_runtime")
+                )
                 .agg(
                         count(lit(1)).alias("runs"),
                         avg("build_time_ms").alias("avg_duration_ms"),
                         expr("percentile_approx(build_time_ms, 0.5)").alias("p50_duration_ms"),
                         expr("percentile_approx(build_time_ms, 0.95)").alias("p95_duration_ms"),
                         min("build_time_ms").alias("min_duration_ms"),
-                        max("build_time_ms").alias("max_duration_ms")
+                        max("build_time_ms").alias("max_duration_ms"),
+                        max("spark_version").alias("spark_version")
                 )
                 .withColumn("scenario", col("column_name"))
                 .withColumn("format", col("index_type"))
@@ -166,7 +217,8 @@ public final class ReportRunner {
     }
 
     private static Dataset<Row> aggregateValidation(Dataset<Row> raw) {
-        return raw.select(
+        Dataset<Row> prepared = withSparkVersion(withRuntime(raw));
+        return prepared.select(
                 lit("validation").alias("source"),
                 col("check").alias("scenario"),
                 lit("n/a").alias("format"),
@@ -179,7 +231,9 @@ public final class ReportRunner {
                 lit(null).cast("double").alias("avg_selectivity"),
                 lit(null).cast("string").alias("index_profile"),
                 lit(null).cast("string").alias("log_format"),
-                col("passed")
+                col("passed"),
+                col("spark_runtime"),
+                col("spark_version")
         );
     }
 

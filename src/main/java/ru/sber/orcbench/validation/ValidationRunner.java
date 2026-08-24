@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 import ru.sber.orcbench.benchmark.DatasetLoader;
 import ru.sber.orcbench.benchmark.FilterContext;
 import ru.sber.orcbench.config.OutputFormat;
+import ru.sber.orcbench.config.SparkRuntimeInfo;
 import ru.sber.orcbench.config.ValidationCheck;
 import ru.sber.orcbench.config.ValidationSettings;
 import ru.sber.orcbench.generator.LogFormatType;
@@ -42,7 +43,8 @@ public final class ValidationRunner {
             String reportsValidationPath,
             long seed,
             long timestampStartMs,
-            long timestampEndMs
+            long timestampEndMs,
+            SparkRuntimeInfo runtime
     ) {
         String runId = UUID.randomUUID().toString();
         List<ValidationResult> results = new ArrayList<>();
@@ -65,27 +67,27 @@ public final class ValidationRunner {
             ValidationResult result;
             switch (check) {
                 case ROW_COUNT_PARITY:
-                    result = checkRowCountParity(runId, orcRows, carbonRows);
+                    result = checkRowCountParity(runId, orcRows, carbonRows, runtime);
                     break;
                 case CHECKSUM_PARITY:
-                    result = checkChecksumParity(runId, orcFull, carbonFull);
+                    result = checkChecksumParity(runId, orcFull, carbonFull, runtime);
                     break;
                 case SAMPLE_QUERY_PARITY:
                     result = checkSampleQueryParity(
-                            runId, orcFull, carbonFull, timestampStartMs, timestampEndMs
+                            runId, orcFull, carbonFull, timestampStartMs, timestampEndMs, runtime
                     );
                     break;
                 case LOW_CARDINALITY_BOUNDS:
-                    result = checkLowCardinalityBounds(runId, orcSample);
+                    result = checkLowCardinalityBounds(runId, orcSample, runtime);
                     break;
                 case TIMESTAMP_RANGE:
-                    result = checkTimestampRange(runId, orcSample, timestampStartMs, timestampEndMs);
+                    result = checkTimestampRange(runId, orcSample, timestampStartMs, timestampEndMs, runtime);
                     break;
                 case LOG_FORMAT_DISTRIBUTION:
-                    result = checkLogFormatDistribution(runId, orcSample, settings);
+                    result = checkLogFormatDistribution(runId, orcSample, settings, runtime);
                     break;
                 case LOG_MESSAGE_STRUCTURE:
-                    result = checkLogMessageStructure(runId, orcSample);
+                    result = checkLogMessageStructure(runId, orcSample, runtime);
                     break;
                 default:
                     throw new IllegalStateException("Unsupported validation check: " + check);
@@ -104,22 +106,26 @@ public final class ValidationRunner {
         LOG.info("Validation completed successfully: runId={} checks={}", runId, results.size());
     }
 
-    private static ValidationResult checkRowCountParity(String runId, long orcRows, long carbonRows) {
+    private static ValidationResult checkRowCountParity(
+            String runId, long orcRows, long carbonRows, SparkRuntimeInfo runtime
+    ) {
         boolean passed = orcRows == carbonRows;
         String details = "orcRows=" + orcRows + ", carbonRows=" + carbonRows;
         return passed
-                ? ValidationResult.pass(runId, ValidationCheck.ROW_COUNT_PARITY, "Row counts match", details)
-                : ValidationResult.fail(runId, ValidationCheck.ROW_COUNT_PARITY, "Row counts differ", details);
+                ? ValidationResult.pass(runId, ValidationCheck.ROW_COUNT_PARITY, "Row counts match", details, runtime)
+                : ValidationResult.fail(runId, ValidationCheck.ROW_COUNT_PARITY, "Row counts differ", details, runtime);
     }
 
-    private static ValidationResult checkChecksumParity(String runId, Dataset<Row> orc, Dataset<Row> carbon) {
+    private static ValidationResult checkChecksumParity(
+            String runId, Dataset<Row> orc, Dataset<Row> carbon, SparkRuntimeInfo runtime
+    ) {
         long orcChecksum = aggregateChecksum(orc);
         long carbonChecksum = aggregateChecksum(carbon);
         boolean passed = orcChecksum == carbonChecksum;
         String details = "orcChecksum=" + orcChecksum + ", carbonChecksum=" + carbonChecksum;
         return passed
-                ? ValidationResult.pass(runId, ValidationCheck.CHECKSUM_PARITY, "Checksums match", details)
-                : ValidationResult.fail(runId, ValidationCheck.CHECKSUM_PARITY, "Checksums differ", details);
+                ? ValidationResult.pass(runId, ValidationCheck.CHECKSUM_PARITY, "Checksums match", details, runtime)
+                : ValidationResult.fail(runId, ValidationCheck.CHECKSUM_PARITY, "Checksums differ", details, runtime);
     }
 
     private static long aggregateChecksum(Dataset<Row> df) {
@@ -142,11 +148,12 @@ public final class ValidationRunner {
             Dataset<Row> orc,
             Dataset<Row> carbon,
             long timestampStartMs,
-            long timestampEndMs
+            long timestampEndMs,
+            SparkRuntimeInfo runtime
     ) {
         List<Row> sample = orc.limit(1).collectAsList();
         if (sample.isEmpty()) {
-            return ValidationResult.fail(runId, ValidationCheck.SAMPLE_QUERY_PARITY, "Empty ORC dataset", "");
+            return ValidationResult.fail(runId, ValidationCheck.SAMPLE_QUERY_PARITY, "Empty ORC dataset", "", runtime);
         }
 
         FilterContext ctx = FilterContext.fromSample(sample.get(0), timestampStartMs, timestampEndMs);
@@ -167,11 +174,13 @@ public final class ValidationRunner {
         String details = "filter country=" + ctx.countryCode() + " status=" + ctx.status()
                 + " log_format=" + ctx.logFormat() + " orcCount=" + orcCount + " carbonCount=" + carbonCount;
         return passed
-                ? ValidationResult.pass(runId, ValidationCheck.SAMPLE_QUERY_PARITY, "Sample query counts match", details)
-                : ValidationResult.fail(runId, ValidationCheck.SAMPLE_QUERY_PARITY, "Sample query counts differ", details);
+                ? ValidationResult.pass(runId, ValidationCheck.SAMPLE_QUERY_PARITY, "Sample query counts match", details, runtime)
+                : ValidationResult.fail(runId, ValidationCheck.SAMPLE_QUERY_PARITY, "Sample query counts differ", details, runtime);
     }
 
-    private static ValidationResult checkLowCardinalityBounds(String runId, Dataset<Row> sample) {
+    private static ValidationResult checkLowCardinalityBounds(
+            String runId, Dataset<Row> sample, SparkRuntimeInfo runtime
+    ) {
         Row row = sample.agg(
                 countDistinct(col("country_code")).alias("country_distinct"),
                 countDistinct(col("device_type")).alias("device_distinct"),
@@ -193,15 +202,16 @@ public final class ValidationRunner {
                 + " status=" + statusDistinct + " log_format=" + logFormatDistinct;
 
         return passed
-                ? ValidationResult.pass(runId, ValidationCheck.LOW_CARDINALITY_BOUNDS, "Low cardinality within bounds", details)
-                : ValidationResult.fail(runId, ValidationCheck.LOW_CARDINALITY_BOUNDS, "Low cardinality out of bounds", details);
+                ? ValidationResult.pass(runId, ValidationCheck.LOW_CARDINALITY_BOUNDS, "Low cardinality within bounds", details, runtime)
+                : ValidationResult.fail(runId, ValidationCheck.LOW_CARDINALITY_BOUNDS, "Low cardinality out of bounds", details, runtime);
     }
 
     private static ValidationResult checkTimestampRange(
             String runId,
             Dataset<Row> sample,
             long timestampStartMs,
-            long timestampEndMs
+            long timestampEndMs,
+            SparkRuntimeInfo runtime
     ) {
         Row row = sample.agg(
                 min(col("timestamp")).alias("min_ts"),
@@ -216,18 +226,19 @@ public final class ValidationRunner {
                 + " expected=[" + timestampStartMs + ".." + timestampEndMs + ")";
 
         return passed
-                ? ValidationResult.pass(runId, ValidationCheck.TIMESTAMP_RANGE, "Timestamp range valid", details)
-                : ValidationResult.fail(runId, ValidationCheck.TIMESTAMP_RANGE, "Timestamp range invalid", details);
+                ? ValidationResult.pass(runId, ValidationCheck.TIMESTAMP_RANGE, "Timestamp range valid", details, runtime)
+                : ValidationResult.fail(runId, ValidationCheck.TIMESTAMP_RANGE, "Timestamp range invalid", details, runtime);
     }
 
     private static ValidationResult checkLogFormatDistribution(
             String runId,
             Dataset<Row> sample,
-            ValidationSettings settings
+            ValidationSettings settings,
+            SparkRuntimeInfo runtime
     ) {
         List<Row> rows = sample.groupBy(col("log_format")).agg(count(lit(1)).alias("cnt")).collectAsList();
         if (rows.isEmpty()) {
-            return ValidationResult.fail(runId, ValidationCheck.LOG_FORMAT_DISTRIBUTION, "No log_format values", "");
+            return ValidationResult.fail(runId, ValidationCheck.LOG_FORMAT_DISTRIBUTION, "No log_format values", "", runtime);
         }
 
         long total = rows.stream().mapToLong(row -> row.getLong(1)).sum();
@@ -245,11 +256,13 @@ public final class ValidationRunner {
         String details = "counts=" + counts + " tolerance=" + settings.logFormatShareTolerance();
 
         return passed
-                ? ValidationResult.pass(runId, ValidationCheck.LOG_FORMAT_DISTRIBUTION, "log_format distribution valid", details)
-                : ValidationResult.fail(runId, ValidationCheck.LOG_FORMAT_DISTRIBUTION, "log_format distribution invalid", details);
+                ? ValidationResult.pass(runId, ValidationCheck.LOG_FORMAT_DISTRIBUTION, "log_format distribution valid", details, runtime)
+                : ValidationResult.fail(runId, ValidationCheck.LOG_FORMAT_DISTRIBUTION, "log_format distribution invalid", details, runtime);
     }
 
-    private static ValidationResult checkLogMessageStructure(String runId, Dataset<Row> sample) {
+    private static ValidationResult checkLogMessageStructure(
+            String runId, Dataset<Row> sample, SparkRuntimeInfo runtime
+    ) {
         long emptyMessages = sample.filter(
                 col("log_message").isNull().or(length(col("log_message")).leq(0))
         ).count();
@@ -263,8 +276,8 @@ public final class ValidationRunner {
         String details = "emptyMessages=" + emptyMessages + " jsonFormatInvalid=" + jsonFormatInvalid;
 
         return passed
-                ? ValidationResult.pass(runId, ValidationCheck.LOG_MESSAGE_STRUCTURE, "Log messages valid", details)
-                : ValidationResult.fail(runId, ValidationCheck.LOG_MESSAGE_STRUCTURE, "Log messages invalid", details);
+                ? ValidationResult.pass(runId, ValidationCheck.LOG_MESSAGE_STRUCTURE, "Log messages valid", details, runtime)
+                : ValidationResult.fail(runId, ValidationCheck.LOG_MESSAGE_STRUCTURE, "Log messages invalid", details, runtime);
     }
 
     private static void writeResults(SparkSession spark, List<ValidationResult> results, String outputPath) {
@@ -274,7 +287,9 @@ public final class ValidationRunner {
                 .add("passed", org.apache.spark.sql.types.DataTypes.BooleanType, false)
                 .add("message", org.apache.spark.sql.types.DataTypes.StringType, false)
                 .add("details", org.apache.spark.sql.types.DataTypes.StringType, false)
-                .add("executed_at", org.apache.spark.sql.types.DataTypes.StringType, false);
+                .add("executed_at", org.apache.spark.sql.types.DataTypes.StringType, false)
+                .add("spark_version", org.apache.spark.sql.types.DataTypes.StringType, false)
+                .add("spark_runtime", org.apache.spark.sql.types.DataTypes.StringType, false);
 
         List<Row> rows = results.stream()
                 .map(result -> org.apache.spark.sql.RowFactory.create(
@@ -283,7 +298,9 @@ public final class ValidationRunner {
                         result.passed(),
                         result.message(),
                         result.details(),
-                        result.executedAt().toString()
+                        result.executedAt().toString(),
+                        result.sparkVersion(),
+                        result.sparkRuntime()
                 ))
                 .collect(Collectors.toList());
 

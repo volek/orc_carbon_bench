@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 import ru.sber.orcbench.config.BenchmarkScenario;
 import ru.sber.orcbench.config.BenchmarkSettings;
 import ru.sber.orcbench.config.OutputFormat;
+import ru.sber.orcbench.config.SparkRuntimeInfo;
 
 import java.util.List;
 import java.util.UUID;
@@ -29,7 +30,8 @@ public final class BenchmarkRunner {
             String reportsRawPath,
             long seed,
             long timestampStartMs,
-            long timestampEndMs
+            long timestampEndMs,
+            SparkRuntimeInfo runtime
     ) {
         String runId = UUID.randomUUID().toString();
         List<BenchmarkResult> results = new java.util.ArrayList<>();
@@ -87,7 +89,8 @@ public final class BenchmarkRunner {
                             durationMs,
                             rowsReturned,
                             totalRows,
-                            seed
+                            seed,
+                            runtime
                     );
                     results.add(result);
 
@@ -150,7 +153,9 @@ public final class BenchmarkRunner {
                 .add("total_rows", DataTypes.LongType, false)
                 .add("selectivity", DataTypes.DoubleType, false)
                 .add("seed", DataTypes.LongType, false)
-                .add("executed_at", DataTypes.StringType, false);
+                .add("executed_at", DataTypes.StringType, false)
+                .add("spark_version", DataTypes.StringType, false)
+                .add("spark_runtime", DataTypes.StringType, false);
 
         List<Row> rows = results.stream()
                 .map(result -> org.apache.spark.sql.RowFactory.create(
@@ -164,7 +169,9 @@ public final class BenchmarkRunner {
                         result.totalRows(),
                         result.selectivity(),
                         result.seed(),
-                        result.executedAt().toString()
+                        result.executedAt().toString(),
+                        result.sparkVersion(),
+                        result.sparkRuntime()
                 ))
                 .collect(Collectors.toList());
 

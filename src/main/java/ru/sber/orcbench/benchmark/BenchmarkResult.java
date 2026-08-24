@@ -2,6 +2,7 @@ package ru.sber.orcbench.benchmark;
 
 import ru.sber.orcbench.config.BenchmarkScenario;
 import ru.sber.orcbench.config.OutputFormat;
+import ru.sber.orcbench.config.SparkRuntimeInfo;
 
 import java.time.Instant;
 
@@ -17,6 +18,8 @@ public final class BenchmarkResult {
     private final double selectivity;
     private final long seed;
     private final Instant executedAt;
+    private final String sparkVersion;
+    private final String sparkRuntime;
 
     public BenchmarkResult(
             String runId,
@@ -29,7 +32,9 @@ public final class BenchmarkResult {
             long totalRows,
             double selectivity,
             long seed,
-            Instant executedAt
+            Instant executedAt,
+            String sparkVersion,
+            String sparkRuntime
     ) {
         this.runId = runId;
         this.scenario = scenario;
@@ -42,6 +47,8 @@ public final class BenchmarkResult {
         this.selectivity = selectivity;
         this.seed = seed;
         this.executedAt = executedAt;
+        this.sparkVersion = sparkVersion;
+        this.sparkRuntime = sparkRuntime;
     }
 
     public static BenchmarkResult of(
@@ -53,7 +60,8 @@ public final class BenchmarkResult {
             long durationMs,
             long rowsReturned,
             long totalRows,
-            long seed
+            long seed,
+            SparkRuntimeInfo runtime
     ) {
         double selectivity = totalRows == 0 ? 0.0 : (double) rowsReturned / totalRows;
         return new BenchmarkResult(
@@ -67,7 +75,9 @@ public final class BenchmarkResult {
                 totalRows,
                 selectivity,
                 seed,
-                Instant.now()
+                Instant.now(),
+                runtime.sparkVersion(),
+                runtime.sparkRuntime()
         );
     }
 
@@ -113,5 +123,13 @@ public final class BenchmarkResult {
 
     public Instant executedAt() {
         return executedAt;
+    }
+
+    public String sparkVersion() {
+        return sparkVersion;
+    }
+
+    public String sparkRuntime() {
+        return sparkRuntime;
     }
 }

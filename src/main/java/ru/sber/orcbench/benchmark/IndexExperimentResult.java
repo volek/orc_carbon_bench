@@ -3,6 +3,7 @@ package ru.sber.orcbench.benchmark;
 import ru.sber.orcbench.config.BenchmarkScenario;
 import ru.sber.orcbench.config.IndexProfile;
 import ru.sber.orcbench.config.OutputFormat;
+import ru.sber.orcbench.config.SparkRuntimeInfo;
 
 import java.time.Instant;
 
@@ -19,6 +20,8 @@ public final class IndexExperimentResult {
     private final double selectivity;
     private final long seed;
     private final Instant executedAt;
+    private final String sparkVersion;
+    private final String sparkRuntime;
 
     public IndexExperimentResult(
             String runId,
@@ -32,7 +35,9 @@ public final class IndexExperimentResult {
             long totalRows,
             double selectivity,
             long seed,
-            Instant executedAt
+            Instant executedAt,
+            String sparkVersion,
+            String sparkRuntime
     ) {
         this.runId = runId;
         this.scenario = scenario;
@@ -46,6 +51,8 @@ public final class IndexExperimentResult {
         this.selectivity = selectivity;
         this.seed = seed;
         this.executedAt = executedAt;
+        this.sparkVersion = sparkVersion;
+        this.sparkRuntime = sparkRuntime;
     }
 
     public static IndexExperimentResult of(
@@ -58,7 +65,8 @@ public final class IndexExperimentResult {
             long durationMs,
             long rowsReturned,
             long totalRows,
-            long seed
+            long seed,
+            SparkRuntimeInfo runtime
     ) {
         double selectivity = totalRows == 0 ? 0.0 : (double) rowsReturned / totalRows;
         return new IndexExperimentResult(
@@ -73,7 +81,9 @@ public final class IndexExperimentResult {
                 totalRows,
                 selectivity,
                 seed,
-                Instant.now()
+                Instant.now(),
+                runtime.sparkVersion(),
+                runtime.sparkRuntime()
         );
     }
 
@@ -123,5 +133,13 @@ public final class IndexExperimentResult {
 
     public Instant executedAt() {
         return executedAt;
+    }
+
+    public String sparkVersion() {
+        return sparkVersion;
+    }
+
+    public String sparkRuntime() {
+        return sparkRuntime;
     }
 }

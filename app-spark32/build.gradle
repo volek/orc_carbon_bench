@@ -1,0 +1,31 @@
+def sparkVersion = '3.2.1'
+def slf4jVersion = '1.7.36'
+
+dependencies {
+    compileOnly "org.apache.spark:spark-sql_2.12:${sparkVersion}"
+
+    implementation "org.slf4j:slf4j-api:${slf4jVersion}"
+    implementation "org.slf4j:slf4j-simple:${slf4jVersion}"
+
+    testImplementation platform('org.junit:junit-bom:5.10.2')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testImplementation "org.apache.spark:spark-sql_2.12:${sparkVersion}"
+}
+
+shadowJar {
+    archiveFileName.set('orc-carbon-bench-spark32-all.jar')
+    mergeServiceFiles()
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    from(sourceSets.main.output)
+
+    dependencies {
+        exclude(dependency('org.apache.spark:.*'))
+        exclude(dependency('org.apache.hadoop:.*'))
+        exclude(dependency('org.scala-lang:.*'))
+        exclude(dependency('org.scala-lang.modules:.*'))
+    }
+
+    manifest {
+        attributes 'Main-Class': 'ru.sber.orcbench.AppMain'
+    }
+}

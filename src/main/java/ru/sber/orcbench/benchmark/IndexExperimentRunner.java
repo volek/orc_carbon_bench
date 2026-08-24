@@ -12,6 +12,7 @@ import ru.sber.orcbench.config.CarbonWriteSettings;
 import ru.sber.orcbench.config.IndexExperimentSettings;
 import ru.sber.orcbench.config.IndexProfile;
 import ru.sber.orcbench.config.OutputFormat;
+import ru.sber.orcbench.config.SparkRuntimeInfo;
 import ru.sber.orcbench.generator.LogFormatType;
 import ru.sber.orcbench.writer.CarbonWriter;
 
@@ -43,15 +44,18 @@ public final class IndexExperimentRunner {
             String reportsIndexBuildPath,
             long seed,
             long timestampStartMs,
-            long timestampEndMs
+            long timestampEndMs,
+            SparkRuntimeInfo runtime
     ) {
         String runId = UUID.randomUUID().toString();
         List<IndexExperimentResult> results = new java.util.ArrayList<>();
         List<IndexBuildMetric> buildMetrics = new java.util.ArrayList<>();
 
         LOG.info(
-                "Index experiment runId={} profiles={} rebuildIndexes={} orcPath={} reportsPath={}",
+                "Index experiment runId={} sparkVersion={} sparkRuntime={} profiles={} rebuildIndexes={} orcPath={} reportsPath={}",
                 runId,
+                runtime.sparkVersion(),
+                runtime.sparkRuntime(),
                 settings.profiles(),
                 settings.rebuildIndexes(),
                 orcPath,
@@ -63,7 +67,7 @@ public final class IndexExperimentRunner {
         FilterContext filterContext = resolveFilterContext(orcDataset, timestampStartMs, timestampEndMs);
 
         LOG.info("ORC reference dataset rows={}", orcTotalRows);
-        runOrcReference(spark, settings, results, runId, orcDataset, filterContext, orcTotalRows, seed);
+        runOrcReference(spark, settings, results, runId, orcDataset, filterContext, orcTotalRows, seed, runtime);
 
         for (IndexProfile profile : settings.profiles()) {
             String carbonPath = settings.resolveCarbonPath(profile, defaultCarbonPath);
@@ -87,7 +91,7 @@ public final class IndexExperimentRunner {
                 }
                 runMeasuredScenario(
                         spark, settings, results, runId, carbonDataset, filterContext,
-                        scenario, OutputFormat.CARBON, profile, null, carbonTotalRows, seed
+                        scenario, OutputFormat.CARBON, profile, null, carbonTotalRows, seed, runtime
                 );
             }
 
@@ -95,7 +99,7 @@ public final class IndexExperimentRunner {
                 for (String logFormat : LogFormatType.ALL_VALUES) {
                     runLuceneByLogFormat(
                             spark, settings, results, runId, carbonDataset, filterContext,
-                            profile, logFormat, carbonTotalRows, seed
+                            profile, logFormat, carbonTotalRows, seed, runtime
                     );
                 }
             }
@@ -124,7 +128,8 @@ public final class IndexExperimentRunner {
             Dataset<Row> orcDataset,
             FilterContext filterContext,
             long totalRows,
-            long seed
+            long seed,
+            SparkRuntimeInfo runtime
     ) {
         for (BenchmarkScenario scenario : INDEX_SCENARIOS) {
             if (scenario == BenchmarkScenario.LUCENE_TEXT_SEARCH) {
@@ -132,7 +137,7 @@ public final class IndexExperimentRunner {
             }
             runMeasuredScenario(
                     spark, settings, results, runId, orcDataset, filterContext,
-                    scenario, OutputFormat.ORC, null, null, totalRows, seed
+                    scenario, OutputFormat.ORC, null, null, totalRows, seed, runtime
             );
         }
     }
@@ -147,7 +152,8 @@ public final class IndexExperimentRunner {
             IndexProfile profile,
             String logFormat,
             long totalRows,
-            long seed
+            long seed,
+            SparkRuntimeInfo runtime
     ) {
         for (int i = 0; i < settings.warmupRuns(); i++) {
             executeLuceneByLogFormat(spark, dataset, filterContext, logFormat, settings.clearCacheBetweenRuns());
@@ -171,7 +177,8 @@ public final class IndexExperimentRunner {
                     durationMs,
                     rowsReturned,
                     totalRows,
-                    seed
+                    seed,
+                    runtime
             ));
         }
     }
@@ -188,7 +195,8 @@ public final class IndexExperimentRunner {
             IndexProfile profile,
             String logFormat,
             long totalRows,
-            long seed
+            long seed,
+            SparkRuntimeInfo runtime
     ) {
         for (int i = 0; i < settings.warmupRuns(); i++) {
             executeScenario(spark, dataset, scenario, filterContext, settings.clearCacheBetweenRuns());
@@ -212,7 +220,8 @@ public final class IndexExperimentRunner {
                     durationMs,
                     rowsReturned,
                     totalRows,
-                    seed
+                    seed,
+                    runtime
             ));
 
             LOG.info(
@@ -282,7 +291,9 @@ public final class IndexExperimentRunner {
                 .add("total_rows", DataTypes.LongType, false)
                 .add("selectivity", DataTypes.DoubleType, false)
                 .add("seed", DataTypes.LongType, false)
-                .add("executed_at", DataTypes.StringType, false);
+                .add("executed_at", DataTypes.StringType, false)
+                .add("spark_version", DataTypes.StringType, false)
+                .add("spark_runtime", DataTypes.StringType, false);
 
         List<Row> rows = results.stream()
                 .map(result -> org.apache.spark.sql.RowFactory.create(
@@ -297,7 +308,9 @@ public final class IndexExperimentRunner {
                         result.totalRows(),
                         result.selectivity(),
                         result.seed(),
-                        result.executedAt().toString()
+                        result.executedAt().toString(),
+                        result.sparkVersion(),
+                        result.sparkRuntime()
                 ))
                 .collect(Collectors.toList());
 
@@ -320,7 +333,9 @@ public final class IndexExperimentRunner {
                 .add("index_type", DataTypes.StringType, false)
                 .add("column_name", DataTypes.StringType, false)
                 .add("build_time_ms", DataTypes.LongType, false)
-                .add("executed_at", DataTypes.StringType, false);
+                .add("executed_at", DataTypes.StringType, false)
+                .add("spark_version", DataTypes.StringType, false)
+                .add("spark_runtime", DataTypes.StringType, false);
 
         List<Row> rows = metrics.stream()
                 .map(metric -> org.apache.spark.sql.RowFactory.create(
@@ -330,7 +345,9 @@ public final class IndexExperimentRunner {
                         metric.indexType(),
                         metric.columnName(),
                         metric.buildTimeMs(),
-                        metric.executedAt().toString()
+                        metric.executedAt().toString(),
+                        metric.sparkVersion(),
+                        metric.sparkRuntime()
                 ))
                 .collect(Collectors.toList());
 

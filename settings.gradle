@@ -22,3 +22,5 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = 'orc-carbon-bench'
+
+include 'app-spark31', 'app-spark32'

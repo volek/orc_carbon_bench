@@ -1,0 +1,44 @@
+def sparkVersion = '3.1.1'
+def carbonVersion = '2.3.0'
+def slf4jVersion = '1.7.36'
+
+dependencies {
+    compileOnly "org.apache.spark:spark-sql_2.12:${sparkVersion}"
+
+    implementation("org.apache.carbondata:carbondata-spark_3.1:${carbonVersion}") {
+        exclude group: 'org.apache.spark'
+        exclude group: 'org.apache.hadoop'
+        exclude group: 'org.scala-lang'
+        exclude group: 'org.scala-lang.modules'
+        exclude group: 'io.confluent'
+        exclude module: 'spark-streaming_2.12'
+        exclude module: 'spark-streaming-kafka-0-10_2.12'
+        // Keep carbondata-streaming_3.1: CarbonSource SPI references CarbonStreamException.
+        // Spark instantiates every DataSourceRegister on any write (including ORC).
+    }
+
+    implementation "org.slf4j:slf4j-api:${slf4jVersion}"
+    implementation "org.slf4j:slf4j-simple:${slf4jVersion}"
+
+    testImplementation platform('org.junit:junit-bom:5.10.2')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testImplementation "org.apache.spark:spark-sql_2.12:${sparkVersion}"
+}
+
+shadowJar {
+    archiveFileName.set('orc-carbon-bench-spark31-all.jar')
+    mergeServiceFiles()
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    from(sourceSets.main.output)
+
+    dependencies {
+        exclude(dependency('org.apache.spark:.*'))
+        exclude(dependency('org.apache.hadoop:.*'))
+        exclude(dependency('org.scala-lang:.*'))
+        exclude(dependency('org.scala-lang.modules:.*'))
+    }
+
+    manifest {
+        attributes 'Main-Class': 'ru.sber.orcbench.AppMain'
+    }
+}

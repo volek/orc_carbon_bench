@@ -1,7 +1,9 @@
 # Ручной запуск и проверка на кластере
 
 Кластер недоступен из среды разработки — прогон выполняется вручную с edge-ноды.  
-Ниже: подготовка, smoke, сбор логов для анализа.
+Ниже: подготовка BYOS Spark 3.1.1, smoke (Carbon + ORC + Bloom/Lucene + референс Spark 3.2), сбор логов.
+
+Кластер **не меняем**: SDP Spark 3.2 остаётся установленным. Spark 3.1.1 едет с edge на YARN вместе с job.
 
 ## Параметры кластера
 
@@ -9,44 +11,68 @@
 |---|---|
 | HDFS namenode | `dev1-abyss-sdp2-ambari-02.opsmon.sbt:50470` |
 | HDFS URI | `hdfs://dev1-abyss-sdp2-ambari-02.opsmon.sbt:50470` |
-| Spark | `3.2.1.3.5.7.0-1-SNAPSHOT` |
-| Scala | `2.12.15` |
+| Spark кластера (референс ORC) | `3.2.1.3.5.7.0-1-SNAPSHOT` |
+| Spark BYOS (Carbon + ORC) | Apache `3.1.1` в `dist/spark-3.1.1/` |
+| Scala | `2.12.x` |
 | JVM | OpenJDK `1.8.0_472` |
 | Hadoop | `3.1.3.3.5.7.0-1-SNAPSHOT` |
-| Артефакт | `orc-carbon-bench-0.1.0-SNAPSHOT-all.jar` (fat JAR, CarbonData внутри) |
+| Артефакты | `orc-carbon-bench-spark31-all.jar`, `orc-carbon-bench-spark32-all.jar` |
 
 ```bash
-export JAR=~/orc-carbon-bench/orc-carbon-bench-0.1.0-SNAPSHOT-all.jar
 export BASE=hdfs://dev1-abyss-sdp2-ambari-02.opsmon.sbt:50470/bench/orc-carbon
+export JAR31=~/orc-carbon-bench/orc-carbon-bench-spark31-all.jar
+export JAR32=~/orc-carbon-bench/orc-carbon-bench-spark32-all.jar
 ```
 
 Если нет прав на `/bench/...`, используйте `/user/$USER/bench/orc-carbon`.
 
-CarbonData уже в fat JAR — **не** передавайте `--packages`.
+CarbonData уже в spark31 fat JAR — **не** передавайте `--packages`.
+
+Не используйте кластерный `spark-submit` 3.2 для Carbon-джобов.
 
 ---
 
 ## 1. Подготовка на edge-ноде
 
-Скопируйте fat JAR с машины сборки:
+Скопируйте оба fat JAR с машины сборки:
 
 ```bash
-scp build/libs/orc-carbon-bench-0.1.0-SNAPSHOT-all.jar \
+scp build/libs/orc-carbon-bench-spark31-all.jar \
+    build/libs/orc-carbon-bench-spark32-all.jar \
   user@edge-host:~/orc-carbon-bench/
+scp -r scripts user@edge-host:~/orc-carbon-bench/
 ```
 
 На edge:
 
 ```bash
+cd ~/orc-carbon-bench
 java -version          # ожидается 1.8.x
-spark-submit --version # ожидается 3.2.1.x
+spark-submit --version # кластерный Spark 3.2.1.x — только для ORC-референса
 hdfs dfs -ls "$BASE" || hdfs dfs -mkdir -p "$BASE"
+
+./scripts/prepare-spark31.sh
+# ожидание: dist/spark-3.1.1/bin/spark-submit и hive-site.xml в conf/
 ```
 
-При известных квотах YARN добавьте в `spark-submit`:
+`prepare-spark31.sh`:
+- качает Apache `spark-3.1.1-bin-without-hadoop` (не ставит Spark в Ambari);
+- берёт Hadoop-клиент кластера через `SPARK_DIST_CLASSPATH=$(hadoop classpath)`;
+- копирует клиентский `hive-site.xml`;
+- **не** выставляет `SPARK_CONF_DIR` на конфиг SDP Spark 3.2 (`spark.yarn.archive` иначе подменит Spark).
 
-```text
---driver-memory … --executor-memory … --executor-cores … --num-executors …
+Fallback при конфликтах `hadoop classpath`:
+
+```bash
+SPARK31_VARIANT=hadoop3.2 ./scripts/prepare-spark31.sh
+```
+
+При известных квотах YARN добавьте флаги до `--`:
+
+```bash
+./scripts/submit-spark31.sh --driver-memory 8g --executor-memory 8g \
+  --executor-cores 4 --num-executors 16 -- \
+  --mode=generate --base-path="$BASE" --target-size-tb=0.01
 ```
 
 ---
@@ -55,59 +81,59 @@ hdfs dfs -ls "$BASE" || hdfs dfs -mkdir -p "$BASE"
 
 Не используйте дефолт `--target-size-tb=5`. Smoke: `0.01`.
 
-Статические Carbon-конфиги (Spark 3.2 не даёт менять их после создания сессии):
+Короткий путь:
 
 ```bash
-export CARBON_CONF="--conf spark.sql.extensions=org.apache.spark.sql.CarbonExtensions --conf spark.sql.session.state.builder=org.apache.spark.sql.hive.CarbonSessionStateBuilder"
+export BASE=hdfs://dev1-abyss-sdp2-ambari-02.opsmon.sbt:50470/bench/orc-carbon
+export JAR31=~/orc-carbon-bench/orc-carbon-bench-spark31-all.jar
+export JAR32=~/orc-carbon-bench/orc-carbon-bench-spark32-all.jar
+./scripts/run-smoke.sh
 ```
 
+По шагам:
+
 ```bash
-# generate ~0.01 TB
-spark-submit --master yarn --deploy-mode cluster \
-  $CARBON_CONF \
-  --class ru.sber.orcbench.AppMain "$JAR" \
-  --mode=generate \
-  --base-path="$BASE" \
-  --target-size-tb=0.01 \
-  --seed=42 \
-  --output-formats=orc,carbon \
-  --enable-bloom-index=true \
-  --enable-lucene-index=true \
+# 1. generate ORC + Carbon + Bloom + Lucene (Spark 3.1.1)
+./scripts/submit-spark31.sh -- \
+  --mode=generate --base-path="$BASE" --target-size-tb=0.01 --seed=42 \
+  --output-formats=orc,carbon --enable-bloom-index=true --enable-lucene-index=true \
   2>&1 | tee smoke-generate.log
 
-# validate
-spark-submit --master yarn --deploy-mode cluster \
-  $CARBON_CONF \
-  --class ru.sber.orcbench.AppMain "$JAR" \
-  --mode=validate \
-  --base-path="$BASE" \
+# 2. validate
+./scripts/submit-spark31.sh -- --mode=validate --base-path="$BASE" \
   2>&1 | tee smoke-validate.log
 
-# короткий benchmark
-spark-submit --master yarn --deploy-mode cluster \
-  $CARBON_CONF \
-  --class ru.sber.orcbench.AppMain "$JAR" \
-  --mode=benchmark \
-  --base-path="$BASE" \
-  --benchmark-scenarios=full_scan,filter_high_cardinality \
-  --benchmark-warmup-runs=1 \
-  --benchmark-repeat-runs=1 \
+# 3. benchmark ORC + Carbon на 3.1.1
+./scripts/submit-spark31.sh -- \
+  --mode=benchmark --base-path="$BASE" \
+  --benchmark-scenarios=all --benchmark-warmup-runs=1 --benchmark-repeat-runs=1 \
   2>&1 | tee smoke-benchmark.log
 
-# report
-spark-submit --master yarn --deploy-mode cluster \
-  --class ru.sber.orcbench.AppMain "$JAR" \
-  --mode=report \
-  --base-path="$BASE" \
+# 4. Bloom / Lucene index experiment
+./scripts/submit-spark31.sh -- \
+  --mode=index-experiment --base-path="$BASE" --rebuild-indexes=true \
+  --index-profiles=baseline,bloom,lucene,bloom_lucene \
+  --benchmark-warmup-runs=1 --benchmark-repeat-runs=1 \
+  2>&1 | tee smoke-index.log
+
+# 5. ORC reference on cluster Spark 3.2 (тот же --orc-path)
+./scripts/submit-spark32.sh -- \
+  --mode=benchmark --base-path="$BASE" --formats=orc \
+  --benchmark-scenarios=all --benchmark-warmup-runs=1 --benchmark-repeat-runs=1 \
+  2>&1 | tee smoke-benchmark-spark32.log
+
+# 6. combined report
+./scripts/submit-spark31.sh -- --mode=report --base-path="$BASE" \
   2>&1 | tee smoke-report.log
 ```
 
 ### Критерий успеха smoke
 
-- Все четыре job в статусе `SUCCEEDED`
-- Есть пути: `$BASE/orc`, `$BASE/carbon`, `$BASE/reports/raw/`, `$BASE/reports/summary/`
+- Все job в статусе `SUCCEEDED`
+- Есть пути: `$BASE/orc`, `$BASE/carbon`, `$BASE/reports/raw/`, `$BASE/reports/raw/spark32-orc/`, `$BASE/reports/summary/`
+- Markdown-отчёт содержит секции ORC vs Carbon (3.1.1), ORC 3.1.1 vs ORC 3.2, Index Experiments
 
-Рекомендуемый порядок на кластере: **generate → validate → benchmark → index-experiment → report**.
+Рекомендуемый порядок: **generate → validate → benchmark (3.1.1) → index-experiment → benchmark ORC (3.2) → report**.
 
 ---
 
@@ -154,16 +180,21 @@ hdfs dfs -ls -R "$BASE"/reports > hdfs-reports-ls.txt 2>&1
 hdfs dfs -get "$BASE"/reports/summary ./summary 2>&1 || true
 
 # версии окружения
-{ java -version; spark-submit --version; hadoop version; } > env-versions.txt 2>&1
+{
+  java -version
+  spark-submit --version
+  "$HOME/orc-carbon-bench/dist/spark-3.1.1/bin/spark-submit" --version
+  hadoop version
+} > env-versions.txt 2>&1
 
 tar -czf bench-logs.tgz smoke-*.log yarn-*.log hdfs-*.txt env-versions.txt summary 2>/dev/null
 ```
 
 ### Минимум при падении
 
-1. Полная команда `spark-submit` и exit code
+1. Полная команда `spark-submit` / `./scripts/submit-spark31.sh` и exit code
 2. `yarn logs -applicationId …` (или driver stderr из YARN UI)
-3. Вывод `java -version` и `spark-submit --version`
+3. Вывод `java -version`, кластерный `spark-submit --version`, BYOS `$SPARK31_HOME/bin/spark-submit --version`
 4. Текст exception / stack trace (обычно в конце yarn log)
 
 ### Минимум при успешном smoke
@@ -207,13 +238,7 @@ IllegalArgumentException: requirement failed: SSLContext does not support any of
 
 **Смысл:** в Spark SSL-конфиге (`spark.ssl.*` / Ambari) указано значение `sdp-deployer` вместо валидных TLS cipher suites.
 
-**Что делать:** найти и исправить в `$SPARK_HOME/conf` / Ambari:
-
-```bash
-grep -rniE 'ssl|sdp-deployer|enabledAlgorithms' $SPARK_HOME/conf /etc/spark*/conf 2>/dev/null
-```
-
-Убрать `sdp-deployer` из списка algorithms или отключить ненужный `spark.ssl.enabled`. Правка платформы, не приложения.
+**Что делать:** не наследовать `SPARK_CONF_DIR` кластерного Spark 3.2 в BYOS 3.1.1 (`submit-spark31.sh` делает `unset SPARK_CONF_DIR`). Если ошибка на spark32-сабмите — править платформенный SSL, не приложение.
 
 ---
 
@@ -236,7 +261,7 @@ If hive is not used, set spark.security.credentials.hive.enabled to false
 
 **Смысл:** при submit Spark пытается взять Hive delegation token; Metastore на `:9083` не слушает.
 
-**Что делать (предпочтительно):** в Ambari поднять **Hive Metastore** (Healthy на обоих URI из `hive-site.xml`).
+**Что делать (предпочтительно):** в Ambari поднять **Hive Metastore** (Healthy на обоих URI из `hive-site.xml`). Это существующий сервис кластера, не установка Spark 3.1.1.
 
 Проверка:
 
@@ -279,19 +304,11 @@ echo "status" | hbase shell
 Если сервисы не поднять сразу, а нужно только пройти submit / ORC-smoke:
 
 ```bash
-spark-submit --master yarn --deploy-mode cluster \
-  --conf spark.sql.extensions=org.apache.spark.sql.CarbonExtensions \
-  --conf spark.sql.session.state.builder=org.apache.spark.sql.hive.CarbonSessionStateBuilder \
+./scripts/submit-spark31.sh \
   --conf spark.security.credentials.hive.enabled=false \
-  --conf spark.security.credentials.hbase.enabled=false \
-  --class ru.sber.orcbench.AppMain "$JAR" \
-  --mode=generate \
-  --base-path="$BASE" \
-  --target-size-tb=0.01 \
-  --seed=42 \
-  --output-formats=orc,carbon \
-  --enable-bloom-index=true \
-  --enable-lucene-index=true \
+  --conf spark.security.credentials.hbase.enabled=false -- \
+  --mode=generate --base-path="$BASE" --target-size-tb=0.01 \
+  --output-formats=orc,carbon --enable-bloom-index=true --enable-lucene-index=true \
   2>&1 | tee smoke-generate.log
 ```
 
@@ -305,7 +322,8 @@ spark-submit --master yarn --deploy-mode cluster \
 2. Нет ошибки `sdp-deployer` в SSL  
 3. Hive Metastore отвечает на `:9083` **или** задано `spark.security.credentials.hive.enabled=false`  
 4. HBase RS отвечает на `:16020` **или** задано `spark.security.credentials.hbase.enabled=false`  
-5. В логе после submit есть строки приложения (`orc-carbon-bench` / `Writing` / `Generating`), а не только ретраи HBase  
+5. BYOS: `$SPARK31_HOME/bin/spark-submit --version` показывает 3.1.1, `SPARK_CONF_DIR` не указывает на SDP Spark 3.2  
+6. В логе после submit есть строки приложения (`orc-carbon-bench` / `Writing` / `Generating`), а не только ретраи HBase  
 
 При новом падении прислать полный `smoke-*.log` + `applicationId` + `yarn logs -applicationId …`.
 
@@ -320,9 +338,7 @@ IllegalArgumentException: Invalid numeric argument for --target-size-tb: 0.01
 NumberFormatException: For input string: "0.01"
 ```
 
-**Смысл:** старые сборки парсили `--target-size-tb` как `long`. Нужен fat JAR с поддержкой дробных ТБ (`double`).
-
-**Что делать:** использовать актуальный `orc-carbon-bench-0.1.0-SNAPSHOT-all.jar` (после фикса) и снова `--target-size-tb=0.01`.
+**Смысл:** старые сборки парсили `--target-size-tb` как `long`. Нужен актуальный fat JAR с поддержкой дробных ТБ (`double`).
 
 ---
 
@@ -335,15 +351,13 @@ AnalysisException: cannot resolve 'element_at(array(...), (pmod(...) + 1))'
 Input to function element_at should have been array followed by a int, but it's [array<string>, bigint]
 ```
 
-**Смысл:** в Spark 3.2 индекс для `element_at` должен быть **int**, а генератор передавал **bigint** (результат `pmod` от `global_id`).
-
-**Что делать:** использовать fat JAR с фиксом (`.cast(IntegerType)` для индекса в `elementAtDictionary`). Обхода через CLI нет.
+**Смысл:** индекс для `element_at` должен быть **int**. Актуальный генератор делает `.cast(IntegerType)`.
 
 ---
 
 ### 6.9. `Cannot modify the value of a static config: spark.sql.extensions`
 
-**Симптом:** AM стартует (часто RUNNING → ACCEPTED → RUNNING — рестарт AM), затем:
+**Симптом:** AM стартует, затем:
 
 ```text
 AnalysisException: Cannot modify the value of a static config: spark.sql.extensions
@@ -352,17 +366,9 @@ AnalysisException: Cannot modify the value of a static config: spark.sql.extensi
   at AppMain.main
 ```
 
-**Смысл:** в Spark 3.2 `spark.sql.extensions` нельзя менять через `spark.conf().set()` после создания `SparkSession`. Старые JAR пытались выставить CarbonExtensions в runtime.
+**Смысл:** `spark.sql.extensions` нельзя менять через `spark.conf().set()` после создания `SparkSession`.
 
-**Что делать:**
-
-1. Использовать fat JAR, который задаёт Carbon-конфиги на `SparkSession.Builder` до `getOrCreate()`.
-2. На submit всё равно передать (на случай, если контекст уже создан платформой):
-
-```bash
---conf spark.sql.extensions=org.apache.spark.sql.CarbonExtensions \
---conf spark.sql.session.state.builder=org.apache.spark.sql.hive.CarbonSessionStateBuilder
-```
+**Что делать:** использовать `./scripts/submit-spark31.sh` (конфиги задаются на Builder и в `--conf` до `getOrCreate()`).
 
 **Не используйте** `spark.sql.catalog.spark_catalog=org.apache.spark.sql.CarbonSessionCatalog` — такого plugin-класса нет (см. §6.12).
 
@@ -378,29 +384,23 @@ ServiceConfigurationError: org.apache.spark.sql.sources.DataSourceRegister:
 Caused by: ClassNotFoundException: org.apache.carbondata.streaming.CarbonStreamException
 ```
 
-**Смысл:** Spark при любом `DataFrameWriter.save` поднимает все SPI `DataSourceRegister`. `CarbonSource` ссылается на класс из модуля `carbondata-streaming`. Старые fat JAR исключали этот модуль (~52 KB) — падала даже запись ORC.
-
-**Что делать:** использовать fat JAR, куда снова включён `carbondata-streaming_3.1` (без Spark Streaming / Kafka). Обхода через CLI нет.
+**Смысл:** Spark при любом `DataFrameWriter.save` поднимает все SPI `DataSourceRegister`. Нужен spark31 fat JAR, куда включён `carbondata-streaming_3.1` (без Spark Streaming / Kafka).
 
 ---
 
-### 6.11. `VerifyError` в `CarbonSecondaryIndexOptimizer` (Spark 3.2)
+### 6.11. `VerifyError` в `CarbonSecondaryIndexOptimizer` (сабмит spark31-JAR через Spark 3.2)
 
-**Симптом:** generate падает при первой записи (часто ORC), после загрузки `CarbonExtensions`:
+**Симптом:**
 
 ```text
 VerifyError: Bad type on operand stack
   CarbonSecondaryIndexOptimizer.createIndexFilterDataFrame
   Type UnaryNode is not assignable to LogicalPlan
-  at CarbonSITransformationRule.<init>
-  at CarbonOptimizer.defaultBatches
 ```
 
-**Смысл:** `carbondata-spark_3.1:2.3.0` собран под Spark 3.1; на кластере Spark 3.2.1 байткод SI optimizer не проходит verification. CarbonOptimizer подключается ко **всем** запросам, включая `.orc()`.
+**Смысл:** `carbondata-spark_3.1:2.3.0` собран под Spark 3.1. Кластерный `spark-submit` 3.2 кладёт Spark 3.2 на classpath. No-op shim больше не используется.
 
-**Что делать:** fat JAR с no-op shim-классом `CarbonSecondaryIndexOptimizer` (legacy SI rewrite отключён; Bloom/Lucene индексы работают). Обхода через CLI нет.
-
-**Ограничение:** secondary-index plan rewrite CarbonData на Spark 3.2 не используется — для bench это не требуется.
+**Что делать:** Carbon-джобы запускать только через `./scripts/submit-spark31.sh` (BYOS Spark 3.1.1). Для ORC-референса на кластерном 3.2 — только `orc-carbon-bench-spark32-all.jar` без CarbonData.
 
 ---
 
@@ -416,9 +416,18 @@ SparkException: Cannot find catalog plugin class for catalog 'spark_catalog':
 
 **Смысл:** в submit передали неверный `--conf spark.sql.catalog.spark_catalog=org.apache.spark.sql.CarbonSessionCatalog`. Это **не** V2 catalog plugin (реальный класс — `org.apache.spark.sql.hive.CarbonHiveSessionCatalog`, подключается через `CarbonSessionStateBuilder`).
 
-**Что делать:** убрать `spark.sql.catalog.spark_catalog=…` и использовать:
+**Что делать:** убрать `spark.sql.catalog.spark_catalog=…` и использовать `./scripts/submit-spark31.sh`.
 
-```bash
---conf spark.sql.extensions=org.apache.spark.sql.CarbonExtensions \
---conf spark.sql.session.state.builder=org.apache.spark.sql.hive.CarbonSessionStateBuilder
+---
+
+### 6.13. Carbon-режим на spark32 JAR
+
+**Симптом:**
+
+```text
+IllegalStateException: CarbonData and index experiments require orc-carbon-bench-spark31-all.jar
 ```
+
+**Смысл:** `validate`, `index-experiment`, `--output-formats=carbon`, `--formats=carbon` запрещены на spark32-артефакте.
+
+**Что делать:** эти режимы — только `submit-spark31.sh`. Для spark32: `--mode=benchmark --formats=orc`.

@@ -1,13 +1,19 @@
 # orc-carbon-bench
 
-Spark 3 / Java 8 приложение для сравнения форматов хранения ORC и CarbonData на HDFS.
+Spark / Java 8 приложение для сравнения форматов хранения ORC и CarbonData на HDFS.
+
+Проект рассчитан на кластер **без изменений**: SDP Spark 3.2 остаётся как есть. CarbonData и основное сравнение ORC vs Carbon идут на **своём Spark 3.1.1** (BYOS на YARN). Кластерный Spark 3.2 используется только как референс ORC.
 
 ## Требования
 
 - Java 8 (совместимо с JVM кластера)
-- Spark **3.2.x** кластер
-- HDFS (или совместимое хранилище)
-- Fat JAR со встроенным CarbonData (`*-all.jar`) — отдельный `--packages` не нужен
+- Hadoop / YARN / HDFS кластера (не меняем)
+- Hive Metastore как уже существующий сервис (нужен CarbonData)
+- Fat JAR `orc-carbon-bench-spark31-all.jar` — приложение + CarbonData 2.3.0 / Spark 3.1
+- Fat JAR `orc-carbon-bench-spark32-all.jar` — приложение без CarbonData, ORC-референс на Spark 3.2
+- Apache Spark **3.1.1** на edge-ноде (`./scripts/prepare-spark31.sh`) — не ставить в Ambari
+
+Не сабмитьте spark31-JAR через кластерный `spark-submit` 3.2: на classpath окажется Spark 3.2, и CarbonData 2.3.0 (`carbondata-spark_3.1`) будет несовместим.
 
 ## Сборка
 
@@ -21,12 +27,45 @@ Windows:
 gradlew.bat build
 ```
 
-Артефакты:
-- `build/libs/orc-carbon-bench-0.1.0-SNAPSHOT.jar` — тонкий JAR
-- `build/libs/orc-carbon-bench-0.1.0-SNAPSHOT-all.jar` — **fat JAR** (приложение + CarbonData 2.3.0 / Spark 3.1 module, без Spark/Hadoop)
+Артефакты (копируются в `build/libs/`):
+- `orc-carbon-bench-spark31-all.jar` — Spark 3.1.1 + CarbonData 2.3.0 (модуль `carbondata-spark_3.1`), без Spark/Hadoop
+- `orc-carbon-bench-spark32-all.jar` — Spark 3.2 ORC-only, без CarbonData
 
-Версии сборки: Spark compile `3.2.1`, CarbonData `org.apache.carbondata:carbondata-spark_3.1:2.3.0`.  
-На Spark 3.2+ fat JAR подменяет legacy SI optimizer no-op shim (см. runbook §6.11).
+Версии сборки: Spark compile `3.1.1` (модуль `app-spark31`) и `3.2.1` (модуль `app-spark32`).
+
+Локальные unit-тесты:
+
+```bash
+./gradlew test
+```
+
+## Два рантайма
+
+| Рантайм | Submit | JAR | Режимы |
+|---|---|---|---|
+| Spark 3.1.1 BYOS | `./scripts/submit-spark31.sh` | `orc-carbon-bench-spark31-all.jar` | `generate`, `validate`, `benchmark`, `index-experiment`, `report` |
+| Spark 3.2 кластера | `./scripts/submit-spark32.sh` | `orc-carbon-bench-spark32-all.jar` | `benchmark --formats=orc`, опционально `generate --output-formats=orc`, `report` |
+
+Подготовка Spark 3.1.1 на edge (один раз):
+
+```bash
+./scripts/prepare-spark31.sh
+```
+
+Скрипт качает `spark-3.1.1-bin-without-hadoop` в `dist/spark-3.1.1/`, выставляет `SPARK_DIST_CLASSPATH=$(hadoop classpath)` и копирует клиентский `hive-site.xml`. `SPARK_CONF_DIR` кластерного Spark 3.2 **не** наследуется.
+
+Если `hadoop classpath` конфликтует с SDP-артефактами:
+
+```bash
+SPARK31_VARIANT=hadoop3.2 ./scripts/prepare-spark31.sh
+```
+
+Флаги `spark-submit` передаются до `--`, аргументы приложения — после:
+
+```bash
+./scripts/submit-spark31.sh --driver-memory 8g --num-executors 16 -- \
+  --mode=generate --base-path="$BASE" --target-size-tb=0.01
+```
 
 ## Формат аргументов
 
@@ -39,18 +78,20 @@ gradlew.bat build
 ## Обзор пайплайна
 
 ```text
-generate  →  validate  →  benchmark  →  index-experiment  →  report
+generate (spark31) → validate (spark31) → benchmark (spark31)
+  → index-experiment (spark31, Bloom/Lucene) → benchmark ORC (spark32) → report (spark31)
 ```
 
-| Шаг | `--mode` | Выход | Статус |
-|---|---|---|---|
-| 1. Генерация данных | `generate` | `<orc-path>/`, `<carbon-path>/` | реализован |
-| 2. Бенчмарки | `benchmark` | `<reports-path>/raw/` | реализован |
-| 3. Индексные эксперименты | `index-experiment` | `<reports-path>/raw/index/` | реализован |
-| 4. Валидация | `validate` | `<reports-path>/raw/validation/` | реализован |
-| 5. Отчёт | `report` | `<reports-path>/summary/` | реализован |
+| Шаг | `--mode` | Рантайм | Выход | Статус |
+|---|---|---|---|---|
+| 1. Генерация данных | `generate` | spark31 | `<orc-path>/`, `<carbon-path>/` | реализован |
+| 2. Валидация | `validate` | spark31 | `<reports-path>/raw/validation/` | реализован |
+| 3. Бенчмарки ORC+Carbon | `benchmark` | spark31 | `<reports-path>/raw/` | реализован |
+| 4. Индексные эксперименты | `index-experiment` | spark31 | `<reports-path>/raw/index/` | реализован |
+| 5. Референс ORC | `benchmark --formats=orc` | spark32 | `<reports-path>/raw/spark32-orc/` | реализован |
+| 6. Отчёт | `report` | spark31 | `<reports-path>/summary/` | реализован |
 
-Промежуточный слой Parquet **не используется** — данные генерируются и сразу записываются в ORC и CarbonData.
+Промежуточный слой Parquet **не используется** — данные генерируются и сразу записываются в ORC и CarbonData. Референс Spark 3.2 читает **тот же** `--orc-path`.
 
 ### Конфигурируемые пути HDFS
 
@@ -75,12 +116,17 @@ generate  →  validate  →  benchmark  →  index-experiment  →  report
 Структура каталогов:
 
 ```text
-<orc-path>/          # ORC-файлы
+<orc-path>/          # ORC-файлы (пишет Spark 3.1.1, читает и 3.2)
 <carbon-path>/       # CarbonData-таблица
 <reports-path>/
-  raw/               # сырые метрики бенчмарков
+  raw/               # сырые метрики spark31
+  raw/spark32-orc/   # референс ORC на Spark 3.2
+  raw/index/         # индексные эксперименты
+  raw/validation/    # валидация
   summary/           # агрегированные отчёты
 ```
+
+Raw parquet содержит поля `spark_version` и `spark_runtime` (`spark31-carbon` / `spark32-orc`).
 
 ### Общие параметры (все шаги)
 
@@ -98,7 +144,7 @@ generate  →  validate  →  benchmark  →  index-experiment  →  report
 
 Генерирует синтетический датасет и **сразу записывает** его в ORC и/или CarbonData. Промежуточный Parquet не создаётся.
 
-По умолчанию пишет в оба формата (`--output-formats=orc,carbon`).
+По умолчанию пишет в оба формата (`--output-formats=orc,carbon`). На spark32-артефакте допустим только `--output-formats=orc`.
 
 ### Параметры запуска
 
@@ -143,14 +189,14 @@ generate  →  validate  →  benchmark  →  index-experiment  →  report
 ### Конфигурация Spark
 
 ORC-настройки выставляются в runtime (`spark.conf().set`).  
-CarbonData-расширения — **статические** в Spark 3.2: их нельзя менять после `SparkSession`. Приложение задаёт их на `SparkSession.Builder` до `getOrCreate()`. На YARN cluster дополнительно передайте:
+CarbonData-расширения задаются на `SparkSession.Builder` до `getOrCreate()`. `submit-spark31.sh` уже передаёт:
 
 ```bash
 --conf spark.sql.extensions=org.apache.spark.sql.CarbonExtensions \
 --conf spark.sql.session.state.builder=org.apache.spark.sql.hive.CarbonSessionStateBuilder
 ```
 
-CarbonData уже внутри fat JAR — **не** передавайте `--packages`.
+CarbonData уже внутри spark31 fat JAR — **не** передавайте `--packages`.
 
 ### Расчёты
 
@@ -186,14 +232,10 @@ write_partitions   = ceil(chunk_rows * avg_row_bytes / target_file_size_mb / 102
 
 ### Примеры запуска
 
-Полная генерация 5 ТБ в ORC и CarbonData:
+Полная генерация 5 ТБ в ORC и CarbonData (Spark 3.1.1):
 
 ```bash
-spark-submit \
-  --master yarn \
-  --deploy-mode cluster \
-  --class ru.sber.orcbench.AppMain \
-  build/libs/orc-carbon-bench-0.1.0-SNAPSHOT-all.jar \
+./scripts/submit-spark31.sh -- \
   --mode=generate \
   --base-path=hdfs://dev1-abyss-sdp2-ambari-02.opsmon.sbt:50470/bench/orc-carbon \
   --target-size-tb=5 \
@@ -207,11 +249,7 @@ spark-submit \
 Только ORC:
 
 ```bash
-spark-submit \
-  --master yarn \
-  --deploy-mode cluster \
-  --class ru.sber.orcbench.AppMain \
-  build/libs/orc-carbon-bench-0.1.0-SNAPSHOT-all.jar \
+./scripts/submit-spark31.sh -- \
   --mode=generate \
   --base-path=hdfs://dev1-abyss-sdp2-ambari-02.opsmon.sbt:50470/bench/orc-carbon \
   --output-formats=orc \
@@ -222,11 +260,7 @@ spark-submit \
 Только CarbonData с индексами:
 
 ```bash
-spark-submit \
-  --master yarn \
-  --deploy-mode cluster \
-  --class ru.sber.orcbench.AppMain \
-  build/libs/orc-carbon-bench-0.1.0-SNAPSHOT-all.jar \
+./scripts/submit-spark31.sh -- \
   --mode=generate \
   --base-path=hdfs://dev1-abyss-sdp2-ambari-02.opsmon.sbt:50470/bench/orc-carbon \
   --output-formats=carbon \
@@ -240,7 +274,10 @@ spark-submit \
 
 ## Шаг 2. Бенчмарки (`--mode=benchmark`)
 
-Запускает тесты производительности на данных из `<orc-path>/` и `<carbon-path>/`, сохраняет метрики в `<reports-path>/raw/`.
+Запускает тесты производительности на данных из `<orc-path>/` и `<carbon-path>/`.
+
+- spark31 пишет в `<reports-path>/raw/` (`spark_runtime=spark31-carbon`)
+- spark32 пишет в `<reports-path>/raw/spark32-orc/` (`spark_runtime=spark32-orc`)
 
 ### Сценарии
 
@@ -257,7 +294,7 @@ spark-submit \
 | `group_by` | Агрегация `GROUP BY` |
 | `lucene_text_search` | Поиск по `log_message` (только CarbonData) |
 
-### Метрики (Parquet в `<reports-path>/raw/`)
+### Метрики (Parquet)
 
 | Поле | Описание |
 |---|---|---|
@@ -272,6 +309,8 @@ spark-submit \
 | `selectivity` | `rows_returned / total_rows` |
 | `seed` | Seed эксперимента |
 | `executed_at` | Время выполнения (ISO-8601) |
+| `spark_version` | `spark.version()` |
+| `spark_runtime` | `spark31-carbon` или `spark32-orc` |
 
 Прогрев (`--benchmark-warmup-runs`) выполняется без записи в отчёт. При `--clear-cache-between-runs=true` кэш Spark очищается перед каждым измеряемым прогоном.
 
@@ -289,18 +328,26 @@ spark-submit \
 | `--benchmark-repeat-runs` | нет | `3` | Измеряемые повторы |
 | `--benchmark-scenarios` | нет | `all` | Сценарии через запятую или `all` |
 | `--clear-cache-between-runs` | нет | `true` | Очистка кэша между прогонами |
-| `--formats` | нет | `orc,carbon` | Форматы для сравнения |
+| `--formats` | нет | `orc,carbon` | Форматы для сравнения; на spark32 только `orc` |
 
 ### Пример запуска
 
+Spark 3.1.1, ORC + Carbon:
+
 ```bash
-spark-submit \
-  --master yarn \
-  --deploy-mode cluster \
-  --class ru.sber.orcbench.AppMain \
-  build/libs/orc-carbon-bench-0.1.0-SNAPSHOT-all.jar \
+./scripts/submit-spark31.sh -- \
   --mode=benchmark \
   --base-path=hdfs://dev1-abyss-sdp2-ambari-02.opsmon.sbt:50470/bench/orc-carbon \
+  --seed=42
+```
+
+Референс ORC на кластерном Spark 3.2 (тот же `--orc-path`):
+
+```bash
+./scripts/submit-spark32.sh -- \
+  --mode=benchmark \
+  --base-path=hdfs://dev1-abyss-sdp2-ambari-02.opsmon.sbt:50470/bench/orc-carbon \
+  --formats=orc \
   --seed=42
 ```
 
@@ -308,7 +355,7 @@ spark-submit \
 
 ## Шаг 3. Индексные эксперименты (`--mode=index-experiment`)
 
-Сравнивает ORC (reference) с CarbonData в профилях `baseline`, `bloom`, `lucene`, `bloom_lucene`. Запускает индексные сценарии и Lucene-поиск в разрезе каждого `log_format`.
+Только spark31. Сравнивает ORC (reference) с CarbonData в профилях `baseline`, `bloom`, `lucene`, `bloom_lucene`. Запускает индексные сценарии и Lucene-поиск в разрезе каждого `log_format`.
 
 Результаты:
 - `<reports-path>/raw/index/` — метрики запросов
@@ -369,11 +416,7 @@ spark-submit \
 ### Пример запуска
 
 ```bash
-spark-submit \
-  --master yarn \
-  --deploy-mode cluster \
-  --class ru.sber.orcbench.AppMain \
-  build/libs/orc-carbon-bench-0.1.0-SNAPSHOT-all.jar \
+./scripts/submit-spark31.sh -- \
   --mode=index-experiment \
   --base-path=hdfs://dev1-abyss-sdp2-ambari-02.opsmon.sbt:50470/bench/orc-carbon \
   --carbon-baseline-path=hdfs://dev1-abyss-sdp2-ambari-02.opsmon.sbt:50470/bench/orc-carbon/carbon-baseline \
@@ -388,7 +431,7 @@ spark-submit \
 
 ## Шаг 4. Валидация данных (`--mode=validate`)
 
-Проверяет корректность и согласованность данных в ORC и CarbonData. Результаты пишутся в `<reports-path>/raw/validation/`. При ошибке любой проверки job завершается с исключением.
+Только spark31. Проверяет корректность и согласованность данных в ORC и CarbonData. Результаты пишутся в `<reports-path>/raw/validation/`. При ошибке любой проверки job завершается с исключением.
 
 ### Проверки
 
@@ -416,24 +459,10 @@ spark-submit \
 | `--timestamp-start` | нет | `2024-01-01` | Ожидаемое начало диапазона `timestamp` |
 | `--timestamp-end` | нет | `2025-01-01` | Ожидаемый конец диапазона `timestamp` |
 
-### Unit-тесты
-
-Локальные тесты без Spark-кластера:
-
-```bash
-./gradlew test
-```
-
-Покрывают: `ArgParser`, `GeneratorConfig`, `LogMessageBuilder`, `ValidationSettings`, `IndexProfile`.
-
 ### Пример запуска
 
 ```bash
-spark-submit \
-  --master yarn \
-  --deploy-mode cluster \
-  --class ru.sber.orcbench.AppMain \
-  build/libs/orc-carbon-bench-0.1.0-SNAPSHOT-all.jar \
+./scripts/submit-spark31.sh -- \
   --mode=validate \
   --base-path=hdfs://dev1-abyss-sdp2-ambari-02.opsmon.sbt:50470/bench/orc-carbon \
   --validation-checks=all \
@@ -444,9 +473,12 @@ spark-submit \
 
 ## Шаг 5. Формирование отчёта (`--mode=report`)
 
-Агрегирует метрики из `<reports-path>/raw/` в `<reports-path>/summary/`.
+Агрегирует метрики из `<reports-path>/raw/` и `<reports-path>/raw/spark32-orc/` в `<reports-path>/summary/`.
 
-> Статус: **реализован**.
+Markdown содержит:
+1. ORC vs Carbon на Spark 3.1.1
+2. ORC Spark 3.1.1 vs ORC Spark 3.2
+3. Index experiments (Bloom / Lucene), build metrics, validation
 
 ### Параметры запуска
 
@@ -464,22 +496,12 @@ spark-submit \
 | `results.parquet` | Агрегированные метрики (benchmark, index, validation) |
 | `results.csv` | То же в CSV |
 | `results.json` | То же в JSON |
-| `<report-name>.md` | Сводный Markdown: сравнение ORC vs Carbon, индексы, валидация, рекомендации |
-
-Источники данных (читаются при наличии):
-- `<reports-path>/raw/` — бенчмарки
-- `<reports-path>/raw/index/` — индексные эксперименты
-- `<reports-path>/raw/index/build-metrics/` — построение индексов
-- `<reports-path>/raw/validation/` — валидация
+| `<report-name>.md` | Сводный Markdown: сравнение форматов, движков, индексы, валидация, рекомендации |
 
 ### Пример запуска
 
 ```bash
-spark-submit \
-  --master yarn \
-  --deploy-mode cluster \
-  --class ru.sber.orcbench.AppMain \
-  build/libs/orc-carbon-bench-0.1.0-SNAPSHOT-all.jar \
+./scripts/submit-spark31.sh -- \
   --mode=report \
   --base-path=hdfs://dev1-abyss-sdp2-ambari-02.opsmon.sbt:50470/bench/orc-carbon
 ```
@@ -488,48 +510,34 @@ spark-submit \
 
 ## Полный прогон пайплайна
 
-Рекомендуемый порядок на кластере: **generate → validate → benchmark → index-experiment → report**.  
-Перед ТБ-прогоном сделайте smoke с `--target-size-tb=0.01`.
+Рекомендуемый порядок на кластере: **generate → validate → benchmark (3.1.1) → index-experiment → benchmark ORC (3.2) → report**.  
+Перед ТБ-прогоном сделайте smoke: `./scripts/run-smoke.sh` (`--target-size-tb=0.01`).
 
 ```bash
-JAR=build/libs/orc-carbon-bench-0.1.0-SNAPSHOT-all.jar
 BASE=hdfs://dev1-abyss-sdp2-ambari-02.opsmon.sbt:50470/bench/orc-carbon
 
-# 1. Генерация в ORC + CarbonData
-spark-submit --master yarn --deploy-mode cluster \
-  --class ru.sber.orcbench.AppMain "$JAR" \
-  --mode=generate \
-  --base-path="$BASE" \
-  --target-size-tb=5 --seed=42 \
-  --enable-bloom-index=true --enable-lucene-index=true
+./scripts/prepare-spark31.sh
 
-# 2. Валидация
-spark-submit --master yarn --deploy-mode cluster \
-  --class ru.sber.orcbench.AppMain "$JAR" \
-  --mode=validate \
-  --base-path="$BASE"
+./scripts/submit-spark31.sh -- --mode=generate --base-path="$BASE" \
+  --target-size-tb=5 --seed=42 --enable-bloom-index=true --enable-lucene-index=true
 
-# 3. Бенчмарки
-spark-submit --master yarn --deploy-mode cluster \
-  --class ru.sber.orcbench.AppMain "$JAR" \
-  --mode=benchmark \
-  --base-path="$BASE"
+./scripts/submit-spark31.sh -- --mode=validate --base-path="$BASE"
 
-# 4. Индексные эксперименты
-spark-submit --master yarn --deploy-mode cluster \
-  --class ru.sber.orcbench.AppMain "$JAR" \
-  --mode=index-experiment \
-  --base-path="$BASE" \
+./scripts/submit-spark31.sh -- --mode=benchmark --base-path="$BASE"
+
+./scripts/submit-spark31.sh -- --mode=index-experiment --base-path="$BASE" \
   --carbon-baseline-path="$BASE/carbon-baseline" \
   --carbon-bloom-path="$BASE/carbon-bloom" \
-  --index-profiles=baseline,bloom
+  --carbon-lucene-path="$BASE/carbon-lucene" \
+  --carbon-bloom-lucene-path="$BASE/carbon-bloom-lucene" \
+  --index-profiles=baseline,bloom,lucene,bloom_lucene
 
-# 5. Отчёт
-spark-submit --master yarn --deploy-mode cluster \
-  --class ru.sber.orcbench.AppMain "$JAR" \
-  --mode=report \
-  --base-path="$BASE"
+./scripts/submit-spark32.sh -- --mode=benchmark --base-path="$BASE" --formats=orc
+
+./scripts/submit-spark31.sh -- --mode=report --base-path="$BASE"
 ```
+
+Подробности кластерного запуска — в [docs/cluster_manual_runbook.md](docs/cluster_manual_runbook.md).
 
 ---
 
@@ -544,3 +552,4 @@ spark-submit --master yarn --deploy-mode cluster \
 | Неверный формат аргумента | `Invalid argument: <arg>. Use --key=value` |
 | Неположительное число | `Argument --<key> must be positive: <value>` |
 | `timestamp-end` <= `timestamp-start` | `--timestamp-end must be greater than --timestamp-start` |
+| Carbon-режим на spark32 JAR | `CarbonData and index experiments require orc-carbon-bench-spark31-all.jar ...` |

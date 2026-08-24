@@ -1,6 +1,7 @@
 package ru.sber.orcbench.benchmark;
 
 import ru.sber.orcbench.config.IndexProfile;
+import ru.sber.orcbench.config.SparkRuntimeInfo;
 
 import java.time.Instant;
 
@@ -12,6 +13,8 @@ public final class IndexBuildMetric {
     private final String columnName;
     private final long buildTimeMs;
     private final Instant executedAt;
+    private final String sparkVersion;
+    private final String sparkRuntime;
 
     public IndexBuildMetric(
             String runId,
@@ -20,7 +23,9 @@ public final class IndexBuildMetric {
             String indexType,
             String columnName,
             long buildTimeMs,
-            Instant executedAt
+            Instant executedAt,
+            String sparkVersion,
+            String sparkRuntime
     ) {
         this.runId = runId;
         this.profile = profile;
@@ -29,6 +34,30 @@ public final class IndexBuildMetric {
         this.columnName = columnName;
         this.buildTimeMs = buildTimeMs;
         this.executedAt = executedAt;
+        this.sparkVersion = sparkVersion;
+        this.sparkRuntime = sparkRuntime;
+    }
+
+    public static IndexBuildMetric of(
+            String runId,
+            IndexProfile profile,
+            String indexName,
+            String indexType,
+            String columnName,
+            long buildTimeMs,
+            SparkRuntimeInfo runtime
+    ) {
+        return new IndexBuildMetric(
+                runId,
+                profile,
+                indexName,
+                indexType,
+                columnName,
+                buildTimeMs,
+                Instant.now(),
+                runtime.sparkVersion(),
+                runtime.sparkRuntime()
+        );
     }
 
     public String runId() {
@@ -57,5 +86,13 @@ public final class IndexBuildMetric {
 
     public Instant executedAt() {
         return executedAt;
+    }
+
+    public String sparkVersion() {
+        return sparkVersion;
+    }
+
+    public String sparkRuntime() {
+        return sparkRuntime;
     }
 }

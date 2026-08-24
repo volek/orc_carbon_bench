@@ -254,6 +254,10 @@ public final class AppConfig {
         return paths.reportsValidationPath();
     }
 
+    public String reportsSpark32OrcPath() {
+        return paths.reportsSpark32OrcPath();
+    }
+
     private static Map<String, String> parseArgs(String[] args) {
         Map<String, String> kv = new HashMap<>();
         for (String arg : args) {

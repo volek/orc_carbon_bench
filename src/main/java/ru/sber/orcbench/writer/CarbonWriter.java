@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 import ru.sber.orcbench.benchmark.IndexBuildMetric;
 import ru.sber.orcbench.config.CarbonWriteSettings;
 import ru.sber.orcbench.config.IndexProfile;
+import ru.sber.orcbench.config.SparkRuntimeInfo;
 
 import java.util.Locale;
 
@@ -28,7 +29,7 @@ public final class CarbonWriter {
     }
 
     /**
-     * {@code spark.sql.extensions} is static in Spark 3.2+: it cannot be changed after
+     * {@code spark.sql.extensions} is static in Spark 3.1+ cluster sessions: it cannot be changed after
      * {@code SparkSession} exists. Fail with a submit hint instead of {@code AnalysisException}.
      */
     public static void requireConfigured(SparkSession spark) {
@@ -118,8 +119,9 @@ public final class CarbonWriter {
                 spark.sql(ddl);
                 long buildTimeMs = (System.nanoTime() - startedAt) / 1_000_000L;
                 if (profile != null) {
-                    metrics.add(new IndexBuildMetric(
-                            runId, profile, indexName, "BLOOMFILTER", column, buildTimeMs, java.time.Instant.now()
+                    metrics.add(IndexBuildMetric.of(
+                            runId, profile, indexName, "BLOOMFILTER", column, buildTimeMs,
+                            SparkRuntimeInfo.from(spark)
                     ));
                 }
             }
@@ -136,8 +138,9 @@ public final class CarbonWriter {
                 spark.sql(ddl);
                 long buildTimeMs = (System.nanoTime() - startedAt) / 1_000_000L;
                 if (profile != null) {
-                    metrics.add(new IndexBuildMetric(
-                            runId, profile, indexName, "LUCENE", column, buildTimeMs, java.time.Instant.now()
+                    metrics.add(IndexBuildMetric.of(
+                            runId, profile, indexName, "LUCENE", column, buildTimeMs,
+                            SparkRuntimeInfo.from(spark)
                     ));
                 }
             }
