@@ -72,10 +72,10 @@ join_parts() {
   local parts_dir="$1"
   local dest="$DIST_DIR/$ARCHIVE_NAME"
   mkdir -p "$DIST_DIR"
-  echo "Joining Spark archive parts from $parts_dir"
+  echo "Joining Spark archive parts from $parts_dir" >&2
   # shellcheck disable=SC2086
   cat "$parts_dir"/$PART_GLOB > "$dest"
-  echo "Joined $dest ($(wc -c < "$dest") bytes)"
+  echo "Joined $dest ($(wc -c < "$dest") bytes)" >&2
   echo "$dest"
 }
 
@@ -94,6 +94,10 @@ else
     echo "Spark archive $ARCHIVE_NAME not found (and no $ARCHIVE_NAME.part-* chunks)." >&2
     echo "Clone the repo (parts live in dist/) or copy them from the build machine." >&2
     echo "Do not download Spark on the edge node." >&2
+    exit 1
+  fi
+  if [[ ! -f "$ARCHIVE" ]]; then
+    echo "Spark archive path is not a file: $ARCHIVE" >&2
     exit 1
   fi
   echo "Extracting $ARCHIVE"
