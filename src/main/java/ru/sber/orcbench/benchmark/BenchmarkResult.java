@@ -1,7 +1,6 @@
 package ru.sber.orcbench.benchmark;
 
 import ru.sber.orcbench.config.BenchmarkScenario;
-import ru.sber.orcbench.config.OutputFormat;
 import ru.sber.orcbench.config.SparkRuntimeInfo;
 
 import java.time.Instant;
@@ -9,7 +8,6 @@ import java.time.Instant;
 public final class BenchmarkResult {
     private final String runId;
     private final BenchmarkScenario scenario;
-    private final OutputFormat format;
     private final int runIndex;
     private final boolean warmup;
     private final long durationMs;
@@ -24,7 +22,6 @@ public final class BenchmarkResult {
     public BenchmarkResult(
             String runId,
             BenchmarkScenario scenario,
-            OutputFormat format,
             int runIndex,
             boolean warmup,
             long durationMs,
@@ -38,7 +35,6 @@ public final class BenchmarkResult {
     ) {
         this.runId = runId;
         this.scenario = scenario;
-        this.format = format;
         this.runIndex = runIndex;
         this.warmup = warmup;
         this.durationMs = durationMs;
@@ -54,7 +50,6 @@ public final class BenchmarkResult {
     public static BenchmarkResult of(
             String runId,
             BenchmarkScenario scenario,
-            OutputFormat format,
             int runIndex,
             boolean warmup,
             long durationMs,
@@ -67,7 +62,6 @@ public final class BenchmarkResult {
         return new BenchmarkResult(
                 runId,
                 scenario,
-                format,
                 runIndex,
                 warmup,
                 durationMs,
@@ -87,10 +81,6 @@ public final class BenchmarkResult {
 
     public BenchmarkScenario scenario() {
         return scenario;
-    }
-
-    public OutputFormat format() {
-        return format;
     }
 
     public int runIndex() {

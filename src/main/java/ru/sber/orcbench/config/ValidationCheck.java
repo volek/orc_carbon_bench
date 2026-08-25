@@ -4,9 +4,7 @@ import java.util.EnumSet;
 import java.util.Set;
 
 public enum ValidationCheck {
-    ROW_COUNT_PARITY("row_count_parity"),
-    CHECKSUM_PARITY("checksum_parity"),
-    SAMPLE_QUERY_PARITY("sample_query_parity"),
+    ROW_COUNT("row_count"),
     LOW_CARDINALITY_BOUNDS("low_cardinality_bounds"),
     TIMESTAMP_RANGE("timestamp_range"),
     LOG_FORMAT_DISTRIBUTION("log_format_distribution"),

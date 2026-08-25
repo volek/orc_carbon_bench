@@ -3,7 +3,6 @@ package ru.sber.orcbench.config;
 public enum Mode {
     GENERATE("generate"),
     VALIDATE("validate"),
-    INDEX_EXPERIMENT("index-experiment"),
     BENCHMARK("benchmark"),
     REPORT("report");
 

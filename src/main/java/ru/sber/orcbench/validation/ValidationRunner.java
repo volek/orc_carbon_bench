@@ -6,8 +6,6 @@ import org.apache.spark.sql.SparkSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.sber.orcbench.benchmark.DatasetLoader;
-import ru.sber.orcbench.benchmark.FilterContext;
-import ru.sber.orcbench.config.OutputFormat;
 import ru.sber.orcbench.config.SparkRuntimeInfo;
 import ru.sber.orcbench.config.ValidationCheck;
 import ru.sber.orcbench.config.ValidationSettings;
@@ -27,7 +25,6 @@ import static org.apache.spark.sql.functions.lit;
 import static org.apache.spark.sql.functions.max;
 import static org.apache.spark.sql.functions.min;
 import static org.apache.spark.sql.functions.not;
-import static org.apache.spark.sql.functions.sum;
 
 public final class ValidationRunner {
     private static final Logger LOG = LoggerFactory.getLogger(ValidationRunner.class);
@@ -39,7 +36,6 @@ public final class ValidationRunner {
             SparkSession spark,
             ValidationSettings settings,
             String orcPath,
-            String carbonPath,
             String reportsValidationPath,
             long seed,
             long timestampStartMs,
@@ -50,32 +46,19 @@ public final class ValidationRunner {
         List<ValidationResult> results = new ArrayList<>();
 
         LOG.info(
-                "Validation runId={} checks={} sampleFraction={} orcPath={} carbonPath={}",
-                runId, settings.checks(), settings.sampleFraction(), orcPath, carbonPath
+                "Validation runId={} checks={} sampleFraction={} orcPath={}",
+                runId, settings.checks(), settings.sampleFraction(), orcPath
         );
 
-        Dataset<Row> orcFull = DatasetLoader.load(spark, OutputFormat.ORC, orcPath, carbonPath);
-        Dataset<Row> carbonFull = DatasetLoader.load(spark, OutputFormat.CARBON, orcPath, carbonPath);
-
+        Dataset<Row> orcFull = DatasetLoader.load(spark, orcPath);
         long orcRows = orcFull.count();
-        long carbonRows = carbonFull.count();
-
         Dataset<Row> orcSample = orcFull.sample(false, settings.sampleFraction(), seed);
-        Dataset<Row> carbonSample = carbonFull.sample(false, settings.sampleFraction(), seed);
 
         for (ValidationCheck check : settings.checks()) {
             ValidationResult result;
             switch (check) {
-                case ROW_COUNT_PARITY:
-                    result = checkRowCountParity(runId, orcRows, carbonRows, runtime);
-                    break;
-                case CHECKSUM_PARITY:
-                    result = checkChecksumParity(runId, orcFull, carbonFull, runtime);
-                    break;
-                case SAMPLE_QUERY_PARITY:
-                    result = checkSampleQueryParity(
-                            runId, orcFull, carbonFull, timestampStartMs, timestampEndMs, runtime
-                    );
+                case ROW_COUNT:
+                    result = checkRowCount(runId, orcRows, runtime);
                     break;
                 case LOW_CARDINALITY_BOUNDS:
                     result = checkLowCardinalityBounds(runId, orcSample, runtime);
@@ -106,76 +89,12 @@ public final class ValidationRunner {
         LOG.info("Validation completed successfully: runId={} checks={}", runId, results.size());
     }
 
-    private static ValidationResult checkRowCountParity(
-            String runId, long orcRows, long carbonRows, SparkRuntimeInfo runtime
-    ) {
-        boolean passed = orcRows == carbonRows;
-        String details = "orcRows=" + orcRows + ", carbonRows=" + carbonRows;
+    private static ValidationResult checkRowCount(String runId, long orcRows, SparkRuntimeInfo runtime) {
+        boolean passed = orcRows > 0;
+        String details = "orcRows=" + orcRows;
         return passed
-                ? ValidationResult.pass(runId, ValidationCheck.ROW_COUNT_PARITY, "Row counts match", details, runtime)
-                : ValidationResult.fail(runId, ValidationCheck.ROW_COUNT_PARITY, "Row counts differ", details, runtime);
-    }
-
-    private static ValidationResult checkChecksumParity(
-            String runId, Dataset<Row> orc, Dataset<Row> carbon, SparkRuntimeInfo runtime
-    ) {
-        long orcChecksum = aggregateChecksum(orc);
-        long carbonChecksum = aggregateChecksum(carbon);
-        boolean passed = orcChecksum == carbonChecksum;
-        String details = "orcChecksum=" + orcChecksum + ", carbonChecksum=" + carbonChecksum;
-        return passed
-                ? ValidationResult.pass(runId, ValidationCheck.CHECKSUM_PARITY, "Checksums match", details, runtime)
-                : ValidationResult.fail(runId, ValidationCheck.CHECKSUM_PARITY, "Checksums differ", details, runtime);
-    }
-
-    private static long aggregateChecksum(Dataset<Row> df) {
-        Row row = df.agg(
-                sum(col("user_id")).alias("user_sum"),
-                sum(col("product_id")).alias("product_sum"),
-                sum(col("campaign_id")).alias("campaign_sum"),
-                sum(length(col("event_id"))).alias("event_len_sum")
-        ).collectAsList().get(0);
-
-        long userSum = row.isNullAt(0) ? 0L : row.getLong(0);
-        long productSum = row.isNullAt(1) ? 0L : row.getLong(1);
-        long campaignSum = row.isNullAt(2) ? 0L : row.getLong(2);
-        long eventLenSum = row.isNullAt(3) ? 0L : row.getLong(3);
-        return userSum ^ productSum ^ campaignSum ^ eventLenSum;
-    }
-
-    private static ValidationResult checkSampleQueryParity(
-            String runId,
-            Dataset<Row> orc,
-            Dataset<Row> carbon,
-            long timestampStartMs,
-            long timestampEndMs,
-            SparkRuntimeInfo runtime
-    ) {
-        List<Row> sample = orc.limit(1).collectAsList();
-        if (sample.isEmpty()) {
-            return ValidationResult.fail(runId, ValidationCheck.SAMPLE_QUERY_PARITY, "Empty ORC dataset", "", runtime);
-        }
-
-        FilterContext ctx = FilterContext.fromSample(sample.get(0), timestampStartMs, timestampEndMs);
-
-        long orcCount = orc.filter(
-                col("country_code").equalTo(lit(ctx.countryCode()))
-                        .and(col("status").equalTo(lit(ctx.status())))
-                        .and(col("log_format").equalTo(lit(ctx.logFormat())))
-        ).count();
-
-        long carbonCount = carbon.filter(
-                col("country_code").equalTo(lit(ctx.countryCode()))
-                        .and(col("status").equalTo(lit(ctx.status())))
-                        .and(col("log_format").equalTo(lit(ctx.logFormat())))
-        ).count();
-
-        boolean passed = orcCount == carbonCount;
-        String details = "filter country=" + ctx.countryCode() + " status=" + ctx.status()
-                + " log_format=" + ctx.logFormat() + " orcCount=" + orcCount + " carbonCount=" + carbonCount;
-        return passed
-                ? ValidationResult.pass(runId, ValidationCheck.SAMPLE_QUERY_PARITY, "Sample query counts match", details, runtime)
-                : ValidationResult.fail(runId, ValidationCheck.SAMPLE_QUERY_PARITY, "Sample query counts differ", details, runtime);
+                ? ValidationResult.pass(runId, ValidationCheck.ROW_COUNT, "ORC dataset is non-empty", details, runtime)
+                : ValidationResult.fail(runId, ValidationCheck.ROW_COUNT, "ORC dataset is empty", details, runtime);
     }
 
     private static ValidationResult checkLowCardinalityBounds(

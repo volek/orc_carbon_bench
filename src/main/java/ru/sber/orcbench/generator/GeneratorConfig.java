@@ -1,21 +1,16 @@
 package ru.sber.orcbench.generator;
 
 import ru.sber.orcbench.config.AppConfig;
-import ru.sber.orcbench.config.CarbonWriteSettings;
 import ru.sber.orcbench.config.OrcWriteSettings;
-import ru.sber.orcbench.config.OutputFormat;
 
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
-import java.util.Set;
 
 public final class GeneratorConfig {
     private static final long BYTES_PER_TB = 1L << 40;
 
     private final String orcPath;
-    private final String carbonPath;
-    private final Set<OutputFormat> outputFormats;
     private final double targetSizeTb;
     private final long seed;
     private final long avgRowBytes;
@@ -24,12 +19,9 @@ public final class GeneratorConfig {
     private final long timestampEndEpochMs;
     private final int targetFileSizeMb;
     private final OrcWriteSettings orcWrite;
-    private final CarbonWriteSettings carbonWrite;
 
     public GeneratorConfig(
             String orcPath,
-            String carbonPath,
-            Set<OutputFormat> outputFormats,
             double targetSizeTb,
             long seed,
             long avgRowBytes,
@@ -37,12 +29,9 @@ public final class GeneratorConfig {
             long timestampStartEpochMs,
             long timestampEndEpochMs,
             int targetFileSizeMb,
-            OrcWriteSettings orcWrite,
-            CarbonWriteSettings carbonWrite
+            OrcWriteSettings orcWrite
     ) {
         this.orcPath = orcPath;
-        this.carbonPath = carbonPath;
-        this.outputFormats = outputFormats;
         this.targetSizeTb = targetSizeTb;
         this.seed = seed;
         this.avgRowBytes = avgRowBytes;
@@ -51,14 +40,11 @@ public final class GeneratorConfig {
         this.timestampEndEpochMs = timestampEndEpochMs;
         this.targetFileSizeMb = targetFileSizeMb;
         this.orcWrite = orcWrite;
-        this.carbonWrite = carbonWrite;
     }
 
     public static GeneratorConfig from(AppConfig appConfig) {
         return new GeneratorConfig(
                 appConfig.orcPath(),
-                appConfig.carbonPath(),
-                appConfig.outputFormats(),
                 appConfig.targetSizeTb(),
                 appConfig.seed(),
                 appConfig.avgRowBytes(),
@@ -66,21 +52,12 @@ public final class GeneratorConfig {
                 appConfig.timestampStartEpochMs(),
                 appConfig.timestampEndEpochMs(),
                 appConfig.targetFileSizeMb(),
-                appConfig.orcWrite(),
-                appConfig.carbonWrite()
+                appConfig.orcWrite()
         );
     }
 
     public String orcPath() {
         return orcPath;
-    }
-
-    public String carbonPath() {
-        return carbonPath;
-    }
-
-    public Set<OutputFormat> outputFormats() {
-        return outputFormats;
     }
 
     public double targetSizeTb() {
@@ -113,18 +90,6 @@ public final class GeneratorConfig {
 
     public OrcWriteSettings orcWrite() {
         return orcWrite;
-    }
-
-    public CarbonWriteSettings carbonWrite() {
-        return carbonWrite;
-    }
-
-    public boolean writesOrc() {
-        return outputFormats.contains(OutputFormat.ORC);
-    }
-
-    public boolean writesCarbon() {
-        return outputFormats.contains(OutputFormat.CARBON);
     }
 
     public long targetBytes() {

@@ -1,212 +1,67 @@
 plugins {
-    id 'com.github.johnrengelman.shadow' version '8.1.1' apply false
+    id 'java'
+    id 'application'
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
 }
 
 group = 'ru.sber.orcbench'
 version = '0.1.0-SNAPSHOT'
 
-subprojects {
-    apply plugin: 'java'
-    apply plugin: 'application'
-    apply plugin: 'com.github.johnrengelman.shadow'
+def sparkVersion = '3.2.1'
+def slf4jVersion = '1.7.36'
 
-    group = rootProject.group
-    version = rootProject.version
-
-    java {
-        toolchain {
-            languageVersion = JavaLanguageVersion.of(8)
-        }
-    }
-
-    sourceSets {
-        main {
-            java.srcDirs = ["${rootDir}/src/main/java"]
-        }
-        test {
-            java.srcDirs = ["${rootDir}/src/test/java"]
-        }
-    }
-
-    application {
-        mainClass = 'ru.sber.orcbench.AppMain'
-    }
-
-    tasks.withType(JavaCompile).configureEach {
-        options.encoding = 'UTF-8'
-    }
-
-    jar {
-        manifest {
-            attributes 'Main-Class': 'ru.sber.orcbench.AppMain'
-        }
-    }
-
-    tasks.test {
-        useJUnitPlatform()
-    }
-
-    tasks.register('copyToRootLibs', Copy) {
-        dependsOn tasks.named('shadowJar')
-        from tasks.named('shadowJar')
-        into "${rootDir}/build/libs"
-    }
-
-    tasks.named('shadowJar') {
-        finalizedBy tasks.named('copyToRootLibs')
-    }
-
-    tasks.named('build') {
-        dependsOn tasks.named('shadowJar')
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(8)
     }
 }
 
-def spark31ArchiveName = 'spark-3.1.1-bin-without-hadoop.tgz'
-def spark31ArchiveUrl = 'https://archive.apache.org/dist/spark/spark-3.1.1/spark-3.1.1-bin-without-hadoop.tgz'
-def spark31ArchiveFile = rootProject.file("dist/${spark31ArchiveName}")
-def spark31DistDir = rootProject.file('dist')
-def spark31PartPrefix = "${spark31ArchiveName}.part-"
+application {
+    mainClass = 'ru.sber.orcbench.AppMain'
+}
 
-// Hive SQL jars missing from spark-*-bin-without-hadoop (no spark-hive / hive-exec).
-// Built on the machine with internet; edge unpacks dist/spark-3.1.1-hive-jars.tgz — no downloads.
-// ~40MB — commit the whole .tgz (under GitHub 100MB). Spark archive still split into parts.
-def spark31HiveArchiveName = 'spark-3.1.1-hive-jars.tgz'
-def spark31HiveArchiveFile = rootProject.file("dist/${spark31HiveArchiveName}")
-def spark31HiveStagingDir = rootProject.file('build/spark31-hive-jars')
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}
 
-configurations {
-    spark31HiveJars
+jar {
+    manifest {
+        attributes 'Main-Class': 'ru.sber.orcbench.AppMain'
+    }
 }
 
 dependencies {
-    // Bring spark-hive + Hive 2.3.7 stack used by Spark 3.1.1 enableHiveSupport / CarbonSession.
-    spark31HiveJars('org.apache.spark:spark-hive_2.12:3.1.1') {
-        exclude group: 'org.apache.hadoop'
-        exclude group: 'org.scala-lang'
-        exclude group: 'org.scala-lang.modules'
-        exclude group: 'org.slf4j'
-        exclude group: 'log4j'
-        exclude group: 'ch.qos.logback'
-        exclude group: 'org.apache.logging.log4j'
+    compileOnly "org.apache.spark:spark-sql_2.12:${sparkVersion}"
+
+    implementation "org.slf4j:slf4j-api:${slf4jVersion}"
+    implementation "org.slf4j:slf4j-simple:${slf4jVersion}"
+
+    testImplementation platform('org.junit:junit-bom:5.10.2')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testImplementation "org.apache.spark:spark-sql_2.12:${sparkVersion}"
+}
+
+tasks.test {
+    useJUnitPlatform()
+}
+
+shadowJar {
+    archiveFileName.set('orc-bench-all.jar')
+    mergeServiceFiles()
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+
+    dependencies {
+        exclude(dependency('org.apache.spark:.*'))
+        exclude(dependency('org.apache.hadoop:.*'))
+        exclude(dependency('org.scala-lang:.*'))
+        exclude(dependency('org.scala-lang.modules:.*'))
+    }
+
+    manifest {
+        attributes 'Main-Class': 'ru.sber.orcbench.AppMain'
     }
 }
 
-tasks.register('downloadSpark31') {
-    group = 'build'
-    description = 'Downloads Apache Spark 3.1.1 without-hadoop archive into dist/ (skipped if already present).'
-    outputs.file spark31ArchiveFile
-    outputs.upToDateWhen { spark31ArchiveFile.exists() && spark31ArchiveFile.length() > 0 }
-    doLast {
-        if (spark31ArchiveFile.exists() && spark31ArchiveFile.length() > 0) {
-            logger.lifecycle("Spark 3.1.1 archive already present: ${spark31ArchiveFile}")
-            return
-        }
-        spark31ArchiveFile.parentFile.mkdirs()
-        logger.lifecycle("Downloading ${spark31ArchiveUrl}")
-        spark31ArchiveFile.withOutputStream { os ->
-            new URI(spark31ArchiveUrl).toURL().openStream().withStream { is ->
-                os << is
-            }
-        }
-        logger.lifecycle("Saved ${spark31ArchiveFile} (${spark31ArchiveFile.length()} bytes)")
-    }
-}
-
-tasks.register('splitSpark31Archive') {
-    group = 'build'
-    description = 'Splits Spark 3.1.1 archive into 90MB chunks for GitHub (100MB file limit).'
-    dependsOn tasks.named('downloadSpark31')
-    doLast {
-        def parts = spark31DistDir.listFiles()?.findAll { it.name.startsWith(spark31PartPrefix) } ?: []
-        if (!parts.isEmpty()) {
-            logger.lifecycle("Spark 3.1.1 parts already present in ${spark31DistDir}")
-            return
-        }
-        if (!spark31ArchiveFile.exists()) {
-            throw new GradleException("Missing ${spark31ArchiveFile}")
-        }
-        exec {
-            commandLine 'split', '-b', '90M', '-d', '-a', '2',
-                    spark31ArchiveFile.absolutePath,
-                    new File(spark31DistDir, spark31PartPrefix).absolutePath
-        }
-        logger.lifecycle("Split ${spark31ArchiveFile.name} into ${spark31PartPrefix}*")
-    }
-}
-
-tasks.register('downloadSpark31HiveJars') {
-    group = 'build'
-    description = 'Resolves spark-hive + Hive jars into dist/spark-3.1.1-hive-jars.tgz (build machine only; commit the .tgz as-is).'
-    outputs.file spark31HiveArchiveFile
-    outputs.upToDateWhen { spark31HiveArchiveFile.exists() && spark31HiveArchiveFile.length() > 0 }
-    doLast {
-        spark31DistDir.mkdirs()
-        if (spark31HiveArchiveFile.exists() && spark31HiveArchiveFile.length() > 0) {
-            logger.lifecycle("Hive jars archive already present: ${spark31HiveArchiveFile}")
-            return
-        }
-
-        // Prefer jar names already inside the without-hadoop Spark archive when available.
-        Set<String> presentNames = [] as Set
-        if (spark31ArchiveFile.exists()) {
-            def proc = ["bash", "-lc",
-                    "tar -tzf '${spark31ArchiveFile.absolutePath}' | sed -n 's|.*/jars/||p' | grep '\\.jar\$'"].execute()
-            proc.waitFor()
-            presentNames = proc.text.readLines().collect { it.trim() }.findAll { it } as Set
-            logger.lifecycle("Loaded ${presentNames.size()} jar names from ${spark31ArchiveFile.name}")
-        }
-
-        delete spark31HiveStagingDir
-        spark31HiveStagingDir.mkdirs()
-        def copied = []
-        configurations.spark31HiveJars.resolve().sort { it.name }.each { File jar ->
-            if (presentNames.contains(jar.name)) {
-                return
-            }
-            // Drop Spark modules already shipped in without-hadoop (core/sql/catalyst/…).
-            if (jar.name.startsWith('spark-') && !jar.name.startsWith('spark-hive')) {
-                return
-            }
-            copy {
-                from jar
-                into spark31HiveStagingDir
-            }
-            copied << jar.name
-        }
-        if (copied.isEmpty()) {
-            throw new GradleException('No Hive jars resolved to package; check spark31HiveJars configuration')
-        }
-        logger.lifecycle("Packaging ${copied.size()} Hive-related jars:")
-        copied.each { logger.lifecycle("  - ${it}") }
-
-        exec {
-            workingDir spark31HiveStagingDir
-            commandLine 'tar', '-czf', spark31HiveArchiveFile.absolutePath, '.'
-        }
-        long githubLimit = 100L * 1024L * 1024L
-        if (spark31HiveArchiveFile.length() >= githubLimit) {
-            throw new GradleException(
-                    "${spark31HiveArchiveFile.name} is ${spark31HiveArchiveFile.length()} bytes (>=100MB). " +
-                            "Trim the jar set before committing.")
-        }
-        logger.lifecycle("Saved ${spark31HiveArchiveFile} (${spark31HiveArchiveFile.length()} bytes) — commit as a single file")
-    }
-}
-
-tasks.register('test') {
-    group = 'verification'
-    description = 'Runs unit tests for both Spark runtimes.'
-    dependsOn ':app-spark31:test', ':app-spark32:test'
-}
-
-tasks.register('build') {
-    group = 'build'
-    description = 'Builds Spark 3.1.1 and Spark 3.2 artifacts.'
-    dependsOn ':app-spark31:build', ':app-spark32:build', 'splitSpark31Archive', 'downloadSpark31HiveJars'
-}
-
-tasks.register('shadowJar') {
-    group = 'build'
-    description = 'Builds Spark 3.1.1 and Spark 3.2 fat JARs.'
-    dependsOn ':app-spark31:shadowJar', ':app-spark32:shadowJar'
+tasks.named('build') {
+    dependsOn tasks.named('shadowJar')
 }

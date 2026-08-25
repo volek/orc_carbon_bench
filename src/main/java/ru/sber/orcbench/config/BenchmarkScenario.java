@@ -1,10 +1,7 @@
 package ru.sber.orcbench.config;
 
-import java.util.Arrays;
-import java.util.Locale;
-import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Collectors;
+import java.util.EnumSet;
+import java.util.Set;
 
 public enum BenchmarkScenario {
     FULL_SCAN("full_scan"),
@@ -16,10 +13,7 @@ public enum BenchmarkScenario {
     FILTER_LOG_FORMAT("filter_log_format"),
     FILTER_COMBINED("filter_combined"),
     GROUP_BY("group_by"),
-    LUCENE_TEXT_SEARCH("lucene_text_search");
-
-    private static final Map<String, BenchmarkScenario> BY_CLI = Arrays.stream(values())
-            .collect(Collectors.toMap(s -> s.cliValue, Function.identity()));
+    TEXT_SEARCH("text_search");
 
     private final String cliValue;
 
@@ -32,10 +26,26 @@ public enum BenchmarkScenario {
     }
 
     public static BenchmarkScenario fromCli(String value) {
-        BenchmarkScenario scenario = BY_CLI.get(value.trim().toLowerCase(Locale.ROOT));
-        if (scenario == null) {
-            throw new IllegalArgumentException("Unknown benchmark scenario: " + value);
+        String normalized = value.trim().toLowerCase(java.util.Locale.ROOT);
+        for (BenchmarkScenario scenario : values()) {
+            if (scenario.cliValue.equals(normalized)) {
+                return scenario;
+            }
         }
-        return scenario;
+        throw new IllegalArgumentException("Unknown benchmark scenario: " + value);
+    }
+
+    public static Set<BenchmarkScenario> parseCsv(String raw) {
+        if ("all".equalsIgnoreCase(raw.trim())) {
+            return EnumSet.allOf(BenchmarkScenario.class);
+        }
+        EnumSet<BenchmarkScenario> scenarios = EnumSet.noneOf(BenchmarkScenario.class);
+        for (String part : ArgParser.parseCsv(raw)) {
+            scenarios.add(fromCli(part));
+        }
+        if (scenarios.isEmpty()) {
+            throw new IllegalArgumentException("Invalid argument for --benchmark-scenarios: empty list");
+        }
+        return scenarios;
     }
 }

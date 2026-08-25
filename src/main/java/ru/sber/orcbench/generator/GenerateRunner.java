@@ -5,7 +5,6 @@ import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import ru.sber.orcbench.writer.CarbonWriter;
 import ru.sber.orcbench.writer.OrcWriter;
 
 public final class GenerateRunner {
@@ -15,20 +14,14 @@ public final class GenerateRunner {
     }
 
     public static void run(SparkSession spark, GeneratorConfig config) {
-        if (!config.writesOrc() && !config.writesCarbon()) {
-            throw new IllegalArgumentException("At least one output format must be enabled via --output-formats=orc,carbon");
-        }
-
         long totalRows = config.estimatedTotalRows();
         int chunkCount = config.chunkCount();
         long rowsPerChunk = config.rowsPerChunk();
 
         LOG.info(
-                "Generator plan: orcPath={} carbonPath={} outputFormats={} targetSizeTb={} estimatedRows={} "
+                "Generator plan: orcPath={} targetSizeTb={} estimatedRows={} "
                         + "chunks={} rowsPerChunk={} timeRange=[{} .. {}] chunkDays={} avgRowBytes={}",
-                config.writesOrc() ? config.orcPath() : "-",
-                config.writesCarbon() ? config.carbonPath() : "-",
-                config.outputFormats(),
+                config.orcPath(),
                 config.targetSizeTb(),
                 totalRows,
                 chunkCount,
@@ -77,26 +70,12 @@ public final class GenerateRunner {
             int writePartitions = estimateWritePartitions(rowsInChunk, config.avgRowBytes(), config.targetFileSizeMb());
             Dataset<Row> prepared = chunk.repartition(writePartitions);
 
-            if (config.writesOrc()) {
-                OrcWriter.write(spark, prepared, config.orcPath(), config.orcWrite(), saveMode);
-            }
-            if (config.writesCarbon()) {
-                CarbonWriter.write(spark, prepared, config.carbonPath(), config.carbonWrite(), saveMode);
-            }
+            OrcWriter.write(spark, prepared, config.orcPath(), config.orcWrite(), saveMode);
 
             globalOffset += rowsInChunk;
         }
 
-        if (config.writesCarbon()) {
-            CarbonWriter.createIndexes(spark, config.carbonWrite());
-        }
-
-        LOG.info(
-                "Generation completed: rowsWritten={} orcPath={} carbonPath={}",
-                globalOffset,
-                config.writesOrc() ? config.orcPath() : "-",
-                config.writesCarbon() ? config.carbonPath() : "-"
-        );
+        LOG.info("Generation completed: rowsWritten={} orcPath={}", globalOffset, config.orcPath());
     }
 
     private static int estimateWritePartitions(long rowsInChunk, long avgRowBytes, int targetFileSizeMb) {

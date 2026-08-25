@@ -52,17 +52,10 @@ public final class BenchmarkQueries {
             case GROUP_BY:
                 return df.groupBy("country_code", "device_type", "status")
                         .agg(count(col("event_id")).alias("cnt"));
-            case LUCENE_TEXT_SEARCH:
+            case TEXT_SEARCH:
                 return df.filter(col("log_message").contains(ctx.searchToken()));
             default:
                 throw new IllegalStateException("Unsupported scenario: " + scenario);
         }
-    }
-
-    public static Dataset<Row> luceneTextSearchByLogFormat(Dataset<Row> df, FilterContext ctx, String logFormat) {
-        return df.filter(
-                col("log_format").equalTo(lit(logFormat))
-                        .and(col("log_message").contains(ctx.searchToken()))
-        );
     }
 }

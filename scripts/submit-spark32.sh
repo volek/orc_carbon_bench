@@ -1,13 +1,11 @@
 #!/usr/bin/env bash
 # -----------------------------------------------------------------------------
-# Запуск ORC-референса через кластерный Spark 3.2 (YARN cluster).
-# Только ORC: --mode=benchmark --formats=orc (и опционально generate ORC).
-# Для CarbonData этот скрипт не использовать — нужен submit-spark31.sh.
+# Запуск ORC-бенчмарка через кластерный Spark 3.2 (YARN cluster).
 #
 # Запуск:
-#   ./scripts/submit-spark32.sh -- --mode=benchmark --formats=orc --base-path="$BASE"
+#   ./scripts/submit-spark32.sh -- --mode=benchmark --base-path="$BASE"
 #   ./scripts/submit-spark32.sh --driver-memory 8g --num-executors 16 -- \
-#       --mode=benchmark --formats=orc --base-path="$BASE" --seed=42
+#       --mode=generate --base-path="$BASE" --target-size-tb=0.01
 #
 # Аргументы:
 #   до "--"     флаги spark-submit (--driver-memory, --num-executors, ...)
@@ -15,17 +13,17 @@
 #   без "--"    все аргументы считаются аргументами приложения
 #
 # Переменные окружения:
-#   JAR32         fat JAR spark32 [build/libs/orc-carbon-bench-spark32-all.jar]
+#   JAR           fat JAR [build/libs/orc-bench-all.jar]
 #   SPARK_SUBMIT  команда submit кластерного Spark 3.2 [spark-submit]
 # -----------------------------------------------------------------------------
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-JAR="${JAR32:-$ROOT/build/libs/orc-carbon-bench-spark32-all.jar}"
+JAR="${JAR:-${JAR32:-$ROOT/build/libs/orc-bench-all.jar}}"
 SPARK_SUBMIT="${SPARK_SUBMIT:-spark-submit}"
 
 if [[ ! -f "$JAR" ]]; then
-  echo "Missing $JAR. Build with: ./gradlew :app-spark32:build" >&2
+  echo "Missing $JAR. Build with: ./gradlew build" >&2
   exit 1
 fi
 

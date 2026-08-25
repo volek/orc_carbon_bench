@@ -9,7 +9,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.sber.orcbench.config.BenchmarkScenario;
 import ru.sber.orcbench.config.BenchmarkSettings;
-import ru.sber.orcbench.config.OutputFormat;
 import ru.sber.orcbench.config.SparkRuntimeInfo;
 
 import java.util.List;
@@ -26,7 +25,6 @@ public final class BenchmarkRunner {
             SparkSession spark,
             BenchmarkSettings settings,
             String orcPath,
-            String carbonPath,
             String reportsRawPath,
             long seed,
             long timestampStartMs,
@@ -37,9 +35,8 @@ public final class BenchmarkRunner {
         List<BenchmarkResult> results = new java.util.ArrayList<>();
 
         LOG.info(
-                "Benchmark runId={} formats={} scenarios={} warmupRuns={} repeatRuns={} clearCache={} reportsPath={}",
+                "Benchmark runId={} scenarios={} warmupRuns={} repeatRuns={} clearCache={} reportsPath={}",
                 runId,
-                settings.formats(),
                 settings.scenarios(),
                 settings.warmupRuns(),
                 settings.repeatRuns(),
@@ -47,68 +44,56 @@ public final class BenchmarkRunner {
                 reportsRawPath
         );
 
-        for (OutputFormat format : settings.formats()) {
-            String dataPath = format == OutputFormat.ORC ? orcPath : carbonPath;
-            LOG.info("Loading dataset format={} path={}", format, dataPath);
+        LOG.info("Loading ORC dataset path={}", orcPath);
+        Dataset<Row> dataset = DatasetLoader.load(spark, orcPath).cache();
+        long totalRows = dataset.count();
+        FilterContext filterContext = resolveFilterContext(dataset, seed, timestampStartMs, timestampEndMs);
 
-            Dataset<Row> dataset = DatasetLoader.load(spark, format, orcPath, carbonPath).cache();
-            long totalRows = dataset.count();
-            FilterContext filterContext = resolveFilterContext(dataset, seed, timestampStartMs, timestampEndMs);
+        LOG.info("Dataset ready totalRows={} sampleEventId={}", totalRows, filterContext.eventId());
 
-            LOG.info("Dataset ready format={} totalRows={} sampleEventId={}", format, totalRows, filterContext.eventId());
+        for (BenchmarkScenario scenario : settings.scenarios()) {
+            LOG.info("Running scenario={}", scenario);
 
-            for (BenchmarkScenario scenario : settings.scenarios()) {
-                if (scenario == BenchmarkScenario.LUCENE_TEXT_SEARCH && format != OutputFormat.CARBON) {
-                    LOG.info("Skipping scenario={} for format={} (CarbonData only)", scenario, format);
-                    continue;
-                }
-
-                LOG.info("Running scenario={} format={}", scenario, format);
-
-                for (int i = 0; i < settings.warmupRuns(); i++) {
-                    executeScenario(spark, dataset, scenario, filterContext, settings.clearCacheBetweenRuns());
-                }
-
-                for (int runIndex = 0; runIndex < settings.repeatRuns(); runIndex++) {
-                    if (settings.clearCacheBetweenRuns()) {
-                        dataset.unpersist();
-                        spark.catalog().clearCache();
-                        dataset = DatasetLoader.load(spark, format, orcPath, carbonPath).cache();
-                    }
-
-                    long startedAt = System.nanoTime();
-                    long rowsReturned = executeScenario(spark, dataset, scenario, filterContext, false);
-                    long durationMs = (System.nanoTime() - startedAt) / 1_000_000L;
-
-                    BenchmarkResult result = BenchmarkResult.of(
-                            runId,
-                            scenario,
-                            format,
-                            runIndex,
-                            false,
-                            durationMs,
-                            rowsReturned,
-                            totalRows,
-                            seed,
-                            runtime
-                    );
-                    results.add(result);
-
-                    LOG.info(
-                            "Measured scenario={} format={} run={} durationMs={} rowsReturned={} selectivity={}",
-                            scenario.cliValue(),
-                            format.cliValue(),
-                            runIndex,
-                            durationMs,
-                            rowsReturned,
-                            result.selectivity()
-                    );
-                }
+            for (int i = 0; i < settings.warmupRuns(); i++) {
+                executeScenario(spark, dataset, scenario, filterContext, settings.clearCacheBetweenRuns());
             }
 
-            dataset.unpersist();
+            for (int runIndex = 0; runIndex < settings.repeatRuns(); runIndex++) {
+                if (settings.clearCacheBetweenRuns()) {
+                    dataset.unpersist();
+                    spark.catalog().clearCache();
+                    dataset = DatasetLoader.load(spark, orcPath).cache();
+                }
+
+                long startedAt = System.nanoTime();
+                long rowsReturned = executeScenario(spark, dataset, scenario, filterContext, false);
+                long durationMs = (System.nanoTime() - startedAt) / 1_000_000L;
+
+                BenchmarkResult result = BenchmarkResult.of(
+                        runId,
+                        scenario,
+                        runIndex,
+                        false,
+                        durationMs,
+                        rowsReturned,
+                        totalRows,
+                        seed,
+                        runtime
+                );
+                results.add(result);
+
+                LOG.info(
+                        "Measured scenario={} run={} durationMs={} rowsReturned={} selectivity={}",
+                        scenario.cliValue(),
+                        runIndex,
+                        durationMs,
+                        rowsReturned,
+                        result.selectivity()
+                );
+            }
         }
 
+        dataset.unpersist();
         writeResults(spark, results, reportsRawPath);
         LOG.info("Benchmark completed: runId={} results={} output={}", runId, results.size(), reportsRawPath);
     }
@@ -161,7 +146,7 @@ public final class BenchmarkRunner {
                 .map(result -> org.apache.spark.sql.RowFactory.create(
                         result.runId(),
                         result.scenario().cliValue(),
-                        result.format().cliValue(),
+                        "orc",
                         result.runIndex(),
                         result.warmup(),
                         result.durationMs(),

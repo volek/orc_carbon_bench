@@ -26,35 +26,27 @@ class MarkdownReportBuilderTest {
             .add("min_duration_ms", DataTypes.LongType, true)
             .add("max_duration_ms", DataTypes.LongType, true)
             .add("avg_selectivity", DataTypes.DoubleType, true)
-            .add("index_profile", DataTypes.StringType, true)
-            .add("log_format", DataTypes.StringType, true)
             .add("passed", DataTypes.BooleanType, true)
             .add("spark_runtime", DataTypes.StringType, true)
             .add("spark_version", DataTypes.StringType, true);
 
     @Test
-    void buildsComparisonAndRecommendations() {
+    void buildsOrcBenchmarkReport() {
         List<Row> rows = Collections.unmodifiableList(Arrays.asList(
-                row("benchmark", "point_lookup", "orc", 3L, 90.0, null, SparkRuntime.SPARK31_CARBON, "3.1.1"),
-                row("benchmark", "point_lookup", "carbon", 3L, 60.0, null, SparkRuntime.SPARK31_CARBON, "3.1.1"),
-                row("benchmark", "point_lookup", "orc", 3L, 80.0, null, SparkRuntime.SPARK32_ORC, "3.2.1"),
-                row("index_experiment", "filter_high_cardinality", "carbon", 3L, 40.0, null,
-                        SparkRuntime.SPARK31_CARBON, "3.1.1"),
-                row("validation", "row_count_parity", "n/a", 1L, null, true, SparkRuntime.SPARK31_CARBON, "3.1.1")
+                row("benchmark", "filter_high_cardinality", "orc", 3L, 90.0, null, SparkRuntime.SPARK32_ORC, "3.2.1"),
+                row("benchmark", "full_scan", "orc", 3L, 120.0, null, SparkRuntime.SPARK32_ORC, "3.2.1"),
+                row("validation", "row_count", "orc", 1L, null, true, SparkRuntime.SPARK32_ORC, "3.2.1")
         ));
 
         String markdown = MarkdownReportBuilder.build(rows, "test-report");
 
         assertTrue(markdown.contains("# test-report"));
-        assertTrue(markdown.contains("ORC vs Carbon on Spark 3.1.1"));
-        assertTrue(markdown.contains("ORC Spark 3.1.1 vs ORC Spark 3.2"));
-        assertTrue(markdown.contains("point_lookup"));
-        assertTrue(markdown.contains("Index Experiments (Bloom / Lucene)"));
+        assertTrue(markdown.contains("Benchmark Summary"));
+        assertTrue(markdown.contains("filter_high_cardinality"));
         assertTrue(markdown.contains("Validation"));
         assertTrue(markdown.contains("Recommendations"));
-        assertTrue(markdown.contains("CarbonData быстрее ORC"));
-        assertTrue(markdown.contains("spark31-carbon"));
         assertTrue(markdown.contains("spark32-orc"));
+        assertTrue(markdown.contains("Самый медленный сценарий"));
     }
 
     private static Row row(
@@ -68,7 +60,7 @@ class MarkdownReportBuilderTest {
             String sparkVersion
     ) {
         return new GenericRowWithSchema(new Object[]{
-                source, scenario, format, runs, p50, p50, p50, 1L, 2L, 0.01, null, null, passed,
+                source, scenario, format, runs, p50, p50, p50, 1L, 2L, 0.01, passed,
                 sparkRuntime, sparkVersion
         }, SCHEMA);
     }

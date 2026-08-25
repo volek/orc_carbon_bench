@@ -4,9 +4,7 @@ import org.apache.spark.sql.SparkSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.sber.orcbench.benchmark.BenchmarkRunner;
-import ru.sber.orcbench.benchmark.IndexExperimentRunner;
 import ru.sber.orcbench.config.AppConfig;
-import ru.sber.orcbench.config.SparkRuntime;
 import ru.sber.orcbench.config.SparkRuntimeInfo;
 import ru.sber.orcbench.generator.GenerateRunner;
 import ru.sber.orcbench.generator.GeneratorConfig;
@@ -22,26 +20,22 @@ public final class AppMain {
 
     public static void main(String[] args) {
         AppConfig config = AppConfig.fromArgs(args);
-        SparkRuntime.requireCompatible(config);
 
         SparkSession spark = SparkConfigurator.configureBuilder(
-                SparkSession.builder().appName("orc-carbon-bench"),
+                SparkSession.builder().appName("orc-bench"),
                 config
         ).getOrCreate();
         SparkConfigurator.configure(spark, config);
         SparkRuntimeInfo runtime = SparkRuntimeInfo.from(spark);
         try {
             LOG.info(
-                    "Starting mode={} sparkVersion={} sparkRuntime={} basePath={} orcPath={} carbonPath={} "
-                            + "reportsPath={} outputFormats={}",
+                    "Starting mode={} sparkVersion={} sparkRuntime={} basePath={} orcPath={} reportsPath={}",
                     config.mode(),
                     runtime.sparkVersion(),
                     runtime.sparkRuntime(),
                     config.basePath(),
                     config.orcPath(),
-                    config.carbonPath(),
-                    config.reportsPath(),
-                    config.outputFormats()
+                    config.reportsPath()
             );
 
             switch (config.mode()) {
@@ -53,23 +47,7 @@ public final class AppMain {
                             spark,
                             config.validation(),
                             config.orcPath(),
-                            config.carbonPath(),
                             config.reportsValidationPath(),
-                            config.seed(),
-                            config.timestampStartEpochMs(),
-                            config.timestampEndEpochMs(),
-                            runtime
-                    );
-                    break;
-                case INDEX_EXPERIMENT:
-                    IndexExperimentRunner.run(
-                            spark,
-                            config.indexExperiment(),
-                            config.carbonWrite(),
-                            config.orcPath(),
-                            config.carbonPath(),
-                            config.reportsIndexPath(),
-                            config.reportsIndexBuildPath(),
                             config.seed(),
                             config.timestampStartEpochMs(),
                             config.timestampEndEpochMs(),
@@ -81,8 +59,7 @@ public final class AppMain {
                             spark,
                             config.benchmark(),
                             config.orcPath(),
-                            config.carbonPath(),
-                            SparkRuntime.benchmarkOutputPath(config),
+                            config.reportsRawPath(),
                             config.seed(),
                             config.timestampStartEpochMs(),
                             config.timestampEndEpochMs(),
@@ -94,9 +71,6 @@ public final class AppMain {
                             spark,
                             config.report(),
                             config.reportsRawPath(),
-                            config.reportsSpark32OrcPath(),
-                            config.reportsIndexPath(),
-                            config.reportsIndexBuildPath(),
                             config.reportsValidationPath(),
                             config.reportsSummaryPath()
                     );
