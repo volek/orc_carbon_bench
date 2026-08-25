@@ -67,7 +67,7 @@ mv -n spark-3.1.1-bin-without-hadoop.tgz.part-* dist/ 2>/dev/null || true
 ./scripts/prepare-spark31.sh
 ```
 
-Скрипт склеивает `spark-3.1.1-bin-without-hadoop.tgz.part-*` (лимит GitHub 100 МБ), распаковывает в `dist/spark-3.1.1/` и копирует клиентский `hive-site.xml`. `SPARK_CONF_DIR` кластерного Spark 3.2 **не** наследуется. Если частей нет — ошибка, а не попытка скачать с Apache.
+Скрипт склеивает `spark-3.1.1-bin-without-hadoop.tgz.part-*` (лимит GitHub 100 МБ), распаковывает в `dist/spark-3.1.1/` и копирует клиентский `hive-site.xml`, вырезая `hadoop.security.credential.provider.path` (чтобы edge не упирался в `hive-site.jceks` Permission denied). `SPARK_CONF_DIR` кластерного Spark 3.2 **не** наследуется. Если частей нет — ошибка, а не попытка скачать с Apache.
 
 `submit-spark31.sh` выставляет `SPARK_DIST_CLASSPATH=$(hadoop classpath)` для варианта without-hadoop.
 

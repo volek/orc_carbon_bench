@@ -65,8 +65,10 @@ mv -n spark-3.1.1-bin-without-hadoop.tgz.part-* dist/ 2>/dev/null || true
 `scripts/prepare-spark31.sh`:
 - **не** качает Spark с Apache (на edge интернета к archive.apache.org нет);
 - склеивает `spark-3.1.1-bin-without-hadoop.tgz.part-*` (GitHub ≤100 МБ) и распаковывает из `dist/` или `build/libs/`;
-- копирует клиентский `hive-site.xml`;
+- копирует клиентский `hive-site.xml` и **вырезает** `hadoop.security.credential.provider.path` (ссылка на `hive-site.jceks`, к которому у edge-пользователя часто нет прав);
 - **не** выставляет `SPARK_CONF_DIR` на конфиг SDP Spark 3.2 (`spark.yarn.archive` иначе подменит Spark).
+
+`submit-spark31.sh` дополнительно сбрасывает `spark.hadoop.hadoop.security.credential.provider.path`, если свойство всё ещё приходит из `HADOOP_CONF_DIR`.
 
 `submit-spark31.sh` берёт Hadoop-клиент кластера через `SPARK_DIST_CLASSPATH=$(hadoop classpath)`.
 
@@ -242,6 +244,22 @@ IllegalArgumentException: requirement failed: SSLContext does not support any of
 **Смысл:** в Spark SSL-конфиге (`spark.ssl.*` / Ambari) указано значение `sdp-deployer` вместо валидных TLS cipher suites.
 
 **Что делать:** не наследовать `SPARK_CONF_DIR` кластерного Spark 3.2 в BYOS 3.1.1 (`submit-spark31.sh` делает `unset SPARK_CONF_DIR`). Если ошибка на spark32-сабмите — править платформенный SSL, не приложение.
+
+---
+
+### 6.2a. `hive-site.jceks` Permission denied / Configuration problem with provider path
+
+**Симптом:** после upload JAR в staging, до старта AM:
+
+```text
+java.io.IOException: Configuration problem with provider path.
+Caused by: java.io.FileNotFoundException:
+  /usr/sdp/current/hive-client/conf/hive-site.jceks (Permission denied)
+```
+
+**Смысл:** в `hive-site.xml` указан `hadoop.security.credential.provider.path` на `.jceks`, к которому у пользователя сабмита нет чтения. Spark `SecurityManager` / `SSLOptions` падает при `getPassword`.
+
+**Что делать:** перезапустить `./scripts/prepare-spark31.sh` (sanitize BYOS `conf/hive-site.xml`) и сабмитить через `./scripts/submit-spark31.sh` (сбрасывает provider path из Hadoop conf). Системный `/etc/hive/conf` не трогаем. Альтернатива — выдать чтение на `.jceks` через админов SDP.
 
 ---
 

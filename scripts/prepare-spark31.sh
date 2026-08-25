@@ -4,7 +4,9 @@
 #
 # Склеивает части dist/spark-3.1.1-bin-without-hadoop.tgz.part-NN (лимит GitHub
 # 100 МБ), распаковывает в dist/spark-3.1.1/ и копирует клиентский hive-site.xml.
-# Ничего не скачивает и не ставит Spark в Ambari / SDP.
+# Из BYOS-копии hive-site.xml убирает credential.provider.path на *.jceks
+# (часто Permission denied у edge-пользователя). Ничего не скачивает и не ставит
+# Spark в Ambari / SDP.
 #
 # Запуск:
 #   ./scripts/prepare-spark31.sh
@@ -122,6 +124,35 @@ copy_conf() {
   return 1
 }
 
+# Drop jceks credential provider from BYOS hive-site only (system conf untouched).
+# Otherwise Spark SecurityManager / SSLOptions fails with Permission denied on
+# /usr/sdp/current/hive-client/conf/hive-site.jceks for typical edge users.
+sanitize_hive_site() {
+  local hive_site="$1"
+  local tmp
+  [[ -f "$hive_site" ]] || return 0
+  if ! grep -q 'hadoop\.security\.credential\.provider\.path' "$hive_site"; then
+    return 0
+  fi
+  tmp="$(mktemp)"
+  awk '
+    /<property>/ { in_prop=1; block=$0; next }
+    in_prop {
+      block = block "\n" $0
+      if ($0 ~ /<\/property>/) {
+        if (block !~ /hadoop\.security\.credential\.provider\.path/)
+          print block
+        in_prop=0
+        next
+      }
+      next
+    }
+    { print }
+  ' "$hive_site" > "$tmp"
+  mv "$tmp" "$hive_site"
+  echo "Removed hadoop.security.credential.provider.path from $hive_site"
+}
+
 if [[ ! -f "$SPARK_HOME/conf/hive-site.xml" ]]; then
   copy_conf "${HIVE_CONF_DIR:-/etc/hive/conf}/hive-site.xml" hive-site.xml \
     || copy_conf "${HADOOP_CONF_DIR:-/etc/hadoop/conf}/hive-site.xml" hive-site.xml \
@@ -129,6 +160,7 @@ if [[ ! -f "$SPARK_HOME/conf/hive-site.xml" ]]; then
     || copy_conf "${HADOOP_CONF_DIR:-/etc/hadoop/conf}/hive-site.xml" hive-site.xml \
     || echo "WARNING: hive-site.xml not found. CarbonData usually needs a client hive-site.xml in $SPARK_HOME/conf/"
 fi
+sanitize_hive_site "$SPARK_HOME/conf/hive-site.xml"
 
 echo
 echo "Next:"

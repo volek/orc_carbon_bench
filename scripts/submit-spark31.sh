@@ -22,6 +22,9 @@
 #   YARN_CONF_DIR        клиентский YARN conf [тот же, что HADOOP_CONF_DIR]
 #   SPARK31_VARIANT      without-hadoop — выставить SPARK_DIST_CLASSPATH
 #   SPARK_DIST_CLASSPATH classpath Hadoop; если пусто — $(hadoop classpath)
+#
+# Также сбрасывает spark.hadoop.hadoop.security.credential.provider.path
+# (часто Permission denied на hive-site.jceks у edge-пользователя).
 # -----------------------------------------------------------------------------
 set -euo pipefail
 
@@ -73,11 +76,15 @@ if [[ $has_separator -eq 0 ]]; then
   SPARK_ARGS=()
 fi
 
+# Clear credential provider path inherited from HADOOP_CONF_DIR / hive-site
+# (edge users often cannot read hive-site.jceks). prepare-spark31.sh also strips
+# it from $SPARK_HOME/conf/hive-site.xml.
 exec "$SPARK_HOME/bin/spark-submit" \
   --master yarn \
   --deploy-mode cluster \
   --conf spark.sql.extensions=org.apache.spark.sql.CarbonExtensions \
   --conf spark.sql.session.state.builder=org.apache.spark.sql.hive.CarbonSessionStateBuilder \
+  --conf spark.hadoop.hadoop.security.credential.provider.path= \
   "${SPARK_ARGS[@]}" \
   --class ru.sber.orcbench.AppMain \
   "$JAR" \
