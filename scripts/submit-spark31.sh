@@ -25,6 +25,8 @@
 #
 # Также сбрасывает spark.hadoop.hadoop.security.credential.provider.path
 # (часто Permission denied на hive-site.jceks у edge-пользователя).
+# Hive jars (spark-hive / hive-exec) ставятся в $SPARK_HOME/jars через
+# prepare-spark31.sh из dist/spark-3.1.1-hive-jars.tgz — без скачивания.
 # -----------------------------------------------------------------------------
 set -euo pipefail
 
@@ -36,6 +38,11 @@ YARN_CONF_DIR="${YARN_CONF_DIR:-$HADOOP_CONF_DIR}"
 
 if [[ ! -x "$SPARK_HOME/bin/spark-submit" ]]; then
   echo "Spark 3.1.1 not found at $SPARK_HOME. Run ./scripts/prepare-spark31.sh first." >&2
+  exit 1
+fi
+if [[ ! -f "$SPARK_HOME/jars/spark-hive_2.12-3.1.1.jar" ]]; then
+  echo "Missing Hive jars in $SPARK_HOME/jars (spark-hive). Run ./scripts/prepare-spark31.sh" >&2
+  echo "(needs dist/spark-3.1.1-hive-jars.tgz from the repo / build machine)." >&2
   exit 1
 fi
 if [[ ! -f "$JAR" ]]; then

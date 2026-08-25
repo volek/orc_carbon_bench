@@ -3,7 +3,9 @@
 # Подготовка локального Apache Spark 3.1.1 (without-hadoop) на edge-ноде.
 #
 # Склеивает части dist/spark-3.1.1-bin-without-hadoop.tgz.part-NN (лимит GitHub
-# 100 МБ), распаковывает в dist/spark-3.1.1/ и копирует клиентский hive-site.xml.
+# 100 МБ), распаковывает в dist/spark-3.1.1/, ставит Hive jars из
+# dist/spark-3.1.1-hive-jars.tgz в $SPARK_HOME/jars/ (в without-hadoop
+# нет spark-hive / hive-exec) и копирует клиентский hive-site.xml.
 # Из BYOS-копии hive-site.xml убирает credential.provider.path на *.jceks
 # (часто Permission denied у edge-пользователя). Ничего не скачивает и не ставит
 # Spark в Ambari / SDP.
@@ -15,7 +17,8 @@
 #   SPARK31_HOME      каталог Spark после распаковки
 #                     [корень_репо/dist/spark-3.1.1]
 #   SPARK31_DIST_DIR  каталог с архивом и частями [корень_репо/dist]
-#   SPARK31_ARCHIVE   полный путь к уже склеенному .tgz (если есть)
+#   SPARK31_ARCHIVE   полный путь к уже склеенному Spark .tgz (если есть)
+#   SPARK31_HIVE_ARCHIVE  полный путь к hive-jars .tgz
 #   SPARK31_VARIANT   суффикс дистрибутива [without-hadoop]
 #   HIVE_CONF_DIR     откуда брать hive-site.xml [/etc/hive/conf]
 #   HADOOP_CONF_DIR   запасной путь к hive-site.xml [/etc/hadoop/conf]
@@ -29,19 +32,32 @@ DIST_DIR="${SPARK31_DIST_DIR:-$ROOT/dist}"
 SPARK_HOME="${SPARK31_HOME:-$DIST_DIR/spark-3.1.1}"
 SPARK_VARIANT="${SPARK31_VARIANT:-without-hadoop}"
 ARCHIVE_NAME="spark-3.1.1-bin-${SPARK_VARIANT}.tgz"
-PART_GLOB="${ARCHIVE_NAME}.part-*"
+HIVE_ARCHIVE_NAME="spark-3.1.1-hive-jars.tgz"
 
-find_archive() {
+search_paths() {
+  printf '%s\n' \
+    "$DIST_DIR" \
+    "$ROOT" \
+    "$ROOT/build/libs" \
+    "$SCRIPT_DIR" \
+    "$PWD" \
+    "$PWD/dist" \
+    "$PWD/build/libs"
+}
+
+find_file() {
+  local name="$1"
+  local extra="${2:-}"
   local candidate
   for candidate in \
-    "${SPARK31_ARCHIVE:-}" \
-    "$DIST_DIR/$ARCHIVE_NAME" \
-    "$ROOT/$ARCHIVE_NAME" \
-    "$ROOT/build/libs/$ARCHIVE_NAME" \
-    "$SCRIPT_DIR/$ARCHIVE_NAME" \
-    "$PWD/$ARCHIVE_NAME" \
-    "$PWD/dist/$ARCHIVE_NAME" \
-    "$PWD/build/libs/$ARCHIVE_NAME"
+    "$extra" \
+    "$DIST_DIR/$name" \
+    "$ROOT/$name" \
+    "$ROOT/build/libs/$name" \
+    "$SCRIPT_DIR/$name" \
+    "$PWD/$name" \
+    "$PWD/dist/$name" \
+    "$PWD/build/libs/$name"
   do
     if [[ -n "$candidate" && -f "$candidate" ]]; then
       echo "$candidate"
@@ -52,56 +68,60 @@ find_archive() {
 }
 
 find_parts_dir() {
+  local prefix="$1"
   local dir
-  for dir in \
-    "$DIST_DIR" \
-    "$ROOT" \
-    "$ROOT/build/libs" \
-    "$SCRIPT_DIR" \
-    "$PWD" \
-    "$PWD/dist" \
-    "$PWD/build/libs"
-  do
-    if compgen -G "$dir/${ARCHIVE_NAME}.part-*" > /dev/null; then
+  while IFS= read -r dir; do
+    if compgen -G "$dir/${prefix}.part-*" > /dev/null; then
       echo "$dir"
       return 0
     fi
-  done
+  done < <(search_paths)
   return 1
 }
 
 join_parts() {
   local parts_dir="$1"
-  local dest="$DIST_DIR/$ARCHIVE_NAME"
+  local archive_name="$2"
+  local dest="$DIST_DIR/$archive_name"
   mkdir -p "$DIST_DIR"
-  echo "Joining Spark archive parts from $parts_dir" >&2
+  echo "Joining $archive_name parts from $parts_dir" >&2
   # shellcheck disable=SC2086
-  cat "$parts_dir"/$PART_GLOB > "$dest"
+  cat "$parts_dir"/${archive_name}.part-* > "$dest"
   echo "Joined $dest ($(wc -c < "$dest") bytes)" >&2
   echo "$dest"
+}
+
+resolve_archive() {
+  local archive_name="$1"
+  local env_override="$2"
+  local label="$3"
+  local archive
+  archive="$(find_file "$archive_name" "$env_override" || true)"
+  if [[ -z "$archive" ]]; then
+    local parts_dir
+    parts_dir="$(find_parts_dir "$archive_name" || true)"
+    if [[ -n "$parts_dir" ]]; then
+      archive="$(join_parts "$parts_dir" "$archive_name")"
+    fi
+  fi
+  if [[ -z "${archive:-}" ]]; then
+    echo "$label archive $archive_name not found (and no $archive_name.part-* chunks)." >&2
+    echo "Clone the repo (parts live in dist/) or copy them from the build machine." >&2
+    echo "Do not download on the edge node." >&2
+    exit 1
+  fi
+  if [[ ! -f "$archive" ]]; then
+    echo "$label archive path is not a file: $archive" >&2
+    exit 1
+  fi
+  echo "$archive"
 }
 
 mkdir -p "$DIST_DIR"
 if [[ -x "$SPARK_HOME/bin/spark-submit" ]]; then
   echo "Spark 3.1.1 already present at $SPARK_HOME"
 else
-  ARCHIVE="$(find_archive || true)"
-  if [[ -z "$ARCHIVE" ]]; then
-    PARTS_DIR="$(find_parts_dir || true)"
-    if [[ -n "$PARTS_DIR" ]]; then
-      ARCHIVE="$(join_parts "$PARTS_DIR")"
-    fi
-  fi
-  if [[ -z "${ARCHIVE:-}" ]]; then
-    echo "Spark archive $ARCHIVE_NAME not found (and no $ARCHIVE_NAME.part-* chunks)." >&2
-    echo "Clone the repo (parts live in dist/) or copy them from the build machine." >&2
-    echo "Do not download Spark on the edge node." >&2
-    exit 1
-  fi
-  if [[ ! -f "$ARCHIVE" ]]; then
-    echo "Spark archive path is not a file: $ARCHIVE" >&2
-    exit 1
-  fi
+  ARCHIVE="$(resolve_archive "$ARCHIVE_NAME" "${SPARK31_ARCHIVE:-}" "Spark")"
   echo "Extracting $ARCHIVE"
   rm -rf "$SPARK_HOME"
   tar -xzf "$ARCHIVE" -C "$DIST_DIR"
@@ -111,6 +131,33 @@ else
   fi
   echo "Extracted Spark 3.1.1 to $SPARK_HOME"
 fi
+
+# without-hadoop does not ship spark-hive / hive-exec; install from dist tarball.
+install_hive_jars() {
+  local marker="$SPARK_HOME/jars/spark-hive_2.12-3.1.1.jar"
+  if [[ -f "$marker" ]]; then
+    echo "Hive jars already present in $SPARK_HOME/jars"
+    return 0
+  fi
+  local hive_archive
+  hive_archive="$(find_file "$HIVE_ARCHIVE_NAME" "${SPARK31_HIVE_ARCHIVE:-}" || true)"
+  if [[ -z "$hive_archive" ]]; then
+    echo "Hive jars archive $HIVE_ARCHIVE_NAME not found." >&2
+    echo "Clone the repo (file lives in dist/) or copy it from the build machine." >&2
+    echo "Do not download Hive jars on the edge node." >&2
+    exit 1
+  fi
+  echo "Installing Hive jars from $hive_archive into $SPARK_HOME/jars"
+  mkdir -p "$SPARK_HOME/jars"
+  tar -xzf "$hive_archive" -C "$SPARK_HOME/jars"
+  if [[ ! -f "$marker" ]]; then
+    echo "ERROR: expected $marker after extracting Hive jars archive." >&2
+    echo "Rebuild on a machine with internet: ./gradlew downloadSpark31HiveJars" >&2
+    exit 1
+  fi
+  echo "Installed Hive jars into $SPARK_HOME/jars ($(ls -1 "$SPARK_HOME/jars"/spark-hive*.jar 2>/dev/null | wc -l) spark-hive jar(s))"
+}
+install_hive_jars
 
 copy_conf() {
   local src="$1"

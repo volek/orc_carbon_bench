@@ -8,3 +8,4 @@ app-spark31/build/
 app-spark32/build/
 dist/*
 !dist/spark-3.1.1-bin-without-hadoop.tgz.part-*
+!dist/spark-3.1.1-hive-jars.tgz

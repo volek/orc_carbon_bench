@@ -41,6 +41,7 @@ CarbonData уже в spark31 fat JAR — **не** передавайте `--pack
 scp build/libs/orc-carbon-bench-spark31-all.jar \
     build/libs/orc-carbon-bench-spark32-all.jar \
     dist/spark-3.1.1-bin-without-hadoop.tgz.part-* \
+    dist/spark-3.1.1-hive-jars.tgz \
   user@edge-host:~/orc-carbon-bench/
 scp -r scripts user@edge-host:~/orc-carbon-bench/
 ```
@@ -57,14 +58,16 @@ sed -i 's/\r$//' scripts/*.sh   # если скрипты приехали с Wi
 chmod +x scripts/*.sh
 mkdir -p dist
 mv -n spark-3.1.1-bin-without-hadoop.tgz.part-* dist/ 2>/dev/null || true
+mv -n spark-3.1.1-hive-jars.tgz dist/ 2>/dev/null || true
 
 ./scripts/prepare-spark31.sh
-# ожидание: dist/spark-3.1.1/bin/spark-submit и hive-site.xml в conf/
+# ожидание: dist/spark-3.1.1/bin/spark-submit, spark-hive*.jar в jars/, hive-site.xml в conf/
 ```
 
 `scripts/prepare-spark31.sh`:
-- **не** качает Spark с Apache (на edge интернета к archive.apache.org нет);
-- склеивает `spark-3.1.1-bin-without-hadoop.tgz.part-*` (GitHub ≤100 МБ) и распаковывает из `dist/` или `build/libs/`;
+- **не** качает Spark/Hive с Apache/Maven (на edge интернета нет);
+- склеивает `spark-3.1.1-bin-without-hadoop.tgz.part-*` (GitHub ≤100 МБ) и распаковывает из `dist/`;
+- ставит jars из `dist/spark-3.1.1-hive-jars.tgz` в `$SPARK31_HOME/jars/` (`without-hadoop` без `spark-hive` / `hive-exec`);
 - копирует клиентский `hive-site.xml` и **вырезает** `hadoop.security.credential.provider.path` (ссылка на `hive-site.jceks`, к которому у edge-пользователя часто нет прав);
 - **не** выставляет `SPARK_CONF_DIR` на конфиг SDP Spark 3.2 (`spark.yarn.archive` иначе подменит Spark).
 
@@ -260,6 +263,21 @@ Caused by: java.io.FileNotFoundException:
 **Смысл:** в `hive-site.xml` указан `hadoop.security.credential.provider.path` на `.jceks`, к которому у пользователя сабмита нет чтения. Spark `SecurityManager` / `SSLOptions` падает при `getPassword`.
 
 **Что делать:** перезапустить `./scripts/prepare-spark31.sh` (sanitize BYOS `conf/hive-site.xml`) и сабмитить через `./scripts/submit-spark31.sh` (сбрасывает provider path из Hadoop conf). Системный `/etc/hive/conf` не трогаем. Альтернатива — выдать чтение на `.jceks` через админов SDP.
+
+---
+
+### 6.2b. `Unable to instantiate SparkSession with Hive support because Hive classes are not found`
+
+**Симптом:** AM exitCode 13, в stderr:
+
+```text
+IllegalArgumentException: Unable to instantiate SparkSession with Hive support because Hive classes are not found.
+  at … CarbonWriter.configureBuilder (… enableHiveSupport())
+```
+
+**Смысл:** `spark-*-bin-without-hadoop` **не** содержит `spark-hive` / `hive-exec`. Carbon вызывает `enableHiveSupport()`, AM не находит `HiveSessionStateBuilder` / `HiveConf`.
+
+**Что делать:** на машине сборки `./gradlew downloadSpark31HiveJars`, закоммитить `dist/spark-3.1.1-hive-jars.tgz`, на edge `git pull` / scp файла и снова `./scripts/prepare-spark31.sh` (должен появиться `$SPARK31_HOME/jars/spark-hive_2.12-3.1.1.jar`). На edge **не** качать из Maven.
 
 ---
 
