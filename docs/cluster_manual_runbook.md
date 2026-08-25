@@ -189,17 +189,14 @@ grep -E 'yarn.resourcemanager\.(address|ha|hostname)' /etc/hadoop/conf/yarn-site
 
 ### 6.3. Hive / HBase credentials зависают submit
 
-Если при сабмите Spark пытается взять Hive/HBase tokens, а сервисы недоступны:
+`submit-spark32.sh` по умолчанию передаёт:
 
 ```bash
-./scripts/submit-spark32.sh \
-  --conf spark.security.credentials.hive.enabled=false \
-  --conf spark.security.credentials.hbase.enabled=false -- \
-  --mode=generate --base-path="$BASE" --target-size-tb=0.01 \
-  2>&1 | tee smoke-generate.log
+--conf spark.security.credentials.hive.enabled=false
+--conf spark.security.credentials.hbase.enabled=false
 ```
 
-Для чистого ORC Metastore обычно не нужен.
+Без этого Spark на submit пытается взять Hive/HBase tokens; при `Connection refused` на Metastore (`:9083`) или HBase RS (`:16020`) сабмит зависает на ретраях, и `AppMain` не стартует. Для ORC Metastore/HBase не нужны.
 
 ### 6.4. `Invalid numeric argument for --target-size-tb: 0.01`
 

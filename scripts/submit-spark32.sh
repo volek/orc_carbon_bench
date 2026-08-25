@@ -15,6 +15,9 @@
 # Переменные окружения:
 #   JAR           fat JAR [build/libs/orc-bench-all.jar]
 #   SPARK_SUBMIT  команда submit кластерного Spark 3.2 [spark-submit]
+#
+# По умолчанию отключает Hive/HBase delegation tokens (ORC не нуждается в Metastore/HBase;
+# иначе submit зависает, если сервисы недоступны).
 # -----------------------------------------------------------------------------
 set -euo pipefail
 
@@ -51,6 +54,8 @@ fi
 exec "$SPARK_SUBMIT" \
   --master yarn \
   --deploy-mode cluster \
+  --conf spark.security.credentials.hive.enabled=false \
+  --conf spark.security.credentials.hbase.enabled=false \
   "${SPARK_ARGS[@]}" \
   --class ru.sber.orcbench.AppMain \
   "$JAR" \
