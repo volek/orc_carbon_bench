@@ -13,6 +13,10 @@ class StoragePathsTest {
         assertEquals("hdfs:///user/hdfs_migration_user/orc_test/orc", paths.orcPath());
         assertEquals("hdfs:///user/hdfs_migration_user/orc_test/reports/raw", paths.reportsRawPath());
         assertEquals(
+                "hdfs:///user/hdfs_migration_user/orc_test/reports/raw/benchmark",
+                paths.reportsBenchmarkPath()
+        );
+        assertEquals(
                 "hdfs:///user/hdfs_migration_user/orc_test/reports/raw/validation",
                 paths.reportsValidationPath()
         );

@@ -37,6 +37,7 @@ public final class ReportRunner {
     public static void run(
             SparkSession spark,
             ReportSettings settings,
+            String reportsBenchmarkPath,
             String reportsRawPath,
             String reportsValidationPath,
             String reportsSummaryPath
@@ -46,8 +47,8 @@ public final class ReportRunner {
 
         List<Dataset<Row>> summaryParts = new ArrayList<>();
 
-        loadParquet(spark, reportsRawPath).ifPresent(raw -> {
-            LOG.info("Loaded benchmark raw data from {}", reportsRawPath);
+        loadBenchmark(spark, reportsBenchmarkPath, reportsRawPath).ifPresent(raw -> {
+            LOG.info("Loaded benchmark raw data");
             summaryParts.add(aggregateBenchmark(raw));
         });
 
@@ -57,7 +58,9 @@ public final class ReportRunner {
         });
 
         if (summaryParts.isEmpty()) {
-            throw new IllegalStateException("No report input data found under " + reportsRawPath);
+            throw new IllegalStateException(
+                    "No report input data found under " + reportsBenchmarkPath + " or " + reportsRawPath
+            );
         }
 
         Dataset<Row> summary = summaryParts.get(0);
@@ -83,6 +86,30 @@ public final class ReportRunner {
         }
 
         LOG.info("Report generation completed: summaryPath={}", reportsSummaryPath);
+    }
+
+    /**
+     * Prefer {@code raw/benchmark/}; fall back to legacy {@code raw/} parquet for older runs.
+     */
+    private static Optional<Dataset<Row>> loadBenchmark(
+            SparkSession spark,
+            String reportsBenchmarkPath,
+            String reportsRawPath
+    ) {
+        Optional<Dataset<Row>> modern = loadParquet(spark, reportsBenchmarkPath);
+        if (modern.isPresent()) {
+            LOG.info("Loaded benchmark metrics from {}", reportsBenchmarkPath);
+            return modern;
+        }
+        Optional<Dataset<Row>> legacy = loadParquet(spark, reportsRawPath);
+        if (legacy.isPresent()) {
+            LOG.warn(
+                    "Loaded legacy benchmark metrics from {} (prefer writing to {})",
+                    reportsRawPath,
+                    reportsBenchmarkPath
+            );
+        }
+        return legacy;
     }
 
     private static Optional<Dataset<Row>> loadParquet(SparkSession spark, String path) {
@@ -134,6 +161,12 @@ public final class ReportRunner {
                 : prepared;
 
         Column sparkVersionAgg = max("spark_version").alias("spark_version");
+        Column avgBytes = hasColumn(measured, "bytes_read")
+                ? avg("bytes_read").alias("avg_bytes_read")
+                : lit(null).cast("double").alias("avg_bytes_read");
+        Column avgRecords = hasColumn(measured, "records_read")
+                ? avg("records_read").alias("avg_records_read")
+                : lit(null).cast("double").alias("avg_records_read");
 
         return measured.groupBy(
                         lit("benchmark").alias("source"),
@@ -150,6 +183,8 @@ public final class ReportRunner {
                         min("duration_ms").alias("min_duration_ms"),
                         max("duration_ms").alias("max_duration_ms"),
                         avg("selectivity").alias("avg_selectivity"),
+                        avgBytes,
+                        avgRecords,
                         sparkVersionAgg
                 )
                 .withColumn("passed", lit(null).cast("boolean"));
@@ -168,6 +203,8 @@ public final class ReportRunner {
                 lit(null).cast("long").alias("min_duration_ms"),
                 lit(null).cast("long").alias("max_duration_ms"),
                 lit(null).cast("double").alias("avg_selectivity"),
+                lit(null).cast("double").alias("avg_bytes_read"),
+                lit(null).cast("double").alias("avg_records_read"),
                 col("passed"),
                 col("spark_runtime"),
                 col("spark_version")

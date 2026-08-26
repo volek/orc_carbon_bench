@@ -36,6 +36,14 @@ public final class StoragePaths {
         return joinPath(reportsPath, "raw");
     }
 
+    /**
+     * Benchmark metrics live under {@code raw/benchmark/} so overwrite does not wipe
+     * sibling {@code raw/validation/}.
+     */
+    public String reportsBenchmarkPath() {
+        return joinPath(reportsRawPath(), "benchmark");
+    }
+
     public String reportsValidationPath() {
         return joinPath(reportsRawPath(), "validation");
     }

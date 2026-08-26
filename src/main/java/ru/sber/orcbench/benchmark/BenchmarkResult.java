@@ -14,6 +14,8 @@ public final class BenchmarkResult {
     private final long rowsReturned;
     private final long totalRows;
     private final double selectivity;
+    private final long bytesRead;
+    private final long recordsRead;
     private final long seed;
     private final Instant executedAt;
     private final String sparkVersion;
@@ -28,6 +30,8 @@ public final class BenchmarkResult {
             long rowsReturned,
             long totalRows,
             double selectivity,
+            long bytesRead,
+            long recordsRead,
             long seed,
             Instant executedAt,
             String sparkVersion,
@@ -41,6 +45,8 @@ public final class BenchmarkResult {
         this.rowsReturned = rowsReturned;
         this.totalRows = totalRows;
         this.selectivity = selectivity;
+        this.bytesRead = bytesRead;
+        this.recordsRead = recordsRead;
         this.seed = seed;
         this.executedAt = executedAt;
         this.sparkVersion = sparkVersion;
@@ -55,6 +61,8 @@ public final class BenchmarkResult {
             long durationMs,
             long rowsReturned,
             long totalRows,
+            long bytesRead,
+            long recordsRead,
             long seed,
             SparkRuntimeInfo runtime
     ) {
@@ -68,6 +76,8 @@ public final class BenchmarkResult {
                 rowsReturned,
                 totalRows,
                 selectivity,
+                bytesRead,
+                recordsRead,
                 seed,
                 Instant.now(),
                 runtime.sparkVersion(),
@@ -105,6 +115,14 @@ public final class BenchmarkResult {
 
     public double selectivity() {
         return selectivity;
+    }
+
+    public long bytesRead() {
+        return bytesRead;
+    }
+
+    public long recordsRead() {
+        return recordsRead;
     }
 
     public long seed() {

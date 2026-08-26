@@ -45,8 +45,15 @@ public final class MarkdownReportBuilder {
             return;
         }
 
-        md.append("| scenario | spark_runtime | runs | avg_ms | p50_ms | p95_ms | avg_selectivity |\n");
-        md.append("|---|---|---:|---:|---:|---:|---:|\n");
+        boolean hasIo = rows.stream().anyMatch(row -> asDouble(row, "avg_bytes_read").isPresent());
+
+        if (hasIo) {
+            md.append("| scenario | spark_runtime | runs | avg_ms | p50_ms | p95_ms | avg_selectivity | avg_bytes_read | avg_records_read |\n");
+            md.append("|---|---|---:|---:|---:|---:|---:|---:|---:|\n");
+        } else {
+            md.append("| scenario | spark_runtime | runs | avg_ms | p50_ms | p95_ms | avg_selectivity |\n");
+            md.append("|---|---|---:|---:|---:|---:|---:|\n");
+        }
         for (Row row : rows) {
             md.append("| ").append(row.getString(row.fieldIndex("scenario")))
                     .append(" | ").append(nullableString(row, "spark_runtime"))
@@ -54,8 +61,12 @@ public final class MarkdownReportBuilder {
                     .append(" | ").append(formatDouble(row, "avg_duration_ms"))
                     .append(" | ").append(formatDouble(row, "p50_duration_ms"))
                     .append(" | ").append(formatDouble(row, "p95_duration_ms"))
-                    .append(" | ").append(formatDouble(row, "avg_selectivity"))
-                    .append(" |\n");
+                    .append(" | ").append(formatDouble(row, "avg_selectivity"));
+            if (hasIo) {
+                md.append(" | ").append(formatDouble(row, "avg_bytes_read"))
+                        .append(" | ").append(formatDouble(row, "avg_records_read"));
+            }
+            md.append(" |\n");
         }
         md.append("\n");
     }
@@ -104,11 +115,34 @@ public final class MarkdownReportBuilder {
                                 + " ms) — кандидат на оптимизацию фильтров/проекций ORC.")
                 );
             }
+
+            OptionalDouble fullScanBytes = benchmark.stream()
+                    .filter(row -> "full_scan".equals(row.getString(row.fieldIndex("scenario"))))
+                    .map(row -> asDouble(row, "avg_bytes_read"))
+                    .filter(OptionalDouble::isPresent)
+                    .mapToDouble(OptionalDouble::getAsDouble)
+                    .findFirst();
+            if (fullScanBytes.isPresent() && fullScanBytes.getAsDouble() > 0) {
+                Row leastBytes = benchmark.stream()
+                        .filter(row -> asDouble(row, "avg_bytes_read").isPresent())
+                        .min(Comparator.comparingDouble(row ->
+                                asDouble(row, "avg_bytes_read").orElse(Double.MAX_VALUE)))
+                        .orElse(null);
+                if (leastBytes != null) {
+                    double bytes = asDouble(leastBytes, "avg_bytes_read").orElse(0.0);
+                    double ratio = bytes / fullScanBytes.getAsDouble();
+                    recommendations.add("Наименьший avg_bytes_read: `"
+                            + leastBytes.getString(leastBytes.fieldIndex("scenario"))
+                            + "` (" + String.format(Locale.US, "%.0f", bytes)
+                            + ", " + String.format(Locale.US, "%.1f%%", ratio * 100.0)
+                            + " от full_scan) — ориентир по ORC pruning / pushdown.");
+                }
+            }
         }
 
         if (recommendations.isEmpty()) {
-            recommendations.add("Метрики ORC на Spark 3.2 собраны; сравнивайте сценарии по p50/p95 "
-                    + "и selectivity для выбора паттернов запросов.");
+            recommendations.add("Метрики ORC на Spark 3.2 собраны; сравнивайте сценарии по p50/p95, "
+                    + "selectivity и avg_bytes_read для оценки pruning.");
         }
 
         for (String recommendation : recommendations) {
@@ -133,14 +167,18 @@ public final class MarkdownReportBuilder {
 
     /** Accepts Double/Long/Integer (percentile_approx often returns Long). */
     private static OptionalDouble asDouble(Row row, String field) {
-        int idx = row.fieldIndex(field);
-        if (row.isNullAt(idx)) {
+        try {
+            int idx = row.fieldIndex(field);
+            if (row.isNullAt(idx)) {
+                return OptionalDouble.empty();
+            }
+            Object value = row.get(idx);
+            if (value instanceof Number) {
+                return OptionalDouble.of(((Number) value).doubleValue());
+            }
+            return OptionalDouble.empty();
+        } catch (IllegalArgumentException ex) {
             return OptionalDouble.empty();
         }
-        Object value = row.get(idx);
-        if (value instanceof Number) {
-            return OptionalDouble.of(((Number) value).doubleValue());
-        }
-        return OptionalDouble.empty();
     }
 }

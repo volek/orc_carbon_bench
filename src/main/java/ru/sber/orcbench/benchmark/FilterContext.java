@@ -43,12 +43,28 @@ public final class FilterContext implements Serializable {
         this.timestampEnd = timestampEnd;
     }
 
-    public static FilterContext fromSample(Row row, long timestampStartMs, long timestampEndMs) {
+    /**
+     * Builds filter values from a sample row and a selective timestamp window inside the generate span.
+     */
+    public static FilterContext fromSample(
+            Row row,
+            long dataTimestampStartMs,
+            long dataTimestampEndMs,
+            long seed,
+            int timestampWindowDays
+    ) {
         String logMessage = row.getAs("log_message");
         String token = "mobile";
         if (logMessage != null && logMessage.length() > 8) {
             token = logMessage.substring(0, Math.min(8, logMessage.length()));
         }
+
+        Instant[] window = TimestampWindow.selective(
+                dataTimestampStartMs,
+                dataTimestampEndMs,
+                seed,
+                timestampWindowDays
+        );
 
         return new FilterContext(
                 row.getAs("event_id"),
@@ -59,8 +75,8 @@ public final class FilterContext implements Serializable {
                 row.getLong(row.fieldIndex("campaign_id")),
                 row.getAs("log_format"),
                 token,
-                Instant.ofEpochMilli(timestampStartMs),
-                Instant.ofEpochMilli(timestampEndMs)
+                window[0],
+                window[1]
         );
     }
 

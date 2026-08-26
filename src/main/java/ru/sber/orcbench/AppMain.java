@@ -59,7 +59,7 @@ public final class AppMain {
                             spark,
                             config.benchmark(),
                             config.orcPath(),
-                            config.reportsRawPath(),
+                            config.reportsBenchmarkPath(),
                             config.seed(),
                             config.timestampStartEpochMs(),
                             config.timestampEndEpochMs(),
@@ -70,6 +70,7 @@ public final class AppMain {
                     ReportRunner.run(
                             spark,
                             config.report(),
+                            config.reportsBenchmarkPath(),
                             config.reportsRawPath(),
                             config.reportsValidationPath(),
                             config.reportsSummaryPath()

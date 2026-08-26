@@ -93,7 +93,14 @@ public final class AppConfig {
                 kv.containsKey("benchmark-scenarios")
                         ? BenchmarkSettings.parseScenarios(kv.get("benchmark-scenarios"))
                         : BenchmarkSettings.defaults().scenarios(),
-                ArgParser.parseBoolean(kv.getOrDefault("clear-cache-between-runs", "true"), "clear-cache-between-runs")
+                ArgParser.parseBoolean(kv.getOrDefault("clear-cache-between-runs", "true"), "clear-cache-between-runs"),
+                ArgParser.parsePositiveInt(
+                        kv.getOrDefault(
+                                "benchmark-timestamp-window-days",
+                                String.valueOf(BenchmarkSettings.DEFAULT_TIMESTAMP_WINDOW_DAYS)
+                        ),
+                        "benchmark-timestamp-window-days"
+                )
         );
 
         ValidationSettings validation = ValidationSettings.from(kv);
@@ -182,6 +189,10 @@ public final class AppConfig {
 
     public String reportsRawPath() {
         return paths.reportsRawPath();
+    }
+
+    public String reportsBenchmarkPath() {
+        return paths.reportsBenchmarkPath();
     }
 
     public String reportsSummaryPath() {

@@ -25,7 +25,7 @@ public final class BenchmarkRunner {
             SparkSession spark,
             BenchmarkSettings settings,
             String orcPath,
-            String reportsRawPath,
+            String reportsBenchmarkPath,
             long seed,
             long timestampStartMs,
             long timestampEndMs,
@@ -35,39 +35,64 @@ public final class BenchmarkRunner {
         List<BenchmarkResult> results = new java.util.ArrayList<>();
 
         LOG.info(
-                "Benchmark runId={} scenarios={} warmupRuns={} repeatRuns={} clearCache={} reportsPath={}",
+                "Benchmark runId={} scenarios={} warmupRuns={} repeatRuns={} clearCache={} "
+                        + "timestampWindowDays={} reportsPath={}",
                 runId,
                 settings.scenarios(),
                 settings.warmupRuns(),
                 settings.repeatRuns(),
                 settings.clearCacheBetweenRuns(),
-                reportsRawPath
+                settings.timestampWindowDays(),
+                reportsBenchmarkPath
         );
 
         LOG.info("Loading ORC dataset path={}", orcPath);
-        Dataset<Row> dataset = DatasetLoader.load(spark, orcPath).cache();
+        Dataset<Row> dataset = DatasetLoader.load(spark, orcPath);
         long totalRows = dataset.count();
-        FilterContext filterContext = resolveFilterContext(dataset, seed, timestampStartMs, timestampEndMs);
+        FilterContext filterContext = resolveFilterContext(
+                dataset,
+                seed,
+                timestampStartMs,
+                timestampEndMs,
+                settings.timestampWindowDays()
+        );
 
-        LOG.info("Dataset ready totalRows={} sampleEventId={}", totalRows, filterContext.eventId());
+        LOG.info(
+                "Dataset ready totalRows={} sampleEventId={} filterTimestamp=[{}, {})",
+                totalRows,
+                filterContext.eventId(),
+                filterContext.timestampStart(),
+                filterContext.timestampEnd()
+        );
 
         for (BenchmarkScenario scenario : settings.scenarios()) {
             LOG.info("Running scenario={}", scenario);
 
             for (int i = 0; i < settings.warmupRuns(); i++) {
-                executeScenario(spark, dataset, scenario, filterContext, settings.clearCacheBetweenRuns());
+                if (settings.clearCacheBetweenRuns()) {
+                    spark.catalog().clearCache();
+                    dataset = DatasetLoader.load(spark, orcPath);
+                }
+                executeScenario(spark, dataset, scenario, filterContext, false);
             }
 
             for (int runIndex = 0; runIndex < settings.repeatRuns(); runIndex++) {
                 if (settings.clearCacheBetweenRuns()) {
-                    dataset.unpersist();
                     spark.catalog().clearCache();
-                    dataset = DatasetLoader.load(spark, orcPath).cache();
+                    // Do not cache the base DF: caching the full table prevents ORC predicate
+                    // pushdown / stripe pruning from being visible in wall time and bytes_read.
+                    dataset = DatasetLoader.load(spark, orcPath);
                 }
 
+                final Dataset<Row> runDataset = dataset;
                 long startedAt = System.nanoTime();
-                long rowsReturned = executeScenario(spark, dataset, scenario, filterContext, false);
+                InputMetricsCollector.Measured<Long> measured = InputMetricsCollector.measure(
+                        spark,
+                        () -> executeScenario(spark, runDataset, scenario, filterContext, false)
+                );
                 long durationMs = (System.nanoTime() - startedAt) / 1_000_000L;
+                long rowsReturned = measured.value();
+                InputMetricsCollector.Snapshot io = measured.snapshot();
 
                 BenchmarkResult result = BenchmarkResult.of(
                         runId,
@@ -77,38 +102,58 @@ public final class BenchmarkRunner {
                         durationMs,
                         rowsReturned,
                         totalRows,
+                        io.bytesRead(),
+                        io.recordsRead(),
                         seed,
                         runtime
                 );
                 results.add(result);
 
                 LOG.info(
-                        "Measured scenario={} run={} durationMs={} rowsReturned={} selectivity={}",
+                        "Measured scenario={} run={} durationMs={} rowsReturned={} selectivity={} "
+                                + "bytesRead={} recordsRead={}",
                         scenario.cliValue(),
                         runIndex,
                         durationMs,
                         rowsReturned,
-                        result.selectivity()
+                        result.selectivity(),
+                        io.bytesRead(),
+                        io.recordsRead()
                 );
             }
         }
 
-        dataset.unpersist();
-        writeResults(spark, results, reportsRawPath);
-        LOG.info("Benchmark completed: runId={} results={} output={}", runId, results.size(), reportsRawPath);
+        spark.catalog().clearCache();
+        writeResults(spark, results, reportsBenchmarkPath);
+        LOG.info(
+                "Benchmark completed: runId={} results={} output={}",
+                runId,
+                results.size(),
+                reportsBenchmarkPath
+        );
     }
 
     private static FilterContext resolveFilterContext(
             Dataset<Row> dataset,
             long seed,
             long timestampStartMs,
-            long timestampEndMs
+            long timestampEndMs,
+            int timestampWindowDays
     ) {
-        List<Row> sampleRows = dataset.limit(1).collectAsList();
+        List<Row> sampleRows = dataset.sample(false, 0.01d, seed).limit(1).collectAsList();
+        if (sampleRows.isEmpty()) {
+            sampleRows = dataset.limit(1).collectAsList();
+        }
         if (sampleRows.isEmpty()) {
             throw new IllegalStateException("Cannot run benchmarks on empty dataset");
         }
-        return FilterContext.fromSample(sampleRows.get(0), timestampStartMs, timestampEndMs);
+        return FilterContext.fromSample(
+                sampleRows.get(0),
+                timestampStartMs,
+                timestampEndMs,
+                seed,
+                timestampWindowDays
+        );
     }
 
     private static long executeScenario(
@@ -126,7 +171,7 @@ public final class BenchmarkRunner {
         return query.count();
     }
 
-    private static void writeResults(SparkSession spark, List<BenchmarkResult> results, String reportsRawPath) {
+    private static void writeResults(SparkSession spark, List<BenchmarkResult> results, String reportsBenchmarkPath) {
         StructType schema = new StructType()
                 .add("run_id", DataTypes.StringType, false)
                 .add("scenario", DataTypes.StringType, false)
@@ -137,6 +182,8 @@ public final class BenchmarkRunner {
                 .add("rows_returned", DataTypes.LongType, false)
                 .add("total_rows", DataTypes.LongType, false)
                 .add("selectivity", DataTypes.DoubleType, false)
+                .add("bytes_read", DataTypes.LongType, false)
+                .add("records_read", DataTypes.LongType, false)
                 .add("seed", DataTypes.LongType, false)
                 .add("executed_at", DataTypes.StringType, false)
                 .add("spark_version", DataTypes.StringType, false)
@@ -153,6 +200,8 @@ public final class BenchmarkRunner {
                         result.rowsReturned(),
                         result.totalRows(),
                         result.selectivity(),
+                        result.bytesRead(),
+                        result.recordsRead(),
                         result.seed(),
                         result.executedAt().toString(),
                         result.sparkVersion(),
@@ -164,6 +213,6 @@ public final class BenchmarkRunner {
                 .coalesce(1)
                 .write()
                 .mode("overwrite")
-                .parquet(reportsRawPath);
+                .parquet(reportsBenchmarkPath);
     }
 }

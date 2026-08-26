@@ -26,6 +26,8 @@ class MarkdownReportBuilderTest {
             .add("min_duration_ms", DataTypes.LongType, true)
             .add("max_duration_ms", DataTypes.LongType, true)
             .add("avg_selectivity", DataTypes.DoubleType, true)
+            .add("avg_bytes_read", DataTypes.DoubleType, true)
+            .add("avg_records_read", DataTypes.DoubleType, true)
             .add("passed", DataTypes.BooleanType, true)
             .add("spark_runtime", DataTypes.StringType, true)
             .add("spark_version", DataTypes.StringType, true);
@@ -33,9 +35,9 @@ class MarkdownReportBuilderTest {
     @Test
     void buildsOrcBenchmarkReport() {
         List<Row> rows = Collections.unmodifiableList(Arrays.asList(
-                row("benchmark", "filter_high_cardinality", "orc", 3L, 90.0, null, SparkRuntime.SPARK32_ORC, "3.2.1"),
-                row("benchmark", "full_scan", "orc", 3L, 120.0, null, SparkRuntime.SPARK32_ORC, "3.2.1"),
-                row("validation", "row_count", "orc", 1L, null, true, SparkRuntime.SPARK32_ORC, "3.2.1")
+                row("benchmark", "filter_high_cardinality", "orc", 3L, 90.0, 1.0e6, null, SparkRuntime.SPARK32_ORC, "3.2.1"),
+                row("benchmark", "full_scan", "orc", 3L, 120.0, 1.0e9, null, SparkRuntime.SPARK32_ORC, "3.2.1"),
+                row("validation", "row_count", "orc", 1L, null, null, true, SparkRuntime.SPARK32_ORC, "3.2.1")
         ));
 
         String markdown = MarkdownReportBuilder.build(rows, "test-report");
@@ -43,10 +45,13 @@ class MarkdownReportBuilderTest {
         assertTrue(markdown.contains("# test-report"));
         assertTrue(markdown.contains("Benchmark Summary"));
         assertTrue(markdown.contains("filter_high_cardinality"));
+        assertTrue(markdown.contains("avg_bytes_read"));
         assertTrue(markdown.contains("Validation"));
+        assertTrue(markdown.contains("PASS"));
         assertTrue(markdown.contains("Recommendations"));
         assertTrue(markdown.contains("spark32-orc"));
         assertTrue(markdown.contains("Самый медленный сценарий"));
+        assertTrue(markdown.contains("Наименьший avg_bytes_read"));
     }
 
     @Test
@@ -84,13 +89,15 @@ class MarkdownReportBuilderTest {
             String format,
             long runs,
             Double p50,
+            Double avgBytes,
             Boolean passed,
             String sparkRuntime,
             String sparkVersion
     ) {
         return new GenericRowWithSchema(new Object[]{
-                source, scenario, format, runs, p50, p50, p50, 1L, 2L, 0.01, passed,
-                sparkRuntime, sparkVersion
+                source, scenario, format, runs, p50, p50, p50, 1L, 2L, 0.01,
+                avgBytes, avgBytes == null ? null : avgBytes / 100.0,
+                passed, sparkRuntime, sparkVersion
         }, SCHEMA);
     }
 }

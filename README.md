@@ -37,6 +37,9 @@ gradlew.bat build
   --mode=generate --base-path="$BASE" --target-size-tb=0.01
 ```
 
+По умолчанию скрипт уже ставит `--num-executors 16`, `--executor-memory 8g`, `--executor-cores 4`, `--driver-memory 4g`.
+Переопределение: флаги до `--` или env `NUM_EXECUTORS`, `EXECUTOR_MEMORY`, `EXECUTOR_CORES`, `DRIVER_MEMORY`.
+
 Флаги `spark-submit` — до `--`, аргументы приложения — после.
 
 Короткий smoke:
@@ -64,7 +67,7 @@ generate → validate → benchmark → report
 |---|---|---|
 | 1. Генерация ORC | `generate` | `<orc-path>/` |
 | 2. Валидация | `validate` | `<reports-path>/raw/validation/` |
-| 3. Бенчмарки ORC | `benchmark` | `<reports-path>/raw/` |
+| 3. Бенчмарки ORC | `benchmark` | `<reports-path>/raw/benchmark/` |
 | 4. Отчёт | `report` | `<reports-path>/summary/` |
 
 ### Конфигурируемые пути HDFS
@@ -80,8 +83,8 @@ generate → validate → benchmark → report
 ```text
 <orc-path>/          # ORC-файлы
 <reports-path>/
-  raw/               # сырые метрики benchmark
-  raw/validation/    # валидация
+  raw/benchmark/     # сырые метрики benchmark (duration, selectivity, bytes_read)
+  raw/validation/    # валидация (не затирается benchmark overwrite)
   summary/           # агрегированные отчёты
 ```
 
@@ -175,7 +178,9 @@ generate → validate → benchmark → report
 
 ## Шаг 3. Бенчмарки (`--mode=benchmark`)
 
-Запускает тесты производительности на ORC из `<orc-path>/`. Метрики пишутся в `<reports-path>/raw/` (`spark_runtime=spark32-orc`).
+Запускает тесты производительности на ORC из `<orc-path>/`. Метрики пишутся в `<reports-path>/raw/benchmark/` (`spark_runtime=spark32-orc`).
+
+Дополнительно к wall time собираются Spark input metrics: `bytes_read`, `records_read` (прокси ORC pruning / pushdown).
 
 ### Сценарии
 
@@ -186,7 +191,7 @@ generate → validate → benchmark → report
 | `filter_low_cardinality` | Фильтр по `country_code`, `status` |
 | `filter_medium_cardinality` | Фильтр по `product_id`, `campaign_id` |
 | `filter_high_cardinality` | Point lookup по `event_id`, `user_id` |
-| `filter_timestamp_range` | Range-фильтр по `timestamp` |
+| `filter_timestamp_range` | Range-фильтр по `timestamp` (окно внутри generate-диапазона) |
 | `filter_log_format` | Фильтр по `log_format` |
 | `filter_combined` | Комбинированный фильтр |
 | `group_by` | Агрегация `GROUP BY` |
@@ -195,23 +200,29 @@ generate → validate → benchmark → report
 | Параметр | По умолчанию | Описание |
 |---|---|---|
 | `--benchmark-warmup-runs` | `1` | Прогревочные запуски |
-| `--benchmark-repeat-runs` | `3` | Измеряемые повторы |
+| `--benchmark-repeat-runs` | `3` | Измеряемые повторы (нужно ≥3 для устойчивых p50/p95) |
 | `--benchmark-scenarios` | `all` | Сценарии через запятую или `all` |
-| `--clear-cache-between-runs` | `true` | Очистка кэша между прогонами |
-| `--seed` | `42` | Seed для воспроизводимости фильтров |
+| `--benchmark-timestamp-window-days` | `30` | Длина окна для `filter_timestamp_range` / `filter_combined` внутри `--timestamp-start`…`--timestamp-end` |
+| `--clear-cache-between-runs` | `true` | Очистка кэша между прогонами (без cache base DF — иначе pruning не виден) |
+| `--seed` | `42` | Seed для выборки значений фильтров и размещения timestamp-окна |
 
 ```bash
 ./scripts/submit-spark32.sh -- \
   --mode=benchmark \
   --base-path=hdfs:///user/hdfs_migration_user/orc_test \
-  --seed=42
+  --seed=42 \
+  --benchmark-repeat-runs=3 \
+  --benchmark-timestamp-window-days=30
 ```
+
+Повтор validate+benchmark+report без generate: `./scripts/run-bench-pipeline.sh`.
 
 ---
 
 ## Шаг 4. Отчёт (`--mode=report`)
 
-Агрегирует метрики из `<reports-path>/raw/` и validation в `<reports-path>/summary/`.
+Агрегирует метрики из `<reports-path>/raw/benchmark/` и validation в `<reports-path>/summary/`.
+(Старые прогоны с parquet прямо в `raw/` тоже читаются как fallback.)
 
 | Параметр | По умолчанию | Описание |
 |---|---|---|
