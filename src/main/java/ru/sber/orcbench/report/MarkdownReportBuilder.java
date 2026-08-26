@@ -6,6 +6,8 @@ import org.apache.spark.sql.Row;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
+import java.util.OptionalDouble;
 import java.util.stream.Collectors;
 
 public final class MarkdownReportBuilder {
@@ -92,15 +94,15 @@ public final class MarkdownReportBuilder {
         if (!benchmark.isEmpty()) {
             Row slowest = benchmark.stream()
                     .max(Comparator.comparingDouble(row ->
-                            row.isNullAt(row.fieldIndex("p50_duration_ms"))
-                                    ? 0.0
-                                    : row.getDouble(row.fieldIndex("p50_duration_ms"))))
+                            asDouble(row, "p50_duration_ms").orElse(0.0)))
                     .orElse(null);
-            if (slowest != null && !slowest.isNullAt(slowest.fieldIndex("p50_duration_ms"))) {
-                recommendations.add("Самый медленный сценарий по p50: `"
-                        + slowest.getString(slowest.fieldIndex("scenario"))
-                        + "` (" + String.format("%.2f", slowest.getDouble(slowest.fieldIndex("p50_duration_ms")))
-                        + " ms) — кандидат на оптимизацию фильтров/проекций ORC.");
+            if (slowest != null) {
+                asDouble(slowest, "p50_duration_ms").ifPresent(p50 ->
+                        recommendations.add("Самый медленный сценарий по p50: `"
+                                + slowest.getString(slowest.fieldIndex("scenario"))
+                                + "` (" + String.format(Locale.US, "%.2f", p50)
+                                + " ms) — кандидат на оптимизацию фильтров/проекций ORC.")
+                );
             }
         }
 
@@ -125,10 +127,20 @@ public final class MarkdownReportBuilder {
     }
 
     private static String formatDouble(Row row, String field) {
+        OptionalDouble value = asDouble(row, field);
+        return value.isPresent() ? String.format(Locale.US, "%.2f", value.getAsDouble()) : "-";
+    }
+
+    /** Accepts Double/Long/Integer (percentile_approx often returns Long). */
+    private static OptionalDouble asDouble(Row row, String field) {
         int idx = row.fieldIndex(field);
         if (row.isNullAt(idx)) {
-            return "-";
+            return OptionalDouble.empty();
         }
-        return String.format("%.2f", row.getDouble(idx));
+        Object value = row.get(idx);
+        if (value instanceof Number) {
+            return OptionalDouble.of(((Number) value).doubleValue());
+        }
+        return OptionalDouble.empty();
     }
 }

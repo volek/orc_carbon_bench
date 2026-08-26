@@ -144,8 +144,9 @@ public final class ReportRunner {
                 .agg(
                         count(lit(1)).alias("runs"),
                         avg("duration_ms").alias("avg_duration_ms"),
-                        expr("percentile_approx(duration_ms, 0.5)").alias("p50_duration_ms"),
-                        expr("percentile_approx(duration_ms, 0.95)").alias("p95_duration_ms"),
+                        // percentile_approx keeps the input type (often Long); cast for stable report schema
+                        expr("cast(percentile_approx(duration_ms, 0.5) as double)").alias("p50_duration_ms"),
+                        expr("cast(percentile_approx(duration_ms, 0.95) as double)").alias("p95_duration_ms"),
                         min("duration_ms").alias("min_duration_ms"),
                         max("duration_ms").alias("max_duration_ms"),
                         avg("selectivity").alias("avg_selectivity"),
