@@ -17,6 +17,9 @@ public final class BenchmarkResult {
     private final long bytesRead;
     private final long recordsRead;
     private final long seed;
+    private final String datasetLabel;
+    private final String orcPath;
+    private final String orcBloomColumns;
     private final Instant executedAt;
     private final String sparkVersion;
     private final String sparkRuntime;
@@ -33,6 +36,9 @@ public final class BenchmarkResult {
             long bytesRead,
             long recordsRead,
             long seed,
+            String datasetLabel,
+            String orcPath,
+            String orcBloomColumns,
             Instant executedAt,
             String sparkVersion,
             String sparkRuntime
@@ -48,6 +54,9 @@ public final class BenchmarkResult {
         this.bytesRead = bytesRead;
         this.recordsRead = recordsRead;
         this.seed = seed;
+        this.datasetLabel = datasetLabel;
+        this.orcPath = orcPath;
+        this.orcBloomColumns = orcBloomColumns;
         this.executedAt = executedAt;
         this.sparkVersion = sparkVersion;
         this.sparkRuntime = sparkRuntime;
@@ -64,6 +73,9 @@ public final class BenchmarkResult {
             long bytesRead,
             long recordsRead,
             long seed,
+            String datasetLabel,
+            String orcPath,
+            String orcBloomColumns,
             SparkRuntimeInfo runtime
     ) {
         double selectivity = totalRows == 0 ? 0.0 : (double) rowsReturned / totalRows;
@@ -79,6 +91,9 @@ public final class BenchmarkResult {
                 bytesRead,
                 recordsRead,
                 seed,
+                datasetLabel,
+                orcPath,
+                orcBloomColumns,
                 Instant.now(),
                 runtime.sparkVersion(),
                 runtime.sparkRuntime()
@@ -127,6 +142,18 @@ public final class BenchmarkResult {
 
     public long seed() {
         return seed;
+    }
+
+    public String datasetLabel() {
+        return datasetLabel;
+    }
+
+    public String orcPath() {
+        return orcPath;
+    }
+
+    public String orcBloomColumns() {
+        return orcBloomColumns;
     }
 
     public Instant executedAt() {

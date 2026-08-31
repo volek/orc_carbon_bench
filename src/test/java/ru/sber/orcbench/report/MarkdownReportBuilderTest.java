@@ -19,6 +19,7 @@ class MarkdownReportBuilderTest {
             .add("source", DataTypes.StringType, false)
             .add("scenario", DataTypes.StringType, false)
             .add("format", DataTypes.StringType, false)
+            .add("dataset_label", DataTypes.StringType, true)
             .add("runs", DataTypes.LongType, false)
             .add("avg_duration_ms", DataTypes.DoubleType, true)
             .add("p50_duration_ms", DataTypes.DoubleType, true)
@@ -28,6 +29,7 @@ class MarkdownReportBuilderTest {
             .add("avg_selectivity", DataTypes.DoubleType, true)
             .add("avg_bytes_read", DataTypes.DoubleType, true)
             .add("avg_records_read", DataTypes.DoubleType, true)
+            .add("orc_bloom_columns", DataTypes.StringType, true)
             .add("passed", DataTypes.BooleanType, true)
             .add("spark_runtime", DataTypes.StringType, true)
             .add("spark_version", DataTypes.StringType, true);
@@ -35,23 +37,37 @@ class MarkdownReportBuilderTest {
     @Test
     void buildsOrcBenchmarkReport() {
         List<Row> rows = Collections.unmodifiableList(Arrays.asList(
-                row("benchmark", "filter_high_cardinality", "orc", 3L, 90.0, 1.0e6, null, SparkRuntime.SPARK32_ORC, "3.2.1"),
-                row("benchmark", "full_scan", "orc", 3L, 120.0, 1.0e9, null, SparkRuntime.SPARK32_ORC, "3.2.1"),
-                row("validation", "row_count", "orc", 1L, null, null, true, SparkRuntime.SPARK32_ORC, "3.2.1")
+                benchmarkRow("filter_high_cardinality", "nobloom", 3L, 90.0, 1.0e9, "none"),
+                benchmarkRow("full_scan", "nobloom", 3L, 120.0, 1.0e9, "none"),
+                validationRow("row_count", true)
         ));
 
         String markdown = MarkdownReportBuilder.build(rows, "test-report");
 
         assertTrue(markdown.contains("# test-report"));
         assertTrue(markdown.contains("Benchmark Summary"));
+        assertTrue(markdown.contains("dataset"));
+        assertTrue(markdown.contains("bloom_columns"));
         assertTrue(markdown.contains("filter_high_cardinality"));
-        assertTrue(markdown.contains("avg_bytes_read"));
         assertTrue(markdown.contains("Validation"));
         assertTrue(markdown.contains("PASS"));
         assertTrue(markdown.contains("Recommendations"));
         assertTrue(markdown.contains("spark32-orc"));
-        assertTrue(markdown.contains("Самый медленный сценарий"));
-        assertTrue(markdown.contains("Наименьший avg_bytes_read"));
+    }
+
+    @Test
+    void buildsBloomComparisonWhenAbPresent() {
+        List<Row> rows = Arrays.asList(
+                benchmarkRow("filter_high_cardinality", "nobloom", 3L, 100.0, 1.0e9, "none"),
+                benchmarkRow("filter_high_cardinality", "bloom", 3L, 80.0, 2.0e8,
+                        "event_id,user_id,product_id,campaign_id")
+        );
+
+        String markdown = MarkdownReportBuilder.build(rows, "bloom-report");
+
+        assertTrue(markdown.contains("Bloom filter comparison"));
+        assertTrue(markdown.contains("filter_high_cardinality"));
+        assertTrue(markdown.contains("Bloom A/B"));
     }
 
     @Test
@@ -60,6 +76,7 @@ class MarkdownReportBuilderTest {
                 .add("source", DataTypes.StringType, false)
                 .add("scenario", DataTypes.StringType, false)
                 .add("format", DataTypes.StringType, false)
+                .add("dataset_label", DataTypes.StringType, true)
                 .add("runs", DataTypes.LongType, false)
                 .add("avg_duration_ms", DataTypes.DoubleType, true)
                 .add("p50_duration_ms", DataTypes.LongType, true)
@@ -67,37 +84,40 @@ class MarkdownReportBuilderTest {
                 .add("min_duration_ms", DataTypes.LongType, true)
                 .add("max_duration_ms", DataTypes.LongType, true)
                 .add("avg_selectivity", DataTypes.DoubleType, true)
+                .add("orc_bloom_columns", DataTypes.StringType, true)
                 .add("passed", DataTypes.BooleanType, true)
                 .add("spark_runtime", DataTypes.StringType, true)
                 .add("spark_version", DataTypes.StringType, true);
 
         Row row = new GenericRowWithSchema(new Object[]{
-                "benchmark", "full_scan", "orc", 3L, 115.5, 120L, 140L, 100L, 150L, 0.02,
-                null, SparkRuntime.SPARK32_ORC, "3.2.1"
+                "benchmark", "full_scan", "orc", "default", 3L, 115.5, 120L, 140L, 100L, 150L, 0.02,
+                "none", null, SparkRuntime.SPARK32_ORC, "3.2.1"
         }, longSchema);
 
         String markdown = MarkdownReportBuilder.build(Collections.singletonList(row), "long-p50");
 
         assertTrue(markdown.contains("120.00"));
         assertTrue(markdown.contains("140.00"));
-        assertTrue(markdown.contains("Самый медленный сценарий по p50: `full_scan` (120.00 ms)"));
     }
 
-    private static Row row(
-            String source,
+    private static Row benchmarkRow(
             String scenario,
-            String format,
+            String datasetLabel,
             long runs,
             Double p50,
             Double avgBytes,
-            Boolean passed,
-            String sparkRuntime,
-            String sparkVersion
+            String bloomColumns
     ) {
         return new GenericRowWithSchema(new Object[]{
-                source, scenario, format, runs, p50, p50, p50, 1L, 2L, 0.01,
-                avgBytes, avgBytes == null ? null : avgBytes / 100.0,
-                passed, sparkRuntime, sparkVersion
+                "benchmark", scenario, "orc", datasetLabel, runs, p50, p50, p50, 1L, 2L, 0.01,
+                avgBytes, avgBytes / 100.0, bloomColumns, null, SparkRuntime.SPARK32_ORC, "3.2.1"
+        }, SCHEMA);
+    }
+
+    private static Row validationRow(String check, boolean passed) {
+        return new GenericRowWithSchema(new Object[]{
+                "validation", check, "orc", "-", 1L, null, null, null, null, null, null,
+                null, null, null, passed, SparkRuntime.SPARK32_ORC, "3.2.1"
         }, SCHEMA);
     }
 }

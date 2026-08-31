@@ -12,13 +12,16 @@ import org.slf4j.LoggerFactory;
 import ru.sber.orcbench.config.ReportFormat;
 import ru.sber.orcbench.config.ReportSettings;
 import ru.sber.orcbench.config.SparkRuntime;
+import ru.sber.orcbench.config.StoragePaths;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.apache.spark.sql.functions.avg;
 import static org.apache.spark.sql.functions.col;
@@ -37,9 +40,7 @@ public final class ReportRunner {
     public static void run(
             SparkSession spark,
             ReportSettings settings,
-            String reportsBenchmarkPath,
-            String reportsRawPath,
-            String reportsValidationPath,
+            StoragePaths paths,
             String reportsSummaryPath
     ) {
         LOG.info("Building report name={} formats={} summaryPath={}",
@@ -47,19 +48,19 @@ public final class ReportRunner {
 
         List<Dataset<Row>> summaryParts = new ArrayList<>();
 
-        loadBenchmark(spark, reportsBenchmarkPath, reportsRawPath).ifPresent(raw -> {
-            LOG.info("Loaded benchmark raw data");
+        loadAllBenchmark(spark, paths).ifPresent(raw -> {
+            LOG.info("Loaded benchmark raw data rows={}", raw.count());
             summaryParts.add(aggregateBenchmark(raw));
         });
 
-        loadParquet(spark, reportsValidationPath).ifPresent(raw -> {
-            LOG.info("Loaded validation results from {}", reportsValidationPath);
+        loadAllValidation(spark, paths).ifPresent(raw -> {
+            LOG.info("Loaded validation results");
             summaryParts.add(aggregateValidation(raw));
         });
 
         if (summaryParts.isEmpty()) {
             throw new IllegalStateException(
-                    "No report input data found under " + reportsBenchmarkPath + " or " + reportsRawPath
+                    "No report input data found under " + paths.reportsRawPath()
             );
         }
 
@@ -88,33 +89,45 @@ public final class ReportRunner {
         LOG.info("Report generation completed: summaryPath={}", reportsSummaryPath);
     }
 
-    /**
-     * Prefer {@code raw/benchmark/}; fall back to legacy {@code raw/} parquet for older runs.
-     */
-    private static Optional<Dataset<Row>> loadBenchmark(
-            SparkSession spark,
-            String reportsBenchmarkPath,
-            String reportsRawPath
-    ) {
-        Optional<Dataset<Row>> modern = loadParquet(spark, reportsBenchmarkPath);
-        if (modern.isPresent()) {
-            LOG.info("Loaded benchmark metrics from {}", reportsBenchmarkPath);
-            return modern;
+    private static Optional<Dataset<Row>> loadAllBenchmark(SparkSession spark, StoragePaths paths) {
+        Set<String> candidatePaths = new LinkedHashSet<>();
+        candidatePaths.add(paths.reportsBenchmarkNobloomPath());
+        candidatePaths.add(paths.reportsBenchmarkBloomPath());
+        candidatePaths.add(paths.reportsBenchmarkPath());
+        candidatePaths.add(paths.reportsRawPath());
+
+        Dataset<Row> combined = null;
+        for (String path : candidatePaths) {
+            Optional<Dataset<Row>> loaded = loadParquet(spark, path);
+            if (!loaded.isPresent()) {
+                continue;
+            }
+            LOG.info("Loaded benchmark metrics from {}", path);
+            combined = combined == null ? loaded.get() : combined.unionByName(loaded.get(), true);
         }
-        Optional<Dataset<Row>> legacy = loadParquet(spark, reportsRawPath);
-        if (legacy.isPresent()) {
-            LOG.warn(
-                    "Loaded legacy benchmark metrics from {} (prefer writing to {})",
-                    reportsRawPath,
-                    reportsBenchmarkPath
-            );
+        return Optional.ofNullable(combined);
+    }
+
+    private static Optional<Dataset<Row>> loadAllValidation(SparkSession spark, StoragePaths paths) {
+        Set<String> candidatePaths = new LinkedHashSet<>();
+        candidatePaths.add(paths.reportsValidationNobloomPath());
+        candidatePaths.add(paths.reportsValidationBloomPath());
+        candidatePaths.add(paths.reportsValidationPath());
+
+        Dataset<Row> combined = null;
+        for (String path : candidatePaths) {
+            Optional<Dataset<Row>> loaded = loadParquet(spark, path);
+            if (!loaded.isPresent()) {
+                continue;
+            }
+            LOG.info("Loaded validation results from {}", path);
+            combined = combined == null ? loaded.get() : combined.unionByName(loaded.get(), true);
         }
-        return legacy;
+        return Optional.ofNullable(combined);
     }
 
     private static Optional<Dataset<Row>> loadParquet(SparkSession spark, String path) {
         if (!pathExists(spark, path)) {
-            LOG.warn("Report input path not found: {}", path);
             return Optional.empty();
         }
         try {
@@ -150,12 +163,19 @@ public final class ReportRunner {
         return raw.withColumn("spark_version", lit(null).cast("string"));
     }
 
+    private static Dataset<Row> withDatasetLabel(Dataset<Row> raw) {
+        if (hasColumn(raw, "dataset_label")) {
+            return raw;
+        }
+        return raw.withColumn("dataset_label", lit("default"));
+    }
+
     private static boolean hasColumn(Dataset<Row> raw, String name) {
         return Arrays.asList(raw.columns()).contains(name);
     }
 
     private static Dataset<Row> aggregateBenchmark(Dataset<Row> raw) {
-        Dataset<Row> prepared = withSparkVersion(withRuntime(raw));
+        Dataset<Row> prepared = withDatasetLabel(withSparkVersion(withRuntime(raw)));
         Dataset<Row> measured = hasColumn(prepared, "warmup")
                 ? prepared.filter(col("warmup").equalTo(false))
                 : prepared;
@@ -167,17 +187,20 @@ public final class ReportRunner {
         Column avgRecords = hasColumn(measured, "records_read")
                 ? avg("records_read").alias("avg_records_read")
                 : lit(null).cast("double").alias("avg_records_read");
+        Column bloomColumns = hasColumn(measured, "orc_bloom_columns")
+                ? max("orc_bloom_columns").alias("orc_bloom_columns")
+                : lit(null).cast("string").alias("orc_bloom_columns");
 
         return measured.groupBy(
                         lit("benchmark").alias("source"),
                         col("scenario"),
                         col("format"),
-                        col("spark_runtime")
+                        col("spark_runtime"),
+                        col("dataset_label")
                 )
                 .agg(
                         count(lit(1)).alias("runs"),
                         avg("duration_ms").alias("avg_duration_ms"),
-                        // percentile_approx keeps the input type (often Long); cast for stable report schema
                         expr("cast(percentile_approx(duration_ms, 0.5) as double)").alias("p50_duration_ms"),
                         expr("cast(percentile_approx(duration_ms, 0.95) as double)").alias("p95_duration_ms"),
                         min("duration_ms").alias("min_duration_ms"),
@@ -185,6 +208,7 @@ public final class ReportRunner {
                         avg("selectivity").alias("avg_selectivity"),
                         avgBytes,
                         avgRecords,
+                        bloomColumns,
                         sparkVersionAgg
                 )
                 .withColumn("passed", lit(null).cast("boolean"));
@@ -205,9 +229,11 @@ public final class ReportRunner {
                 lit(null).cast("double").alias("avg_selectivity"),
                 lit(null).cast("double").alias("avg_bytes_read"),
                 lit(null).cast("double").alias("avg_records_read"),
+                lit(null).cast("string").alias("orc_bloom_columns"),
                 col("passed"),
                 col("spark_runtime"),
-                col("spark_version")
+                col("spark_version"),
+                lit("-").alias("dataset_label")
         );
     }
 

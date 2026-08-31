@@ -6,6 +6,7 @@ import org.apache.spark.sql.SparkSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.sber.orcbench.benchmark.DatasetLoader;
+import ru.sber.orcbench.config.OrcWriteSettings;
 import ru.sber.orcbench.config.SparkRuntimeInfo;
 import ru.sber.orcbench.config.ValidationCheck;
 import ru.sber.orcbench.config.ValidationSettings;
@@ -35,6 +36,7 @@ public final class ValidationRunner {
     public static void run(
             SparkSession spark,
             ValidationSettings settings,
+            OrcWriteSettings orcWrite,
             String orcPath,
             String reportsValidationPath,
             long seed,
@@ -71,6 +73,9 @@ public final class ValidationRunner {
                     break;
                 case LOG_MESSAGE_STRUCTURE:
                     result = checkLogMessageStructure(runId, orcSample, runtime);
+                    break;
+                case ORC_BLOOM_FILTERS:
+                    result = checkOrcBloomFilters(runId, spark, orcPath, orcWrite, runtime);
                     break;
                 default:
                     throw new IllegalStateException("Unsupported validation check: " + check);
@@ -197,6 +202,49 @@ public final class ValidationRunner {
         return passed
                 ? ValidationResult.pass(runId, ValidationCheck.LOG_MESSAGE_STRUCTURE, "Log messages valid", details, runtime)
                 : ValidationResult.fail(runId, ValidationCheck.LOG_MESSAGE_STRUCTURE, "Log messages invalid", details, runtime);
+    }
+
+    private static ValidationResult checkOrcBloomFilters(
+            String runId,
+            SparkSession spark,
+            String orcPath,
+            OrcWriteSettings orcWrite,
+            SparkRuntimeInfo runtime
+    ) {
+        String[] columnsToCheck = orcWrite.bloomFiltersEnabled()
+                ? orcWrite.bloomFilterColumns()
+                : OrcWriteSettings.DEFAULT_BLOOM_FILTER_COLUMNS;
+        boolean expectPresent = orcWrite.bloomFiltersEnabled();
+
+        try {
+            OrcMetadataInspector.InspectionResult inspection = OrcMetadataInspector.inspectBloomFilters(
+                    spark.sparkContext().hadoopConfiguration(),
+                    orcPath,
+                    columnsToCheck,
+                    expectPresent
+            );
+            if (inspection.passed()) {
+                String message = expectPresent
+                        ? "ORC bloom filters present on configured columns"
+                        : "ORC bloom filters absent as expected";
+                return ValidationResult.pass(runId, ValidationCheck.ORC_BLOOM_FILTERS, message, inspection.details(), runtime);
+            }
+            return ValidationResult.fail(
+                    runId,
+                    ValidationCheck.ORC_BLOOM_FILTERS,
+                    "ORC bloom filter metadata check failed",
+                    inspection.details(),
+                    runtime
+            );
+        } catch (Exception ex) {
+            return ValidationResult.fail(
+                    runId,
+                    ValidationCheck.ORC_BLOOM_FILTERS,
+                    "Failed to inspect ORC bloom metadata: " + ex.getMessage(),
+                    ex.toString(),
+                    runtime
+            );
+        }
     }
 
     private static void writeResults(SparkSession spark, List<ValidationResult> results, String outputPath) {

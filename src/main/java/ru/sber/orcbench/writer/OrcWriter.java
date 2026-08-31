@@ -16,6 +16,8 @@ public final class OrcWriter {
     public static void configureSpark(SparkSession spark, OrcWriteSettings settings) {
         spark.conf().set("spark.sql.orc.filterPushdown", "true");
         spark.conf().set("spark.sql.orc.enableVectorizedReader", "true");
+        spark.conf().set("spark.sql.orc.splits.include.file.footer", "true");
+        spark.conf().set("spark.sql.orc.cache.stripe.details.size", "10000");
         spark.conf().set("spark.sql.orc.block.size", String.valueOf(settings.stripeSizeMb() * 1024L * 1024L));
         spark.conf().set("spark.sql.orc.row.index.stride", String.valueOf(settings.rowGroupSizeMb() * 1024 * 1024 / 4));
     }
@@ -28,17 +30,26 @@ public final class OrcWriter {
                 : dataset;
 
         LOG.info(
-                "Writing ORC: path={} mode={} compression={} partitionBy={}",
+                "Writing ORC: path={} mode={} compression={} partitionBy={} bloomColumns={} bloomFpp={}",
                 orcPath,
                 saveMode,
                 settings.compression(),
-                String.join(",", settings.partitionBy())
+                String.join(",", settings.partitionBy()),
+                settings.bloomFiltersEnabled() ? settings.bloomFilterColumnsCsv() : "none",
+                settings.bloomFilterFpp()
         );
 
-        toWrite.write()
+        org.apache.spark.sql.DataFrameWriter<Row> writer = toWrite.write()
                 .mode(saveMode)
                 .option("compression", settings.compression())
-                .partitionBy(settings.partitionBy())
-                .orc(orcPath);
+                .partitionBy(settings.partitionBy());
+
+        if (settings.bloomFiltersEnabled()) {
+            writer = writer
+                    .option("orc.bloom.filter.columns", settings.bloomFilterColumnsCsv())
+                    .option("orc.bloom.filter.fpp", String.valueOf(settings.bloomFilterFpp()));
+        }
+
+        writer.orc(orcPath);
     }
 }

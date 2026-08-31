@@ -8,7 +8,8 @@ public enum ValidationCheck {
     LOW_CARDINALITY_BOUNDS("low_cardinality_bounds"),
     TIMESTAMP_RANGE("timestamp_range"),
     LOG_FORMAT_DISTRIBUTION("log_format_distribution"),
-    LOG_MESSAGE_STRUCTURE("log_message_structure");
+    LOG_MESSAGE_STRUCTURE("log_message_structure"),
+    ORC_BLOOM_FILTERS("orc_bloom_filters");
 
     private final String cliValue;
 

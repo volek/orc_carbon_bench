@@ -4,19 +4,45 @@ public final class StoragePaths {
     private final String basePath;
     private final String orcPath;
     private final String reportsPath;
+    private final String reportsBenchmarkPath;
+    private final String reportsValidationPath;
 
-    public StoragePaths(String basePath, String orcPath, String reportsPath) {
+    public StoragePaths(
+            String basePath,
+            String orcPath,
+            String reportsPath,
+            String reportsBenchmarkPath,
+            String reportsValidationPath
+    ) {
         this.basePath = basePath;
         this.orcPath = orcPath;
         this.reportsPath = reportsPath;
+        this.reportsBenchmarkPath = reportsBenchmarkPath;
+        this.reportsValidationPath = reportsValidationPath;
     }
 
-    public static StoragePaths from(String basePath, String orcPath, String reportsPath) {
+    public static StoragePaths from(
+            String basePath,
+            String orcPath,
+            String reportsPath,
+            String reportsBenchmarkPath,
+            String reportsValidationPath
+    ) {
         String normalizedBase = normalize(basePath);
+        String normalizedReports = reportsPath != null
+                ? normalize(reportsPath)
+                : joinPath(normalizedBase, "reports");
+        String raw = joinPath(normalizedReports, "raw");
         return new StoragePaths(
                 normalizedBase,
                 orcPath != null ? normalize(orcPath) : joinPath(normalizedBase, "orc"),
-                reportsPath != null ? normalize(reportsPath) : joinPath(normalizedBase, "reports")
+                normalizedReports,
+                reportsBenchmarkPath != null
+                        ? normalize(reportsBenchmarkPath)
+                        : joinPath(raw, "benchmark"),
+                reportsValidationPath != null
+                        ? normalize(reportsValidationPath)
+                        : joinPath(raw, "validation")
         );
     }
 
@@ -28,6 +54,11 @@ public final class StoragePaths {
         return orcPath;
     }
 
+    /** Default bloom-enabled dataset path for A/B runs. */
+    public String orcBloomPath() {
+        return joinPath(basePath, "orc_bloom");
+    }
+
     public String reportsPath() {
         return reportsPath;
     }
@@ -36,16 +67,28 @@ public final class StoragePaths {
         return joinPath(reportsPath, "raw");
     }
 
-    /**
-     * Benchmark metrics live under {@code raw/benchmark/} so overwrite does not wipe
-     * sibling {@code raw/validation/}.
-     */
     public String reportsBenchmarkPath() {
-        return joinPath(reportsRawPath(), "benchmark");
+        return reportsBenchmarkPath;
+    }
+
+    public String reportsBenchmarkNobloomPath() {
+        return joinPath(reportsRawPath(), "benchmark_nobloom");
+    }
+
+    public String reportsBenchmarkBloomPath() {
+        return joinPath(reportsRawPath(), "benchmark_bloom");
     }
 
     public String reportsValidationPath() {
-        return joinPath(reportsRawPath(), "validation");
+        return reportsValidationPath;
+    }
+
+    public String reportsValidationNobloomPath() {
+        return joinPath(reportsRawPath(), "validation_nobloom");
+    }
+
+    public String reportsValidationBloomPath() {
+        return joinPath(reportsRawPath(), "validation_bloom");
     }
 
     public String reportsSummaryPath() {

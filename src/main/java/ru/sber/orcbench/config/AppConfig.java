@@ -20,6 +20,7 @@ public final class AppConfig {
     private final BenchmarkSettings benchmark;
     private final ValidationSettings validation;
     private final ReportSettings report;
+    private final String benchmarkDatasetLabel;
 
     public AppConfig(
             Mode mode,
@@ -34,7 +35,8 @@ public final class AppConfig {
             OrcWriteSettings orcWrite,
             BenchmarkSettings benchmark,
             ValidationSettings validation,
-            ReportSettings report
+            ReportSettings report,
+            String benchmarkDatasetLabel
     ) {
         this.mode = mode;
         this.paths = paths;
@@ -49,6 +51,7 @@ public final class AppConfig {
         this.benchmark = benchmark;
         this.validation = validation;
         this.report = report;
+        this.benchmarkDatasetLabel = benchmarkDatasetLabel;
     }
 
     public static AppConfig fromArgs(String[] args) {
@@ -69,7 +72,9 @@ public final class AppConfig {
         StoragePaths paths = StoragePaths.from(
                 basePath,
                 kv.get("orc-path"),
-                kv.get("reports-path")
+                kv.get("reports-path"),
+                kv.get("reports-benchmark-path"),
+                kv.get("reports-validation-path")
         );
 
         String[] partitionBy = kv.containsKey("partition-by")
@@ -79,12 +84,19 @@ public final class AppConfig {
         OptionalInt writePartitions = ArgParser.parseOptionalPositiveInt(kv, "write-partitions");
         int partitions = writePartitions.orElse(0);
 
+        String[] bloomColumns = OrcWriteSettings.parseBloomFilterColumns(
+                kv.getOrDefault("orc-bloom-filter-columns", String.join(",", OrcWriteSettings.DEFAULT_BLOOM_FILTER_COLUMNS))
+        );
+        double bloomFpp = OrcWriteSettings.parseBloomFilterFpp(kv.get("orc-bloom-filter-fpp"));
+
         OrcWriteSettings orcWrite = new OrcWriteSettings(
                 ArgParser.parseEnum(kv.getOrDefault("orc-compression", "snappy"), "orc-compression", "snappy", "zstd", "none"),
                 (int) ArgParser.parsePositiveLong(kv.getOrDefault("orc-stripe-size-mb", "64"), "orc-stripe-size-mb"),
                 (int) ArgParser.parsePositiveLong(kv.getOrDefault("orc-row-group-size-mb", "32"), "orc-row-group-size-mb"),
                 partitions,
-                partitionBy
+                partitionBy,
+                bloomColumns,
+                bloomFpp
         );
 
         BenchmarkSettings benchmark = new BenchmarkSettings(
@@ -106,6 +118,10 @@ public final class AppConfig {
         ValidationSettings validation = ValidationSettings.from(kv);
         ReportSettings report = ReportSettings.from(kv);
 
+        String datasetLabel = kv.containsKey("benchmark-dataset-label")
+                ? kv.get("benchmark-dataset-label").trim()
+                : (orcWrite.bloomFiltersEnabled() ? "bloom" : "nobloom");
+
         return new AppConfig(
                 Mode.fromCli(modeValue),
                 paths,
@@ -119,8 +135,25 @@ public final class AppConfig {
                 orcWrite,
                 benchmark,
                 validation,
-                report
+                report,
+                datasetLabel
         );
+    }
+
+    static String inferBenchmarkDatasetLabel(String orcPath) {
+        String normalized = orcPath.replace('\\', '/');
+        if (normalized.endsWith("/orc_bloom") || normalized.contains("/orc_bloom/")) {
+            return "bloom";
+        }
+        if (normalized.endsWith("/orc") || normalized.endsWith("/orc/")) {
+            return "nobloom";
+        }
+        return "default";
+    }
+
+    /** Used when {@code --benchmark-dataset-label} is omitted: tags from write config. */
+    static String inferDatasetLabelFromOrcWrite(OrcWriteSettings orcWrite) {
+        return orcWrite.bloomFiltersEnabled() ? "bloom" : "nobloom";
     }
 
     public Mode mode() {
@@ -173,6 +206,10 @@ public final class AppConfig {
 
     public ReportSettings report() {
         return report;
+    }
+
+    public String benchmarkDatasetLabel() {
+        return benchmarkDatasetLabel;
     }
 
     public String basePath() {

@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.sber.orcbench.benchmark.BenchmarkRunner;
 import ru.sber.orcbench.config.AppConfig;
+import ru.sber.orcbench.config.OrcWriteSettings;
 import ru.sber.orcbench.config.SparkRuntimeInfo;
 import ru.sber.orcbench.generator.GenerateRunner;
 import ru.sber.orcbench.generator.GeneratorConfig;
@@ -29,13 +30,14 @@ public final class AppMain {
         SparkRuntimeInfo runtime = SparkRuntimeInfo.from(spark);
         try {
             LOG.info(
-                    "Starting mode={} sparkVersion={} sparkRuntime={} basePath={} orcPath={} reportsPath={}",
+                    "Starting mode={} sparkVersion={} sparkRuntime={} basePath={} orcPath={} reportsPath={} bloom={}",
                     config.mode(),
                     runtime.sparkVersion(),
                     runtime.sparkRuntime(),
                     config.basePath(),
                     config.orcPath(),
-                    config.reportsPath()
+                    config.reportsPath(),
+                    config.orcWrite()
             );
 
             switch (config.mode()) {
@@ -46,6 +48,7 @@ public final class AppMain {
                     ValidationRunner.run(
                             spark,
                             config.validation(),
+                            config.orcWrite(),
                             config.orcPath(),
                             config.reportsValidationPath(),
                             config.seed(),
@@ -63,6 +66,8 @@ public final class AppMain {
                             config.seed(),
                             config.timestampStartEpochMs(),
                             config.timestampEndEpochMs(),
+                            config.benchmarkDatasetLabel(),
+                            resolveOrcBloomColumns(config),
                             runtime
                     );
                     break;
@@ -70,9 +75,7 @@ public final class AppMain {
                     ReportRunner.run(
                             spark,
                             config.report(),
-                            config.reportsBenchmarkPath(),
-                            config.reportsRawPath(),
-                            config.reportsValidationPath(),
+                            config.paths(),
                             config.reportsSummaryPath()
                     );
                     break;
@@ -82,5 +85,17 @@ public final class AppMain {
         } finally {
             spark.stop();
         }
+    }
+
+    static String resolveOrcBloomColumns(AppConfig config) {
+        if ("bloom".equals(config.benchmarkDatasetLabel())) {
+            return String.join(",", OrcWriteSettings.DEFAULT_BLOOM_FILTER_COLUMNS);
+        }
+        if ("nobloom".equals(config.benchmarkDatasetLabel())) {
+            return "none";
+        }
+        return config.orcWrite().bloomFiltersEnabled()
+                ? config.orcWrite().bloomFilterColumnsCsv()
+                : "none";
     }
 }

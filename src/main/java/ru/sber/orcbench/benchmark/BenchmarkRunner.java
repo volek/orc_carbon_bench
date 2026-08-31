@@ -29,6 +29,8 @@ public final class BenchmarkRunner {
             long seed,
             long timestampStartMs,
             long timestampEndMs,
+            String datasetLabel,
+            String orcBloomColumns,
             SparkRuntimeInfo runtime
     ) {
         String runId = UUID.randomUUID().toString();
@@ -36,13 +38,15 @@ public final class BenchmarkRunner {
 
         LOG.info(
                 "Benchmark runId={} scenarios={} warmupRuns={} repeatRuns={} clearCache={} "
-                        + "timestampWindowDays={} reportsPath={}",
+                        + "timestampWindowDays={} datasetLabel={} orcBloomColumns={} reportsPath={}",
                 runId,
                 settings.scenarios(),
                 settings.warmupRuns(),
                 settings.repeatRuns(),
                 settings.clearCacheBetweenRuns(),
                 settings.timestampWindowDays(),
+                datasetLabel,
+                orcBloomColumns,
                 reportsBenchmarkPath
         );
 
@@ -105,6 +109,9 @@ public final class BenchmarkRunner {
                         io.bytesRead(),
                         io.recordsRead(),
                         seed,
+                        datasetLabel,
+                        orcPath,
+                        orcBloomColumns,
                         runtime
                 );
                 results.add(result);
@@ -185,6 +192,9 @@ public final class BenchmarkRunner {
                 .add("bytes_read", DataTypes.LongType, false)
                 .add("records_read", DataTypes.LongType, false)
                 .add("seed", DataTypes.LongType, false)
+                .add("dataset_label", DataTypes.StringType, false)
+                .add("orc_path", DataTypes.StringType, false)
+                .add("orc_bloom_columns", DataTypes.StringType, false)
                 .add("executed_at", DataTypes.StringType, false)
                 .add("spark_version", DataTypes.StringType, false)
                 .add("spark_runtime", DataTypes.StringType, false);
@@ -203,6 +213,9 @@ public final class BenchmarkRunner {
                         result.bytesRead(),
                         result.recordsRead(),
                         result.seed(),
+                        result.datasetLabel(),
+                        result.orcPath(),
+                        result.orcBloomColumns(),
                         result.executedAt().toString(),
                         result.sparkVersion(),
                         result.sparkRuntime()

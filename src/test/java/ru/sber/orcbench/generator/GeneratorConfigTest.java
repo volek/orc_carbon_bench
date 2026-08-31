@@ -40,7 +40,7 @@ class GeneratorConfigTest {
     private static AppConfig minimalConfig(double targetTb, long avgRowBytes) {
         return new AppConfig(
                 ru.sber.orcbench.config.Mode.GENERATE,
-                ru.sber.orcbench.config.StoragePaths.from("/bench", null, null),
+                ru.sber.orcbench.config.StoragePaths.from("/bench", null, null, null, null),
                 targetTb,
                 42L,
                 avgRowBytes,
@@ -48,10 +48,19 @@ class GeneratorConfigTest {
                 GeneratorConfig.defaultTimestampStart(),
                 GeneratorConfig.defaultTimestampEnd(),
                 384,
-                new OrcWriteSettings("snappy", 64, 32, 0, OrcWriteSettings.DEFAULT_PARTITION_BY),
+                new OrcWriteSettings(
+                        "snappy",
+                        64,
+                        32,
+                        0,
+                        OrcWriteSettings.DEFAULT_PARTITION_BY,
+                        OrcWriteSettings.DEFAULT_BLOOM_FILTER_COLUMNS,
+                        0.05d
+                ),
                 ru.sber.orcbench.config.BenchmarkSettings.defaults(),
                 ru.sber.orcbench.config.ValidationSettings.defaults(),
-                ru.sber.orcbench.config.ReportSettings.from(Collections.<String, String>emptyMap())
+                ru.sber.orcbench.config.ReportSettings.from(Collections.<String, String>emptyMap()),
+                "default"
         );
     }
 }

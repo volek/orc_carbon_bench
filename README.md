@@ -117,6 +117,8 @@ generate → validate → benchmark → report
 | `--orc-compression` | `snappy` | `snappy`, `zstd`, `none` |
 | `--orc-stripe-size-mb` | `64` | Размер ORC stripe |
 | `--orc-row-group-size-mb` | `32` | Размер row group |
+| `--orc-bloom-filter-columns` | `event_id,user_id,product_id,campaign_id` | Bloom filters при записи; `none` — отключить |
+| `--orc-bloom-filter-fpp` | `0.05` | False positive rate bloom filter |
 
 ### Схема данных
 
@@ -161,6 +163,7 @@ generate → validate → benchmark → report
 | `timestamp_range` | `timestamp` в заданном диапазоне |
 | `log_format_distribution` | Все форматы логов с ожидаемыми долями |
 | `log_message_structure` | `log_message` не пустой; JSON начинается с `{` |
+| `orc_bloom_filters` | Bloom index в ORC footer (present / absent по `--orc-bloom-filter-columns`) |
 
 | Параметр | По умолчанию | Описание |
 |---|---|---|
@@ -205,6 +208,11 @@ generate → validate → benchmark → report
 | `--benchmark-timestamp-window-days` | `30` | Длина окна для `filter_timestamp_range` / `filter_combined` внутри `--timestamp-start`…`--timestamp-end` |
 | `--clear-cache-between-runs` | `true` | Очистка кэша между прогонами (без cache base DF — иначе pruning не виден) |
 | `--seed` | `42` | Seed для выборки значений фильтров и размещения timestamp-окна |
+| `--benchmark-dataset-label` | `bloom` / `nobloom` по `--orc-bloom-filter-columns` | Метка A/B в отчёте (`bloom` / `nobloom`) |
+| `--reports-benchmark-path` | `<reports>/raw/benchmark` | Куда писать raw benchmark (для A/B: `benchmark_nobloom`, `benchmark_bloom`) |
+| `--reports-validation-path` | `<reports>/raw/validation` | Куда писать validation |
+
+Сценарии для оценки **bloom**: `filter_high_cardinality`, `filter_medium_cardinality` (equality на колонках с bloom).
 
 ```bash
 ./scripts/submit-spark32.sh -- \
@@ -216,6 +224,14 @@ generate → validate → benchmark → report
 ```
 
 Повтор validate+benchmark+report без generate: `./scripts/run-bench-pipeline.sh`.
+
+**Bloom A/B** (nobloom vs bloom, один объединённый отчёт):
+
+```bash
+TARGET_SIZE_TB=0.1 ./scripts/run-bloom-ab.sh
+```
+
+Отчёт: `reports/summary/bloom-ab-report.md` — секции `Benchmark Summary` (колонки `dataset`, `bloom_columns`) и `Bloom filter comparison`.
 
 ---
 

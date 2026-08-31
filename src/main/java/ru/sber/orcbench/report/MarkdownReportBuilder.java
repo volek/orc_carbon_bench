@@ -4,13 +4,22 @@ import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.OptionalDouble;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public final class MarkdownReportBuilder {
+    private static final List<String> BLOOM_SCENARIOS = Arrays.asList(
+            "filter_high_cardinality",
+            "filter_medium_cardinality",
+            "filter_combined"
+    );
+
     private MarkdownReportBuilder() {
     }
 
@@ -23,7 +32,9 @@ public final class MarkdownReportBuilder {
         md.append("# ").append(reportName).append("\n\n");
         md.append("Сводный отчёт бенчмарка ORC на кластерном Spark 3.2.\n\n");
 
-        appendSection(md, "Benchmark Summary", filterSource(rows, "benchmark"));
+        List<Row> benchmark = filterSource(rows, "benchmark");
+        appendSection(md, "Benchmark Summary", benchmark);
+        appendBloomSummary(md, benchmark);
         appendValidationSection(md, filterSource(rows, "validation"));
         appendRecommendations(md, rows);
 
@@ -34,6 +45,7 @@ public final class MarkdownReportBuilder {
         return rows.stream()
                 .filter(row -> source.equals(row.getString(row.fieldIndex("source"))))
                 .sorted(Comparator.comparing((Row r) -> r.getString(r.fieldIndex("scenario")))
+                        .thenComparing(r -> nullableString(r, "dataset_label"))
                         .thenComparing(r -> nullableString(r, "spark_runtime")))
                 .collect(Collectors.toList());
     }
@@ -45,17 +57,24 @@ public final class MarkdownReportBuilder {
             return;
         }
 
+        boolean hasDatasetLabel = rows.stream().anyMatch(row -> hasField(row, "dataset_label"));
         boolean hasIo = rows.stream().anyMatch(row -> asDouble(row, "avg_bytes_read").isPresent());
 
+        md.append("| scenario | dataset | bloom_columns | spark_runtime | runs | avg_ms | p50_ms | p95_ms | avg_selectivity");
         if (hasIo) {
-            md.append("| scenario | spark_runtime | runs | avg_ms | p50_ms | p95_ms | avg_selectivity | avg_bytes_read | avg_records_read |\n");
-            md.append("|---|---|---:|---:|---:|---:|---:|---:|---:|\n");
-        } else {
-            md.append("| scenario | spark_runtime | runs | avg_ms | p50_ms | p95_ms | avg_selectivity |\n");
-            md.append("|---|---|---:|---:|---:|---:|---:|\n");
+            md.append(" | avg_bytes_read | avg_records_read");
         }
+        md.append(" |\n");
+        md.append("|---|---|---|---|---:|---:|---:|---:|---:");
+        if (hasIo) {
+            md.append("|---:|---:");
+        }
+        md.append("|\n");
+
         for (Row row : rows) {
             md.append("| ").append(row.getString(row.fieldIndex("scenario")))
+                    .append(" | ").append(hasDatasetLabel ? nullableString(row, "dataset_label") : "-")
+                    .append(" | ").append(formatBloomColumns(row))
                     .append(" | ").append(nullableString(row, "spark_runtime"))
                     .append(" | ").append(row.getLong(row.fieldIndex("runs")))
                     .append(" | ").append(formatDouble(row, "avg_duration_ms"))
@@ -69,6 +88,65 @@ public final class MarkdownReportBuilder {
             md.append(" |\n");
         }
         md.append("\n");
+    }
+
+    private static void appendBloomSummary(StringBuilder md, List<Row> benchmark) {
+        md.append("## Bloom filter comparison\n\n");
+
+        Set<String> labels = benchmark.stream()
+                .map(row -> nullableString(row, "dataset_label"))
+                .collect(Collectors.toCollection(HashSet::new));
+
+        boolean hasBloomAb = labels.contains("bloom") && labels.contains("nobloom");
+        if (!hasBloomAb) {
+            md.append("_Нет A/B данных (нужны прогоны с `dataset_label=bloom` и `dataset_label=nobloom`)._\n\n");
+            return;
+        }
+
+        md.append("| scenario | nobloom bytes_read | bloom bytes_read | Δ bytes | nobloom p50_ms | bloom p50_ms |\n");
+        md.append("|---|---:|---:|---:|---:|---:|\n");
+
+        for (String scenario : BLOOM_SCENARIOS) {
+            Row nobloom = findBenchmarkRow(benchmark, scenario, "nobloom");
+            Row bloom = findBenchmarkRow(benchmark, scenario, "bloom");
+            if (nobloom == null && bloom == null) {
+                continue;
+            }
+            md.append("| ").append(scenario)
+                    .append(" | ").append(formatDouble(nobloom, "avg_bytes_read"))
+                    .append(" | ").append(formatDouble(bloom, "avg_bytes_read"))
+                    .append(" | ").append(formatBytesDelta(nobloom, bloom))
+                    .append(" | ").append(formatDouble(nobloom, "p50_duration_ms"))
+                    .append(" | ").append(formatDouble(bloom, "p50_duration_ms"))
+                    .append(" |\n");
+        }
+        md.append("\n");
+    }
+
+    private static Row findBenchmarkRow(List<Row> benchmark, String scenario, String datasetLabel) {
+        return benchmark.stream()
+                .filter(row -> scenario.equals(row.getString(row.fieldIndex("scenario")))
+                        && datasetLabel.equals(nullableString(row, "dataset_label")))
+                .findFirst()
+                .orElse(null);
+    }
+
+    private static String formatBytesDelta(Row nobloom, Row bloom) {
+        OptionalDouble noBytes = nobloom == null ? OptionalDouble.empty() : asDouble(nobloom, "avg_bytes_read");
+        OptionalDouble bloomBytes = bloom == null ? OptionalDouble.empty() : asDouble(bloom, "avg_bytes_read");
+        if (!noBytes.isPresent() || !bloomBytes.isPresent() || noBytes.getAsDouble() <= 0) {
+            return "-";
+        }
+        double pct = (bloomBytes.getAsDouble() - noBytes.getAsDouble()) / noBytes.getAsDouble() * 100.0;
+        return String.format(Locale.US, "%+.1f%%", pct);
+    }
+
+    private static String formatBloomColumns(Row row) {
+        if (!hasField(row, "orc_bloom_columns")) {
+            return "-";
+        }
+        String value = nullableString(row, "orc_bloom_columns");
+        return "none".equals(value) || "-".equals(value) ? "none" : value;
     }
 
     private static void appendValidationSection(StringBuilder md, List<Row> rows) {
@@ -102,6 +180,8 @@ public final class MarkdownReportBuilder {
         }
 
         List<Row> benchmark = filterSource(rows, "benchmark");
+        appendBloomRecommendations(recommendations, benchmark);
+
         if (!benchmark.isEmpty()) {
             Row slowest = benchmark.stream()
                     .max(Comparator.comparingDouble(row ->
@@ -111,44 +191,49 @@ public final class MarkdownReportBuilder {
                 asDouble(slowest, "p50_duration_ms").ifPresent(p50 ->
                         recommendations.add("Самый медленный сценарий по p50: `"
                                 + slowest.getString(slowest.fieldIndex("scenario"))
-                                + "` (" + String.format(Locale.US, "%.2f", p50)
-                                + " ms) — кандидат на оптимизацию фильтров/проекций ORC.")
+                                + "` / dataset="
+                                + nullableString(slowest, "dataset_label")
+                                + " (" + String.format(Locale.US, "%.2f", p50)
+                                + " ms).")
                 );
-            }
-
-            OptionalDouble fullScanBytes = benchmark.stream()
-                    .filter(row -> "full_scan".equals(row.getString(row.fieldIndex("scenario"))))
-                    .map(row -> asDouble(row, "avg_bytes_read"))
-                    .filter(OptionalDouble::isPresent)
-                    .mapToDouble(OptionalDouble::getAsDouble)
-                    .findFirst();
-            if (fullScanBytes.isPresent() && fullScanBytes.getAsDouble() > 0) {
-                Row leastBytes = benchmark.stream()
-                        .filter(row -> asDouble(row, "avg_bytes_read").isPresent())
-                        .min(Comparator.comparingDouble(row ->
-                                asDouble(row, "avg_bytes_read").orElse(Double.MAX_VALUE)))
-                        .orElse(null);
-                if (leastBytes != null) {
-                    double bytes = asDouble(leastBytes, "avg_bytes_read").orElse(0.0);
-                    double ratio = bytes / fullScanBytes.getAsDouble();
-                    recommendations.add("Наименьший avg_bytes_read: `"
-                            + leastBytes.getString(leastBytes.fieldIndex("scenario"))
-                            + "` (" + String.format(Locale.US, "%.0f", bytes)
-                            + ", " + String.format(Locale.US, "%.1f%%", ratio * 100.0)
-                            + " от full_scan) — ориентир по ORC pruning / pushdown.");
-                }
             }
         }
 
         if (recommendations.isEmpty()) {
-            recommendations.add("Метрики ORC на Spark 3.2 собраны; сравнивайте сценарии по p50/p95, "
-                    + "selectivity и avg_bytes_read для оценки pruning.");
+            recommendations.add("Метрики ORC на Spark 3.2 собраны; сравнивайте bloom vs nobloom по avg_bytes_read "
+                    + "на `filter_high_cardinality` и `filter_medium_cardinality`.");
         }
 
         for (String recommendation : recommendations) {
             md.append("- ").append(recommendation).append("\n");
         }
         md.append("\n");
+    }
+
+    private static void appendBloomRecommendations(List<String> recommendations, List<Row> benchmark) {
+        Row nobloomHigh = findBenchmarkRow(benchmark, "filter_high_cardinality", "nobloom");
+        Row bloomHigh = findBenchmarkRow(benchmark, "filter_high_cardinality", "bloom");
+        if (nobloomHigh == null || bloomHigh == null) {
+            return;
+        }
+
+        OptionalDouble noBytes = asDouble(nobloomHigh, "avg_bytes_read");
+        OptionalDouble bloomBytes = asDouble(bloomHigh, "avg_bytes_read");
+        if (noBytes.isPresent() && bloomBytes.isPresent() && noBytes.getAsDouble() > 0) {
+            double reduction = (1.0 - bloomBytes.getAsDouble() / noBytes.getAsDouble()) * 100.0;
+            recommendations.add(String.format(Locale.US,
+                    "Bloom A/B на `filter_high_cardinality`: avg_bytes_read bloom=%.0f vs nobloom=%.0f (экономия ~%.1f%%).",
+                    bloomBytes.getAsDouble(), noBytes.getAsDouble(), reduction));
+        }
+    }
+
+    private static boolean hasField(Row row, String field) {
+        try {
+            row.fieldIndex(field);
+            return true;
+        } catch (IllegalArgumentException ex) {
+            return false;
+        }
     }
 
     private static String nullableString(Row row, String field) {
@@ -161,6 +246,9 @@ public final class MarkdownReportBuilder {
     }
 
     private static String formatDouble(Row row, String field) {
+        if (row == null) {
+            return "-";
+        }
         OptionalDouble value = asDouble(row, field);
         return value.isPresent() ? String.format(Locale.US, "%.2f", value.getAsDouble()) : "-";
     }
