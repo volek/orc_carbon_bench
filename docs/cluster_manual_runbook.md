@@ -59,9 +59,13 @@ chmod +x scripts/*.sh
 | `--executor-memory` | `EXECUTOR_MEMORY` | `8g` | Память одного worker |
 | `--executor-cores` | `EXECUTOR_CORES` | `4` | Ядра на worker |
 | `--driver-memory` | `DRIVER_MEMORY` | `4g` | Память driver |
+| `spark.yarn.am.memory` | `DRIVER_MEMORY` | `4g` | AM в cluster mode (явно, не от executor) |
+| `spark.yarn.am.memoryOverhead` | `YARN_AM_MEMORY_OVERHEAD` | `512m` | Overhead AM-контейнера |
 
 Приоритет: **явный флаг до `--`** > **env** > **дефолт скрипта**.  
 `run-smoke.sh`, `run-bench-pipeline.sh` и `run-bloom-ab.sh` вызывают `submit-spark32.sh` без своих spark-флагов — наследуют эти дефолты (или ваш `export`).
+
+Без явного `spark.yarn.am.memory` Spark 3.2 в cluster mode может выделить AM ≈ `executor-memory` (при `8g` → ~9011 MB), что на кластере с лимитом 9216 MB/container приводит к `exitCode: 13` на launch AM.
 
 **Вариант A — дефолты скрипта (16 workers × 8g):**
 

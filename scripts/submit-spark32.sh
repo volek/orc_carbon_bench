@@ -18,7 +18,11 @@
 #   NUM_EXECUTORS     число YARN workers/executors [16]
 #   EXECUTOR_MEMORY   память executor [8g]
 #   EXECUTOR_CORES    ядра на executor [4]
-#   DRIVER_MEMORY     память driver [4g]
+#   DRIVER_MEMORY             память driver [4g]
+#   YARN_AM_MEMORY_OVERHEAD   overhead AM-контейнера [512m]
+#
+# В cluster mode явно задаёт spark.yarn.am.memory из driver-memory (иначе Spark
+# наследует executor-memory и AM может занять ~9g при EXECUTOR_MEMORY=8g).
 #
 # По умолчанию отключает Hive/HBase delegation tokens (ORC не нуждается в Metastore/HBase;
 # иначе submit зависает, если сервисы недоступны).
@@ -32,6 +36,7 @@ NUM_EXECUTORS="${NUM_EXECUTORS:-16}"
 EXECUTOR_MEMORY="${EXECUTOR_MEMORY:-8g}"
 EXECUTOR_CORES="${EXECUTOR_CORES:-4}"
 DRIVER_MEMORY="${DRIVER_MEMORY:-4g}"
+YARN_AM_MEMORY_OVERHEAD="${YARN_AM_MEMORY_OVERHEAD:-512m}"
 
 if [[ ! -f "$JAR" ]]; then
   echo "Missing $JAR. Build with: ./gradlew build" >&2
@@ -70,13 +75,50 @@ spark_args_has() {
   return 1
 }
 
+spark_conf_has() {
+  local key="$1"
+  local arg
+  for arg in "${SPARK_ARGS[@]+"${SPARK_ARGS[@]}"}"; do
+    case "$arg" in
+      --conf="${key}"=*)
+        return 0
+        ;;
+    esac
+  done
+  return 1
+}
+
+resolve_driver_memory() {
+  local arg i=0
+  for arg in "${SPARK_ARGS[@]+"${SPARK_ARGS[@]}"}"; do
+    case "$arg" in
+      --driver-memory=*)
+        echo "${arg#--driver-memory=}"
+        return
+        ;;
+      --driver-memory)
+        if [[ $((i + 1)) -lt ${#SPARK_ARGS[@]} ]]; then
+          echo "${SPARK_ARGS[$((i + 1))]}"
+          return
+        fi
+        ;;
+    esac
+    i=$((i + 1))
+  done
+  echo "$DRIVER_MEMORY"
+}
+
 DEFAULT_SPARK_ARGS=()
 spark_args_has --num-executors || DEFAULT_SPARK_ARGS+=(--num-executors "$NUM_EXECUTORS")
 spark_args_has --executor-memory || DEFAULT_SPARK_ARGS+=(--executor-memory "$EXECUTOR_MEMORY")
 spark_args_has --executor-cores || DEFAULT_SPARK_ARGS+=(--executor-cores "$EXECUTOR_CORES")
 spark_args_has --driver-memory || DEFAULT_SPARK_ARGS+=(--driver-memory "$DRIVER_MEMORY")
 
-echo "spark-submit resources: num-executors=${NUM_EXECUTORS} executor-memory=${EXECUTOR_MEMORY} executor-cores=${EXECUTOR_CORES} driver-memory=${DRIVER_MEMORY}" >&2
+EFFECTIVE_DRIVER_MEMORY="$(resolve_driver_memory)"
+spark_conf_has spark.yarn.am.memory || DEFAULT_SPARK_ARGS+=(--conf "spark.yarn.am.memory=${EFFECTIVE_DRIVER_MEMORY}")
+spark_conf_has spark.yarn.am.memoryOverhead || DEFAULT_SPARK_ARGS+=(--conf "spark.yarn.am.memoryOverhead=${YARN_AM_MEMORY_OVERHEAD}")
+
+echo "spark-submit resources: num-executors=${NUM_EXECUTORS} executor-memory=${EXECUTOR_MEMORY} executor-cores=${EXECUTOR_CORES} driver-memory=${EFFECTIVE_DRIVER_MEMORY} yarn-am-memory=${EFFECTIVE_DRIVER_MEMORY} yarn-am-overhead=${YARN_AM_MEMORY_OVERHEAD}" >&2
 
 exec "$SPARK_SUBMIT" \
   --master yarn \
