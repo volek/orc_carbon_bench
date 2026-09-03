@@ -1,0 +1,326 @@
+spark-submit resources: num-executors=16 executor-memory=8g executor-cores=4 driver-memory=4g yarn-am-memory=4g yarn-am-overhead=512m
+SPARK_MAJOR_VERSION is set to 3, using Spark3
+26/09/02 19:50:47 WARN NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
+26/09/02 19:50:47 INFO ConfiguredRMFailoverProxyProvider: Failing over to rm2
+26/09/02 19:50:47 INFO Client: Requesting a new application from cluster with 6 NodeManagers
+26/09/02 19:50:48 WARN DomainSocketFactory: The short-circuit local reads feature cannot be used because libhadoop cannot be loaded.
+26/09/02 19:50:48 INFO Configuration: found resource resource-types.xml at file:/etc/hadoop/3.5.7.0-1/0/resource-types.xml
+26/09/02 19:50:48 INFO Client: Verifying our application has not requested more than the maximum memory capability of the cluster (9216 MB per container)
+26/09/02 19:50:48 INFO Client: Will allocate AM container, with 4505 MB memory including 409 MB overhead
+26/09/02 19:50:48 INFO Client: Setting up container launch context for our AM
+26/09/02 19:50:48 INFO Client: Setting up the launch environment for our AM container
+26/09/02 19:50:48 INFO Client: Preparing resources for our AM container
+26/09/02 19:50:48 WARN Client: Neither spark.yarn.jars nor spark.yarn.archive is set, falling back to uploading libraries under SPARK_HOME.
+26/09/02 19:50:50 INFO Client: Uploading resource file:/tmp/spark-830e1b1b-8687-4ed8-b159-7ac344a93b63/__spark_libs__4669917886590064131.zip -> hdfs://sdp-dzo-dev/user/hdfs_migration_user/.sparkStaging/application_1785928909888_0029/__spark_libs__4669917886590064131.zip
+26/09/02 19:50:54 INFO Client: Uploading resource file:/home/abyss_ci/build/libs/orc-bench-all.jar -> hdfs://sdp-dzo-dev/user/hdfs_migration_user/.sparkStaging/application_1785928909888_0029/orc-bench-all.jar
+26/09/02 19:50:54 INFO Client: Uploading resource file:/tmp/spark-830e1b1b-8687-4ed8-b159-7ac344a93b63/__spark_conf__1633596094760080182.zip -> hdfs://sdp-dzo-dev/user/hdfs_migration_user/.sparkStaging/application_1785928909888_0029/__spark_conf__.zip
+26/09/02 19:50:55 INFO SecurityManager: Changing view acls to: abyss_ci,hdfs_migration_user
+26/09/02 19:50:55 INFO SecurityManager: Changing modify acls to: abyss_ci,hdfs_migration_user
+26/09/02 19:50:55 INFO SecurityManager: Changing view acls groups to: 
+26/09/02 19:50:55 INFO SecurityManager: Changing modify acls groups to: 
+26/09/02 19:50:55 INFO SecurityManager: SecurityManager: authentication disabled; ui acls enabled; users  with view permissions: Set(abyss_ci, hdfs_migration_user); groups with view permissions: Set(); users  with modify permissions: Set(abyss_ci, hdfs_migration_user); groups with modify permissions: Set()
+26/09/02 19:50:55 INFO HadoopDelegationTokenManager: Attempting to load user's ticket cache.
+26/09/02 19:50:55 INFO HadoopFSDelegationTokenProvider: getting token for: DFS[DFSClient[clientName=DFSClient_NONMAPREDUCE_622712329_1, ugi=hdfs_migration_user@OPSMON.SBT (auth:KERBEROS)]] with renewer rm/dev1-abyss-sdp2-ambari-02.opsmon.sbt@OPSMON.SBT
+26/09/02 19:50:55 INFO DFSClient: Created token for hdfs_migration_user: HDFS_DELEGATION_TOKEN owner=hdfs_migration_user@OPSMON.SBT, renewer=yarn, realUser=, issueDate=1788367855098, maxDate=1788972655098, sequenceNumber=207, masterKeyId=153 on ha-hdfs:sdp2-dzo-dev1
+26/09/02 19:50:55 INFO HadoopFSDelegationTokenProvider: getting token for: DFS[DFSClient[clientName=DFSClient_NONMAPREDUCE_-41658838_1, ugi=hdfs_migration_user@OPSMON.SBT (auth:KERBEROS)]] with renewer rm/dev1-abyss-sdp2-ambari-02.opsmon.sbt@OPSMON.SBT
+26/09/02 19:50:55 INFO DFSClient: Created token for hdfs_migration_user: HDFS_DELEGATION_TOKEN owner=hdfs_migration_user@OPSMON.SBT, renewer=yarn, realUser=, issueDate=1788367855151, maxDate=1788972655151, sequenceNumber=2670, masterKeyId=845 on ha-hdfs:sdp-dzo-dev
+26/09/02 19:50:55 INFO HadoopFSDelegationTokenProvider: getting token for: DFS[DFSClient[clientName=DFSClient_NONMAPREDUCE_622712329_1, ugi=hdfs_migration_user@OPSMON.SBT (auth:KERBEROS)]] with renewer hdfs_migration_user@OPSMON.SBT
+26/09/02 19:50:55 INFO DFSClient: Created token for hdfs_migration_user: HDFS_DELEGATION_TOKEN owner=hdfs_migration_user@OPSMON.SBT, renewer=hdfs_migration_user, realUser=, issueDate=1788367855157, maxDate=1788972655157, sequenceNumber=208, masterKeyId=153 on ha-hdfs:sdp2-dzo-dev1
+26/09/02 19:50:55 INFO HadoopFSDelegationTokenProvider: getting token for: DFS[DFSClient[clientName=DFSClient_NONMAPREDUCE_-41658838_1, ugi=hdfs_migration_user@OPSMON.SBT (auth:KERBEROS)]] with renewer hdfs_migration_user@OPSMON.SBT
+26/09/02 19:50:55 INFO DFSClient: Created token for hdfs_migration_user: HDFS_DELEGATION_TOKEN owner=hdfs_migration_user@OPSMON.SBT, renewer=hdfs_migration_user, realUser=, issueDate=1788367855161, maxDate=1788972655161, sequenceNumber=2671, masterKeyId=845 on ha-hdfs:sdp-dzo-dev
+26/09/02 19:50:55 INFO HadoopFSDelegationTokenProvider: Renewal interval is 86400020 for token HDFS_DELEGATION_TOKEN
+26/09/02 19:50:55 INFO HadoopFSDelegationTokenProvider: Renewal interval is 86400033 for token HDFS_DELEGATION_TOKEN
+26/09/02 19:50:55 INFO Client: Submitting application application_1785928909888_0029 to ResourceManager
+26/09/02 19:50:55 INFO YarnClientImpl: Submitted application application_1785928909888_0029
+26/09/02 19:50:56 INFO Client: Application report for application_1785928909888_0029 (state: ACCEPTED)
+26/09/02 19:50:56 INFO Client: 
+	 client token: Token { kind: YARN_CLIENT_TOKEN, service:  }
+	 diagnostics: AM container is launched, waiting for AM container to Register with RM
+	 ApplicationMaster host: N/A
+	 ApplicationMaster RPC port: -1
+	 queue: default
+	 start time: 1788367855217
+	 final status: UNDEFINED
+	 tracking URL: https://dev1-abyss-sdp2-ambari-03.opsmon.sbt:8090/proxy/application_1785928909888_0029/
+	 user: hdfs_migration_user
+26/09/02 19:50:57 INFO Client: Application report for application_1785928909888_0029 (state: ACCEPTED)
+26/09/02 19:50:58 INFO Client: Application report for application_1785928909888_0029 (state: ACCEPTED)
+26/09/02 19:50:59 INFO Client: Application report for application_1785928909888_0029 (state: ACCEPTED)
+26/09/02 19:51:00 INFO Client: Application report for application_1785928909888_0029 (state: ACCEPTED)
+26/09/02 19:51:01 INFO Client: Application report for application_1785928909888_0029 (state: ACCEPTED)
+26/09/02 19:51:02 INFO Client: Application report for application_1785928909888_0029 (state: ACCEPTED)
+26/09/02 19:51:03 INFO Client: Application report for application_1785928909888_0029 (state: ACCEPTED)
+26/09/02 19:51:04 INFO Client: Application report for application_1785928909888_0029 (state: ACCEPTED)
+26/09/02 19:51:05 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:51:05 INFO Client: 
+	 client token: Token { kind: YARN_CLIENT_TOKEN, service:  }
+	 diagnostics: N/A
+	 ApplicationMaster host: dev1-abyss-sdp2-druid-02.opsmon.sbt
+	 ApplicationMaster RPC port: 43885
+	 queue: default
+	 start time: 1788367855217
+	 final status: UNDEFINED
+	 tracking URL: https://dev1-abyss-sdp2-ambari-03.opsmon.sbt:8090/proxy/application_1785928909888_0029/
+	 user: hdfs_migration_user
+26/09/02 19:51:06 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:51:07 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:51:08 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:51:09 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:51:10 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:51:11 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:51:12 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:51:13 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:51:14 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:51:15 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:51:16 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:51:17 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:51:18 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:51:19 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:51:20 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:51:21 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:51:22 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:51:23 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:51:24 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:51:25 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:51:26 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:51:27 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:51:28 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:51:29 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:51:30 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:51:31 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:51:32 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:51:33 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:51:34 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:51:35 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:51:36 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:51:37 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:51:38 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:51:39 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:51:40 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:51:41 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:51:42 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:51:43 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:51:44 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:51:45 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:51:46 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:51:47 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:51:48 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:51:49 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:51:50 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:51:51 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:51:52 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:51:53 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:51:54 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:51:55 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:51:56 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:51:57 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:51:58 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:51:59 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:52:00 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:52:01 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:52:02 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:52:03 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:52:04 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:52:05 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:52:06 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:52:07 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:52:08 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:52:09 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:52:10 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:52:11 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:52:12 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:52:13 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:52:14 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:52:15 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:52:16 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:52:17 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:52:18 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:52:19 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:52:20 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:52:21 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:52:22 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:52:23 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:52:24 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:52:25 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:52:26 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:52:27 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:52:28 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:52:29 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:52:30 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:52:31 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:52:32 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:52:33 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:52:34 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:52:35 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:52:36 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:52:37 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:52:38 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:52:39 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:52:40 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:52:41 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:52:42 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:52:43 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:52:44 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:52:45 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:52:46 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:52:47 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:52:48 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:52:49 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:52:50 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:52:51 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:52:52 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:52:53 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:52:54 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:52:55 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:52:56 INFO Client: Application report for application_1785928909888_0029 (state: ACCEPTED)
+26/09/02 19:52:56 INFO Client: 
+	 client token: Token { kind: YARN_CLIENT_TOKEN, service:  }
+	 diagnostics: AM container is launched, waiting for AM container to Register with RM
+	 ApplicationMaster host: N/A
+	 ApplicationMaster RPC port: -1
+	 queue: default
+	 start time: 1788367855217
+	 final status: UNDEFINED
+	 tracking URL: https://dev1-abyss-sdp2-ambari-03.opsmon.sbt:8090/proxy/application_1785928909888_0029/
+	 user: hdfs_migration_user
+26/09/02 19:52:57 INFO Client: Application report for application_1785928909888_0029 (state: ACCEPTED)
+26/09/02 19:52:58 INFO Client: Application report for application_1785928909888_0029 (state: ACCEPTED)
+26/09/02 19:52:59 INFO Client: Application report for application_1785928909888_0029 (state: ACCEPTED)
+26/09/02 19:53:00 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:53:00 INFO Client: 
+	 client token: Token { kind: YARN_CLIENT_TOKEN, service:  }
+	 diagnostics: N/A
+	 ApplicationMaster host: dev1-abyss-sdp2-druid-02.opsmon.sbt
+	 ApplicationMaster RPC port: 38965
+	 queue: default
+	 start time: 1788367855217
+	 final status: UNDEFINED
+	 tracking URL: https://dev1-abyss-sdp2-ambari-03.opsmon.sbt:8090/proxy/application_1785928909888_0029/
+	 user: hdfs_migration_user
+26/09/02 19:53:01 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:53:02 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:53:03 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:53:04 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:53:05 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:53:06 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:53:07 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:53:08 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:53:09 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:53:10 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:53:11 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:53:12 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:53:13 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:53:14 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:53:15 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:53:16 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:53:17 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:53:18 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:53:19 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:53:20 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:53:21 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:53:22 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:53:23 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:53:24 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:53:25 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:53:26 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:53:27 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:53:28 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:53:29 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:53:30 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:53:31 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:53:32 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:53:33 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:53:34 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:53:35 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:53:36 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:53:37 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:53:38 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:53:39 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:53:40 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:53:41 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:53:42 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:53:43 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:53:44 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:53:45 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:53:46 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:53:47 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:53:48 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:53:49 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:53:50 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:53:51 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:53:52 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:53:53 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:53:54 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:53:55 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:53:56 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:53:57 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:53:58 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:53:59 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:54:00 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:54:01 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:54:02 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:54:03 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:54:04 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:54:05 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:54:06 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:54:07 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:54:08 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:54:09 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:54:10 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:54:11 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:54:12 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:54:13 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:54:14 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:54:15 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:54:16 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:54:17 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:54:18 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:54:19 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:54:20 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:54:21 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:54:22 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:54:23 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:54:24 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:54:25 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:54:26 INFO Client: Application report for application_1785928909888_0029 (state: RUNNING)
+26/09/02 19:54:27 INFO Client: Application report for application_1785928909888_0029 (state: FINISHED)
+26/09/02 19:54:27 INFO Client: 
+	 client token: Token { kind: YARN_CLIENT_TOKEN, service:  }
+	 diagnostics: User class threw exception: java.lang.IllegalStateException: Validation failed: 1 of 6 checks failed
+	at ru.sber.orcbench.validation.ValidationRunner.run(ValidationRunner.java:91)
+	at ru.sber.orcbench.AppMain.main(AppMain.java:48)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.spark.deploy.yarn.ApplicationMaster$$anon$2.run(ApplicationMaster.scala:737)
+
+	 ApplicationMaster host: dev1-abyss-sdp2-druid-02.opsmon.sbt
+	 ApplicationMaster RPC port: 38965
+	 queue: default
+	 start time: 1788367855217
+	 final status: FAILED
+	 tracking URL: https://dev1-abyss-sdp2-ambari-03.opsmon.sbt:8090/proxy/application_1785928909888_0029/
+	 user: hdfs_migration_user
+26/09/02 19:54:27 ERROR Client: Application diagnostics message: User class threw exception: java.lang.IllegalStateException: Validation failed: 1 of 6 checks failed
+	at ru.sber.orcbench.validation.ValidationRunner.run(ValidationRunner.java:91)
+	at ru.sber.orcbench.AppMain.main(AppMain.java:48)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.spark.deploy.yarn.ApplicationMaster$$anon$2.run(ApplicationMaster.scala:737)
+
+Exception in thread "main" org.apache.spark.SparkException: Application application_1785928909888_0029 finished with failed status
+	at org.apache.spark.deploy.yarn.Client.run(Client.scala:1300)
+	at org.apache.spark.deploy.yarn.YarnClusterApplication.start(Client.scala:1694)
+	at org.apache.spark.deploy.SparkSubmit.org$apache$spark$deploy$SparkSubmit$$runMain(SparkSubmit.scala:968)
+	at org.apache.spark.deploy.SparkSubmit.doRunMain$1(SparkSubmit.scala:180)
+	at org.apache.spark.deploy.SparkSubmit.submit(SparkSubmit.scala:203)
+	at org.apache.spark.deploy.SparkSubmit.doSubmit(SparkSubmit.scala:90)
+	at org.apache.spark.deploy.SparkSubmit$$anon$2.doSubmit(SparkSubmit.scala:1056)
+	at org.apache.spark.deploy.SparkSubmit$.main(SparkSubmit.scala:1065)
+	at org.apache.spark.deploy.SparkSubmit.main(SparkSubmit.scala)
+26/09/02 19:54:27 INFO ShutdownHookManager: Shutdown hook called
+26/09/02 19:54:27 INFO ShutdownHookManager: Deleting directory /tmp/spark-8484b029-28ed-4b7c-9785-ee16f6c37a1a
+26/09/02 19:54:27 INFO ShutdownHookManager: Deleting directory /tmp/spark-830e1b1b-8687-4ed8-b159-7ac344a93b63
