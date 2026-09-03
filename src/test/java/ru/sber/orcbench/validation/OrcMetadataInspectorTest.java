@@ -50,7 +50,7 @@ class OrcMetadataInspectorTest {
 
     @Test
     void failsWhenBloomExpectedButMissing() throws Exception {
-        Path orcDir = writeDataset(false);
+        Path orcDir = writeDataset(false, false);
         OrcMetadataInspector.InspectionResult result = OrcMetadataInspector.inspectBloomFilters(
                 new Configuration(),
                 orcDir.toString(),
@@ -61,11 +61,33 @@ class OrcMetadataInspectorTest {
         assertTrue(result.details().contains("Bloom filter missing"));
     }
 
+    @Test
+    void findsOrcFilesUnderPartitionDirectories() throws Exception {
+        Path orcDir = writeDataset(true, true);
+        OrcMetadataInspector.InspectionResult result = OrcMetadataInspector.inspectBloomFilters(
+                new Configuration(),
+                orcDir.toString(),
+                new String[]{"event_id", "user_id"},
+                true
+        );
+        assertTrue(result.passed(), result.details());
+        assertTrue(result.details().contains("event_year=2024"));
+    }
+
     private Path writeDataset(boolean withBloom) throws Exception {
-        File dir = new File(tempDir, withBloom ? "with_bloom" : "no_bloom");
-        Files.createDirectories(dir.toPath());
-        // Inspector only lists files whose names contain "part-"
-        Path file = new Path(new File(dir, "part-00000.orc").getAbsolutePath());
+        return writeDataset(withBloom, false);
+    }
+
+    private Path writeDataset(boolean withBloom, boolean partitioned) throws Exception {
+        File dir = new File(tempDir, (withBloom ? "with_bloom" : "no_bloom")
+                + (partitioned ? "_partitioned" : ""));
+        File dataDir = partitioned
+                ? new File(dir, "event_year=2024/event_month=1/event_day=1/log_format=json")
+                : dir;
+        Files.createDirectories(dataDir.toPath());
+        // Marker files that must be ignored by the inspector
+        Files.write(new File(dir, "_SUCCESS").toPath(), new byte[0]);
+        Path file = new Path(new File(dataDir, "part-00000.orc").getAbsolutePath());
 
         TypeDescription schema = TypeDescription.createStruct()
                 .addField("event_id", TypeDescription.createString())

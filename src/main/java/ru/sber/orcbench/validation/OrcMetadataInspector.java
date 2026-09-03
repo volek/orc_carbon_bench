@@ -131,25 +131,36 @@ public final class OrcMetadataInspector {
         return index != null && index.getBloomFilterCount() > 0;
     }
 
-    private static List<Path> listOrcFiles(FileSystem fs, Path root) throws IOException {
+    /**
+     * Recursively lists ORC data files under {@code root}.
+     * Partition directories (e.g. {@code event_year=2024}) are entered; only leaf files are filtered.
+     */
+    static List<Path> listOrcFiles(FileSystem fs, Path root) throws IOException {
         Set<Path> files = new LinkedHashSet<>();
-        FileStatus[] statuses = fs.listStatus(root, ORC_FILE_FILTER);
+        // Do not apply the part- filter here: Hadoop PathFilter would also skip partition dirs.
+        FileStatus[] statuses = fs.listStatus(root, VISIBLE_ENTRY_FILTER);
         if (statuses != null) {
             for (FileStatus status : statuses) {
-                if (status.isFile()) {
-                    files.add(status.getPath());
-                } else if (status.isDirectory()) {
+                if (status.isDirectory()) {
                     files.addAll(listOrcFiles(fs, status.getPath()));
+                } else if (status.isFile() && isOrcDataFile(status.getPath())) {
+                    files.add(status.getPath());
                 }
             }
         }
         return new ArrayList<>(files);
     }
 
-    private static final PathFilter ORC_FILE_FILTER = path -> {
-        String name = path.getName().toLowerCase(Locale.ROOT);
-        return !name.startsWith("_") && !name.startsWith(".") && name.contains("part-");
+    /** Skip Hive/Spark marker and hidden entries; allow partition directories through. */
+    private static final PathFilter VISIBLE_ENTRY_FILTER = path -> {
+        String name = path.getName();
+        return !name.startsWith("_") && !name.startsWith(".");
     };
+
+    static boolean isOrcDataFile(Path path) {
+        String name = path.getName().toLowerCase(Locale.ROOT);
+        return name.contains("part-") || name.endsWith(".orc");
+    }
 
     public static final class InspectionResult {
         private final boolean passed;
