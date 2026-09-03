@@ -1,8 +1,18 @@
 # Ручной запуск и проверка на кластере
 
 Кластер недоступен из среды разработки — прогон выполняется вручную с edge-ноды.  
-Порядок: **smoke (`0.01`) → Pilot / адекватная картина (`≥0.1`)** → при необходимости **Bloom A/B** или Full.  
+Порядок: **smoke (`0.01`, с bloom) → Pilot / все проверки (`≥0.1`, Bloom A/B)** → при необходимости Full.  
 Кластер **не меняем**: используется штатный SDP Spark 3.2.
+
+**Bloom — обязательная часть всех проверок.** Дефолт приложения пишет bloom на  
+`event_id,user_id,product_id,campaign_id`. Validate с `--validation-checks=all` всегда включает  
+`orc_bloom_filters`. Generate и validate должны использовать **одинаковый**  
+`--orc-bloom-filter-columns` (иначе check врёт или падает).
+
+| Константа | Значение |
+|---|---|
+| Bloom ON | `event_id,user_id,product_id,campaign_id` |
+| Bloom OFF | `none` |
 
 ## Параметры кластера
 
@@ -15,11 +25,13 @@
 | JVM | OpenJDK `1.8.0_472` |
 | Hadoop | `3.1.3.3.5.7.0-1-SNAPSHOT` |
 | Артефакт | `orc-bench-all.jar` |
-| BASE | `hdfs:///user/hdfs_migration_user/orc_test` |
+| BASE (smoke) | `hdfs:///user/hdfs_migration_user/orc_test` |
+| BASE (Pilot / A/B) | `hdfs:///user/hdfs_migration_user/orc_test_pilot` |
 
 ```bash
 export BASE=hdfs:///user/hdfs_migration_user/orc_test
 export JAR=~/orc-bench/orc-bench-all.jar
+export BLOOM_COLUMNS=event_id,user_id,product_id,campaign_id
 ```
 
 Путь использует default FS из `core-site.xml` (`hdfs:///...`).
@@ -71,7 +83,8 @@ chmod +x scripts/*.sh
 
 ```bash
 ./scripts/submit-spark32.sh -- \
-  --mode=generate --base-path="$BASE" --target-size-tb=0.01
+  --mode=generate --base-path="$BASE" --target-size-tb=0.01 \
+  --orc-bloom-filter-columns="$BLOOM_COLUMNS"
 ```
 
 **Вариант B — через env (удобно для smoke/pipeline):**
@@ -96,7 +109,8 @@ export DRIVER_MEMORY=8g
   --executor-cores 4 \
   --driver-memory 8g \
   -- \
-  --mode=generate --base-path="$BASE" --target-size-tb=0.01
+  --mode=generate --base-path="$BASE" --target-size-tb=0.01 \
+  --orc-bloom-filter-columns="$BLOOM_COLUMNS"
 ```
 
 Типичные профили:
@@ -117,7 +131,16 @@ export DRIVER_MEMORY=8g
 ### Общая схема
 
 ```text
-generate → validate → benchmark → report
+generate (bloom ON) → validate (bloom ON) → benchmark → report
+```
+
+Для **всех проверок** на Pilot-объёме — Bloom A/B (nobloom + bloom):
+
+```text
+generate nobloom + generate bloom
+  → validate nobloom + validate bloom
+  → benchmark nobloom + benchmark bloom
+  → report (сравнение)
 ```
 
 Каждый шаг — отдельный `spark-submit` (отдельное YARN-приложение).  
@@ -126,16 +149,16 @@ generate → validate → benchmark → report
 
 ### Скрипты-обёртки
 
-| Скрипт | Назначение | Шаги | Дефолт `TARGET_SIZE_TB` | Когда использовать |
-|---|---|---|---|---|
-| [`submit-spark32.sh`](../scripts/submit-spark32.sh) | один `--mode=...` | 1 job | — | ручной запуск, отладка одного шага |
-| [`run-smoke.sh`](../scripts/run-smoke.sh) | smoke пайплайн | generate → validate → benchmark → report | `0.01` | **первый** прогон на кластере |
-| [`run-bench-pipeline.sh`](../scripts/run-bench-pipeline.sh) | повтор benchmark | validate → benchmark → report | — (ORC уже есть) | после smoke/pilot, без regenerate |
-| [`run-bloom-ab.sh`](../scripts/run-bloom-ab.sh) | **Bloom A/B** | 2×generate → 2×validate → 2×benchmark → report | `0.1` | сравнение ORC **с bloom / без bloom** |
+| Скрипт | Назначение | Шаги | Дефолт `TARGET_SIZE_TB` | Bloom | Когда использовать |
+|---|---|---|---|---|---|
+| [`submit-spark32.sh`](../scripts/submit-spark32.sh) | один `--mode=...` | 1 job | — | явно в args | ручной запуск, отладка |
+| [`run-smoke.sh`](../scripts/run-smoke.sh) | smoke пайплайн | generate → validate → benchmark → report | `0.01` | **ON** (дефолт app) | **первый** прогон на кластере |
+| [`run-bench-pipeline.sh`](../scripts/run-bench-pipeline.sh) | повтор без generate | validate → benchmark → report | — | как в уже записанном ORC | после smoke/pilot |
+| [`run-bloom-ab.sh`](../scripts/run-bloom-ab.sh) | **все проверки + Bloom A/B** | 2×generate → 2×validate → 2×benchmark → report | `0.1` | nobloom **и** bloom | Pilot / адекватная картина |
 
-#### `run-bloom-ab.sh` — что это
+#### `run-bloom-ab.sh` — полный набор проверок
 
-Скрипт автоматизирует **A/B-тест ORC Bloom filters**: на одном `BASE` создаёт **два идентичных по seed/объёму датасета**, но:
+Скрипт — канонический способ прогнать **все** проверки, включая bloom:
 
 | Вариант | HDFS path | `--orc-bloom-filter-columns` | Метка в отчёте |
 |---|---|---|---|
@@ -146,17 +169,16 @@ generate → validate → benchmark → report
 
 1. generate nobloom → `$BASE/orc`
 2. generate bloom → `$BASE/orc_bloom`
-3. validate nobloom → `reports/raw/validation_nobloom/`
-4. validate bloom → `reports/raw/validation_bloom/`
+3. validate nobloom → `reports/raw/validation_nobloom/` (`orc_bloom_filters`: absent)
+4. validate bloom → `reports/raw/validation_bloom/` (`orc_bloom_filters`: present)
 5. benchmark nobloom → `reports/raw/benchmark_nobloom/`
 6. benchmark bloom → `reports/raw/benchmark_bloom/`
-7. report (объединённый) → `reports/summary/bloom-ab-report.md`
+7. report → `reports/summary/bloom-ab-report.md`
 
-Отчёт содержит **Benchmark Summary** (колонки `dataset`, `bloom_columns`) и **Bloom filter comparison** (nobloom vs bloom по `bytes_read` / p50).
+Отчёт: **Benchmark Summary** (`dataset`, `bloom_columns`) + **Bloom filter comparison**  
+(nobloom vs bloom по `bytes_read` / p50) + Validation по обоим вариантам.
 
-Логи в текущем каталоге: `bloom-ab-generate-nobloom.log`, …, `bloom-ab-report.log`.
-
-**Не путать с smoke:** smoke — один датасет и проверка пайплайна; bloom A/B — два датасета и сравнение оптимизации equality-фильтров.
+Логи: `bloom-ab-generate-nobloom.log`, …, `bloom-ab-report.log`.
 
 ```bash
 export BASE=hdfs:///user/hdfs_migration_user/orc_test_pilot
@@ -166,15 +188,13 @@ TARGET_SIZE_TB=0.1 BENCHMARK_REPEAT_RUNS=5 ./scripts/run-bloom-ab.sh
 
 ### Переменные окружения скриптов
 
-Общие для всех `run-*.sh` и `submit-spark32.sh`:
-
 | Переменная | Дефолт | Описание |
 |---|---|---|
-| `BASE` | smoke: `…/orc_test`; bloom A/B: `…/orc_test_pilot` | корень эксперимента на HDFS |
+| `BASE` | smoke: `…/orc_test`; A/B: `…/orc_test_pilot` | корень эксперимента на HDFS |
 | `JAR` | `~/orc-bench/orc-bench-all.jar` | fat JAR приложения |
 | `SEED` | `42` | seed generate / validate / фильтров benchmark |
-| `TARGET_SIZE_TB` | см. скрипт | объём generate (`0.01` smoke, `0.1` bloom A/B) |
-| `NUM_EXECUTORS` | `16` | workers (через `submit-spark32.sh`) |
+| `TARGET_SIZE_TB` | см. скрипт | объём generate (`0.01` smoke, `0.1` A/B) |
+| `NUM_EXECUTORS` | `16` | workers |
 | `EXECUTOR_MEMORY` | `8g` | память executor |
 | `EXECUTOR_CORES` | `4` | ядра executor |
 | `DRIVER_MEMORY` | `4g` | память driver |
@@ -185,8 +205,8 @@ TARGET_SIZE_TB=0.1 BENCHMARK_REPEAT_RUNS=5 ./scripts/run-bloom-ab.sh
 |---|---|---|---|
 | `BENCHMARK_REPEAT_RUNS` | `3` | `3` | `5` |
 | `BENCHMARK_WARMUP_RUNS` | `1` | `1` | `1` |
-| `BENCHMARK_TIMESTAMP_WINDOW_DAYS` | `30` | `30` | `30` (в скрипте зашито) |
-| `BENCHMARK_SCENARIOS` | `all` (не env в smoke) | `all` | `all` (зашито) |
+| `BENCHMARK_TIMESTAMP_WINDOW_DAYS` | `30` | `30` | `30` (в скрипте) |
+| `BENCHMARK_SCENARIOS` | `all` | `all` | `all` |
 
 Формат аргументов приложения: **`--key=value`** (обязательно `=`).
 
@@ -194,19 +214,21 @@ TARGET_SIZE_TB=0.1 BENCHMARK_REPEAT_RUNS=5 ./scripts/run-bloom-ab.sh
 
 | Режим | Описание | Выход на HDFS |
 |---|---|---|
-| `generate` | синтетический датасет → ORC | `<orc-path>/` |
-| `validate` | проверки качества данных | `<reports-validation-path>/` (parquet) |
-| `benchmark` | 10 сценариев, метрики wall time + `bytes_read` | `<reports-benchmark-path>/` (parquet) |
+| `generate` | синтетический датасет → ORC (+ bloom по флагам) | `<orc-path>/` |
+| `validate` | проверки качества, **включая** `orc_bloom_filters` | `<reports-validation-path>/` |
+| `benchmark` | 10 сценариев, wall time + `bytes_read` | `<reports-benchmark-path>/` |
 | `report` | агрегация raw → summary | `<reports-path>/summary/` |
 
-Дефолтные пути от `--base-path=$BASE`:
+Дефолтные пути от `--base-path=$BASE` (одиночный прогон с bloom ON):
 
 ```text
-$BASE/orc/                          # ORC-данные
-$BASE/reports/raw/benchmark/        # benchmark metrics
-$BASE/reports/raw/validation/       # validation results
-$BASE/reports/summary/              # markdown + csv/json/parquet
+$BASE/orc/                          # ORC с bloom (дефолт columns)
+$BASE/reports/raw/benchmark/
+$BASE/reports/raw/validation/
+$BASE/reports/summary/
 ```
+
+Bloom A/B пути — в §5.
 
 Переопределение: `--orc-path`, `--reports-path`, `--reports-benchmark-path`, `--reports-validation-path`.
 
@@ -237,18 +259,19 @@ $BASE/reports/summary/              # markdown + csv/json/parquet
 | `--orc-compression` | `snappy` | `snappy`, `zstd`, `none` |
 | `--orc-stripe-size-mb` | `64` | размер stripe |
 | `--orc-row-group-size-mb` | `32` | row group |
-| `--orc-bloom-filter-columns` | `event_id,user_id,product_id,campaign_id` | bloom при записи; `none` = выкл |
+| `--orc-bloom-filter-columns` | `event_id,user_id,product_id,campaign_id` | **bloom ON по умолчанию**; `none` = выкл |
 | `--orc-bloom-filter-fpp` | `0.05` | false positive rate bloom |
 
 ### Параметры: validate
 
 | Параметр | Дефолт | Описание |
 |---|---|---|
-| `--validation-checks` | `all` | CSV или `all` |
+| `--validation-checks` | `all` | CSV или `all` (**включает** `orc_bloom_filters`) |
 | `--validation-sample-fraction` | `0.01` | доля выборки |
 | `--log-format-share-tolerance` | `0.15` | допуск долей log_format |
+| `--orc-bloom-filter-columns` | те же, что у generate | ожидание present/absent для bloom check |
 
-Проверки (`all` включает все):
+Проверки (`all` = полный набор; bloom обязателен):
 
 | Check | Описание |
 |---|---|
@@ -257,9 +280,11 @@ $BASE/reports/summary/              # markdown + csv/json/parquet
 | `timestamp_range` | timestamp в generate-окне |
 | `log_format_distribution` | все форматы, баланс долей |
 | `log_message_structure` | log_message не пустой |
-| `orc_bloom_filters` | bloom index present/absent по `--orc-bloom-filter-columns` |
+| `orc_bloom_filters` | bloom index **present**, если columns ≠ `none`; **absent**, если `none` |
 
-При FAIL любой проверки job падает.
+При FAIL любой проверки job падает; в diagnostics перечисляются упавшие checks и `details`.
+
+**Правило:** флаги bloom у generate и validate должны совпадать.
 
 ### Параметры: benchmark
 
@@ -270,13 +295,13 @@ $BASE/reports/summary/              # markdown + csv/json/parquet
 | `--benchmark-scenarios` | `all` | CSV или `all` |
 | `--benchmark-timestamp-window-days` | `30` | окно для `filter_timestamp_range` |
 | `--clear-cache-between-runs` | `true` | cold read; иначе `bytes_read` занижен |
-| `--benchmark-dataset-label` | auto | `bloom` / `nobloom` (метка в отчёте) |
+| `--benchmark-dataset-label` | auto | `bloom` / `nobloom` |
 
 Сценарии:
 
 | Сценарий | Назначение | Bloom-релевантность |
 |---|---|---|
-| `full_scan` | baseline I/O | нет |
+| `full_scan` | baseline I/O | нет (контроль) |
 | `projection` | column pruning | нет |
 | `filter_low_cardinality` | country + status | низкая |
 | `filter_medium_cardinality` | product_id / campaign_id | **да** |
@@ -294,27 +319,28 @@ $BASE/reports/summary/              # markdown + csv/json/parquet
 | Параметр | Дефолт | Описание |
 |---|---|---|
 | `--report-formats` | `parquet,csv,json,markdown` | форматы summary |
-| `--report-name` | `benchmark-report` | имя `.md` (бloom A/B: `bloom-ab-report`) |
+| `--report-name` | `benchmark-report` | имя `.md` (A/B: `bloom-ab-report`) |
 
 Report читает **все** найденные каталоги: `benchmark_nobloom`, `benchmark_bloom`, `benchmark`, `validation_*`, `validation`.
 
 ### Какой скрипт когда
 
 ```text
-Первый раз на кластере     →  run-smoke.sh          (0.01 TB)
-Пайплайн OK, нужны выводы  →  Pilot §5 или run-bench-pipeline после generate ≥0.1 TB
-Сравнить bloom vs nobloom  →  run-bloom-ab.sh       (≥0.1 TB, repeat≥5)
-Один шаг / отладка         →  submit-spark32.sh -- --mode=...
+Первый раз на кластере              →  run-smoke.sh           (0.01 TB, bloom ON)
+Все проверки / адекватная картина   →  run-bloom-ab.sh        (≥0.1 TB, nobloom+bloom)
+Повтор без regenerate               →  run-bench-pipeline.sh  (ORC уже с bloom)
+Один шаг / отладка                  →  submit-spark32.sh -- --mode=...
 ```
 
 ---
 
-## 3. Smoke (обязательно первым)
+## 3. Smoke (обязательно первым, с bloom)
 
-Не используйте дефолт `--target-size-tb=5`. Smoke: `0.01`.
+Не используйте дефолт `--target-size-tb=5`. Smoke: `0.01`.  
+Датасет пишется **с bloom** (дефолт app / явный `--orc-bloom-filter-columns`).
 
-**Что даёт этот прогон:** проверка пайплайна end-to-end (generate → validate → benchmark → report), ресурсов YARN и новых метрик (`runs=3`, selective timestamp, `avg_bytes_read`).  
-**Чего не даёт:** устойчивой картины по pruning/ранжированию сценариев — на `0.01` ТБ wall time часто «слипается» (фиксированный overhead job доминирует). Для интерпретации performance см. §5 Pilot.
+**Что даёт:** end-to-end пайплайн, YARN, validation включая `orc_bloom_filters` (present), метрики (`runs=3`, `avg_bytes_read`).  
+**Чего не даёт:** устойчивого A/B bloom vs nobloom и ранжирования на малом объёме — для этого §5.
 
 Короткий путь:
 
@@ -325,27 +351,30 @@ export JAR=~/orc-bench/orc-bench-all.jar
 ./scripts/run-smoke.sh
 ```
 
-По шагам (эквивалент `run-smoke.sh`; ресурсы — дефолты `submit-spark32.sh`):
+`run-smoke.sh` не передаёт bloom-флаг явно — срабатывает **дефолт приложения** (bloom ON).  
+При ручном запуске указывайте колонки явно, чтобы generate и validate совпали.
+
+По шагам:
 
 ```bash
 export BASE=hdfs:///user/hdfs_migration_user/orc_test
 export JAR=~/orc-bench/orc-bench-all.jar
 export SEED=42
+export BLOOM_COLUMNS=event_id,user_id,product_id,campaign_id
 
-# 1. generate ORC (smoke-объём)
+# 1. generate ORC с bloom
 ./scripts/submit-spark32.sh -- \
   --mode=generate --base-path="$BASE" --target-size-tb=0.01 --seed="$SEED" \
+  --orc-bloom-filter-columns="$BLOOM_COLUMNS" \
   2>&1 | tee smoke-generate.log
 
-# 2. validate (тот же seed, что у generate)
+# 2. validate (тот же seed и те же bloom-колонки)
 ./scripts/submit-spark32.sh -- \
   --mode=validate --base-path="$BASE" --seed="$SEED" \
+  --orc-bloom-filter-columns="$BLOOM_COLUMNS" \
   2>&1 | tee smoke-validate.log
 
-# 3. benchmark ORC
-#    - repeat-runs=3 → осмысленные p50/p95
-#    - timestamp-window-days=30 → filter_timestamp_range не на всём generate-окне
-#    - clear-cache-between-runs=true → cold read, видны bytes_read / pruning
+# 3. benchmark
 ./scripts/submit-spark32.sh -- \
   --mode=benchmark --base-path="$BASE" --seed="$SEED" \
   --benchmark-scenarios=all \
@@ -353,9 +382,10 @@ export SEED=42
   --benchmark-repeat-runs=3 \
   --benchmark-timestamp-window-days=30 \
   --clear-cache-between-runs=true \
+  --benchmark-dataset-label=bloom \
   2>&1 | tee smoke-benchmark.log
 
-# 4. report (читает raw/benchmark + raw/validation)
+# 4. report
 ./scripts/submit-spark32.sh -- \
   --mode=report --base-path="$BASE" \
   2>&1 | tee smoke-report.log
@@ -363,84 +393,128 @@ export SEED=42
 
 ### Критерий успеха smoke
 
-- Все job в статусе `SUCCEEDED`
-- Есть пути: `$BASE/orc`, `$BASE/reports/raw/benchmark/`, `$BASE/reports/raw/validation/`, `$BASE/reports/summary/`
-- Markdown-отчёт содержит секции Benchmark Summary (с `avg_bytes_read`) и Validation (не пустая)
-- У сценариев `runs=3`
-- У `filter_timestamp_range` selectivity **существенно меньше 1.0** (ожидаемо ~окно/год, при 30d ≈ 0.08)
-- У selective-фильтров `avg_bytes_read` **ниже**, чем у `full_scan` (иначе pushdown/pruning не проявляется — смотрите plan/логи)
+- Все job `SUCCEEDED`
+- Пути: `$BASE/orc`, `$BASE/reports/raw/benchmark/`, `$BASE/reports/raw/validation/`, `$BASE/reports/summary/`
+- Validation: **все** checks PASS, в т.ч. `orc_bloom_filters` (bloom present)
+- Markdown: Benchmark Summary с `avg_bytes_read`, Validation не пустая, `runs=3`
+- У `filter_timestamp_range` selectivity ≪ 1 (при 30d ≈ 0.08)
+- У selective-фильтров `avg_bytes_read` ниже, чем у `full_scan`
 
-Рекомендуемый порядок: **generate → validate → benchmark → report**.
+Без повторного generate: `./scripts/run-bench-pipeline.sh` (ORC уже с bloom).
 
-Без повторного generate (уже есть ORC): `./scripts/run-bench-pipeline.sh`.
-
-**Carbon A/B:** в этом репозитории не реализован (out of scope). Сравнение форматов — отдельный проект/ветка.
+**Carbon A/B:** в этом репозитории не реализован (out of scope).
 
 ---
 
 ## 4. Проверки после прогона
 
 ```bash
-hdfs dfs -du -h -s "$BASE"/orc "$BASE"/reports
+hdfs dfs -du -h -s "$BASE"/orc "$BASE"/orc_bloom "$BASE"/reports 2>/dev/null
 hdfs dfs -ls -R "$BASE"/reports/summary | head
 yarn application -list -appStates FINISHED | head
 
-# applicationId из yarn / spark-submit:
 yarn logs -applicationId application_XXXXXXXX_XXXX > yarn-app.log
 ```
 
 ---
 
-## 5. Адекватная картина бенчмарка (Pilot)
+## 5. Все проверки / адекватная картина (Pilot + Bloom A/B)
 
-Smoke (`--target-size-tb=0.01`) **недостаточен** для выводов по performance: на малом объёме wall time сценариев почти одинаковый, pruning/`bytes_read` плохо различимы.
+Smoke недостаточен для выводов по performance и **не сравнивает** bloom vs nobloom.
 
-Для **адекватной картины** после успешного smoke сделайте Pilot с большим датасетом и теми же корректными флагами benchmark.
+Канонический Pilot = **`run-bloom-ab.sh`**: оба датасета, оба validate (present/absent), оба benchmark, единый отчёт.
 
 ### Рекомендуемые параметры
 
 | Параметр | Значение | Зачем |
 |---|---|---|
-| `--target-size-tb` | **`0.1`** (минимум) или **`0.5`** | объём, на котором видны различия сценариев |
-| `--seed` | `42` | воспроизводимость generate / validate / фильтров |
-| `--benchmark-repeat-runs` | **`3`** (лучше **`5`**) | устойчивые p50/p95 |
-| `--benchmark-warmup-runs` | `1` | прогрев JVM / метаданных |
-| `--benchmark-timestamp-window-days` | `30` | selectivity ≪ 1 у `filter_timestamp_range` |
-| `--clear-cache-between-runs` | `true` | cold read; иначе `bytes_read` недостоверен |
-| `--benchmark-scenarios` | `all` | полный набор сценариев |
+| `--target-size-tb` | **`0.1`** (минимум) или **`0.5`** | различимы сценарии и bloom-эффект |
+| `--seed` | `42` | одинаковый seed для nobloom и bloom |
+| `--benchmark-repeat-runs` | **`5`** (минимум 3) | устойчивые p50/p95 |
+| `--benchmark-warmup-runs` | `1` | прогрев |
+| `--benchmark-timestamp-window-days` | `30` | selectivity ≪ 1 |
+| `--clear-cache-between-runs` | `true` | cold read / достоверный `bytes_read` |
+| Bloom columns | `event_id,user_id,product_id,campaign_id` | запись + validate present |
+| Контроль | `--orc-bloom-filter-columns=none` | validate absent |
 | `NUM_EXECUTORS` | `16` | workers |
 | `EXECUTOR_MEMORY` | `8g` (при OOM — `16g`) | память worker |
 
-**Не используйте** `--target-size-tb=0.01` как единственный прогон для отчёта о производительности.
+**Не используйте** `--target-size-tb=0.01` как единственный прогон для отчёта о производительности / bloom.
 
-### Полный прогон Pilot (по шагам)
-
-Отдельный HDFS-корень удобен, чтобы не затирать smoke-данные:
+### Быстрый запуск (рекомендуется)
 
 ```bash
 export BASE=hdfs:///user/hdfs_migration_user/orc_test_pilot
 export JAR=~/orc-bench/orc-bench-all.jar
-export SEED=42
 export NUM_EXECUTORS=16
 export EXECUTOR_MEMORY=8g
 
-TARGET_SIZE_TB=0.1          # для более уверенных выводов: 0.5
-REPEAT_RUNS=5               # минимум 3; для адекватной картины лучше 5
-
 hdfs dfs -mkdir -p "$BASE"
+TARGET_SIZE_TB=0.1 BENCHMARK_REPEAT_RUNS=5 ./scripts/run-bloom-ab.sh
+```
 
-# 1. generate ORC (pilot-объём — обязательно ≥ 0.1)
+### Структура HDFS после полного прогона
+
+```text
+$BASE/orc/                              # nobloom
+$BASE/orc_bloom/                        # bloom
+$BASE/reports/raw/benchmark_nobloom/
+$BASE/reports/raw/benchmark_bloom/
+$BASE/reports/raw/validation_nobloom/
+$BASE/reports/raw/validation_bloom/
+$BASE/reports/summary/bloom-ab-report.md
+```
+
+### Env `run-bloom-ab.sh`
+
+| Переменная | Дефолт | Описание |
+|---|---|---|
+| `BASE` | `hdfs:///…/orc_test_pilot` | отдельный от smoke корень |
+| `SEED` | `42` | один seed на оба датасета |
+| `TARGET_SIZE_TB` | `0.1` | объём **каждого** generate |
+| `BENCHMARK_REPEAT_RUNS` | `5` | повторы benchmark |
+| `BENCHMARK_WARMUP_RUNS` | `1` | прогрев |
+| `NUM_EXECUTORS` / `EXECUTOR_MEMORY` / … | см. §1 | ресурсы YARN |
+
+Bloom-колонки зашиты в скрипте (`BLOOM_COLUMNS`).
+
+### Критерий: все проверки пройдены / картина адекватна
+
+| Проверка | Ожидание |
+|---|---|
+| Объём | `--target-size-tb` ≥ **0.1** |
+| `runs` | ≥ 3, предпочтительно **5** |
+| Validation nobloom | все PASS; `orc_bloom_filters` = absent |
+| Validation bloom | все PASS; `orc_bloom_filters` = present |
+| Report | секции Benchmark Summary + **Bloom filter comparison** + Validation |
+| `filter_high_cardinality` | `avg_bytes_read` bloom **ниже** nobloom |
+| `filter_medium_cardinality` | желательно выигрыш bloom по bytes_read |
+| `full_scan` | bytes_read примерно одинаково |
+| `filter_timestamp_range` selectivity | ≪ 1 (30d ≈ **0.08**) |
+| Ресурсы | без постоянного OOM / недобора контейнеров |
+
+### Одиночный Pilot только с bloom (без A/B)
+
+Если нужен один датасет с bloom (без сравнения nobloom) — тот же объём и флаги, но **не** заменяет полный A/B:
+
+```bash
+export BASE=hdfs:///user/hdfs_migration_user/orc_test_pilot
+export SEED=42
+export BLOOM_COLUMNS=event_id,user_id,product_id,campaign_id
+TARGET_SIZE_TB=0.1
+REPEAT_RUNS=5
+
 ./scripts/submit-spark32.sh -- \
   --mode=generate --base-path="$BASE" \
   --target-size-tb="$TARGET_SIZE_TB" --seed="$SEED" \
+  --orc-bloom-filter-columns="$BLOOM_COLUMNS" \
   2>&1 | tee pilot-generate.log
 
-# 2. validate
 ./scripts/submit-spark32.sh -- \
   --mode=validate --base-path="$BASE" --seed="$SEED" \
+  --orc-bloom-filter-columns="$BLOOM_COLUMNS" \
   2>&1 | tee pilot-validate.log
 
-# 3. benchmark
 ./scripts/submit-spark32.sh -- \
   --mode=benchmark --base-path="$BASE" --seed="$SEED" \
   --benchmark-scenarios=all \
@@ -448,21 +522,12 @@ hdfs dfs -mkdir -p "$BASE"
   --benchmark-repeat-runs="$REPEAT_RUNS" \
   --benchmark-timestamp-window-days=30 \
   --clear-cache-between-runs=true \
+  --benchmark-dataset-label=bloom \
   2>&1 | tee pilot-benchmark.log
 
-# 4. report
 ./scripts/submit-spark32.sh -- \
   --mode=report --base-path="$BASE" \
   2>&1 | tee pilot-report.log
-```
-
-Короткий путь, если ORC уже сгенерирован с нужным `--target-size-tb`:
-
-```bash
-export BASE=hdfs:///user/hdfs_migration_user/orc_test_pilot
-export SEED=42
-BENCHMARK_REPEAT_RUNS=5 BENCHMARK_TIMESTAMP_WINDOW_DAYS=30 \
-  ./scripts/run-bench-pipeline.sh
 ```
 
 ### Full (после Pilot)
@@ -471,89 +536,11 @@ BENCHMARK_REPEAT_RUNS=5 BENCHMARK_TIMESTAMP_WINDOW_DAYS=30 \
 |---|---|
 | Full | по согласованию (дефолт приложения — `5`) |
 
-Те же шаги 1–4 и те же benchmark-флаги; увеличьте `EXECUTOR_MEMORY` при OOM.
-
-### Критерий: картина адекватна
-
-Считайте прогон годным для выводов по бенчмарку, только если выполнено всё:
-
-| Проверка | Ожидание |
-|---|---|
-| Объём generate | `--target-size-tb` ≥ **0.1** (не 0.01) |
-| `runs` | ≥ 3, предпочтительно **5** |
-| Validation | все checks **PASS**, секция не пустая |
-| `filter_timestamp_range` selectivity | ≪ 1 (при 30d ≈ **0.08**, не ~1.0) |
-| `avg_bytes_read` | у selective-фильтров **заметно ниже**, чем у `full_scan` |
-| p50 / wall time | сценарии различаются сильнее, чем «все ~одинаковые ±несколько %» |
-| Ресурсы | 16 executors, без постоянного OOM / недобора контейнеров |
-
-Иначе сначала добейте smoke (§3), затем повторите Pilot с `TARGET_SIZE_TB=0.1` или `0.5`.
+Тот же Bloom A/B (`run-bloom-ab.sh` с большим `TARGET_SIZE_TB`); при OOM увеличьте `EXECUTOR_MEMORY`.
 
 ---
 
-## 6. Bloom filter A/B (`run-bloom-ab.sh`)
-
-Подробное описание скрипта и всех параметров — в **§2** (таблица скриптов, `run-bloom-ab.sh`, bloom-параметры).
-
-Сравнение ORC **без bloom** (`$BASE/orc`) и **с bloom** (`$BASE/orc_bloom`) на колонках  
-`event_id,user_id,product_id,campaign_id`.
-
-Read-side включён для обоих прогонов: `spark.sql.orc.splits.include.file.footer=true`, cache stripe details.
-
-### Быстрый запуск
-
-```bash
-export BASE=hdfs:///user/hdfs_migration_user/orc_test_pilot
-export JAR=~/orc-bench/orc-bench-all.jar
-TARGET_SIZE_TB=0.1 BENCHMARK_REPEAT_RUNS=5 ./scripts/run-bloom-ab.sh
-```
-
-Переопределение ресурсов YARN (до запуска скрипта):
-
-```bash
-export NUM_EXECUTORS=16 EXECUTOR_MEMORY=16g DRIVER_MEMORY=8g
-TARGET_SIZE_TB=0.1 ./scripts/run-bloom-ab.sh
-```
-
-### Env-переменные `run-bloom-ab.sh`
-
-| Переменная | Дефолт | Описание |
-|---|---|---|
-| `BASE` | `hdfs:///…/orc_test_pilot` | корень (отдельный от smoke!) |
-| `SEED` | `42` | один seed для обоих датасетов |
-| `TARGET_SIZE_TB` | `0.1` | объём **каждого** generate |
-| `BENCHMARK_REPEAT_RUNS` | `5` | повторы benchmark |
-| `BENCHMARK_WARMUP_RUNS` | `1` | прогрев |
-| `NUM_EXECUTORS` / `EXECUTOR_MEMORY` / … | см. §1 | ресурсы YARN |
-
-Bloom-колонки зашиты в скрипте: `event_id,user_id,product_id,campaign_id` (константа `BLOOM_COLUMNS`).
-
-### Структура HDFS после прогона
-
-```text
-$BASE/orc/                              # nobloom (--orc-bloom-filter-columns=none)
-$BASE/orc_bloom/                        # bloom (default columns)
-$BASE/reports/raw/benchmark_nobloom/
-$BASE/reports/raw/benchmark_bloom/
-$BASE/reports/raw/validation_nobloom/
-$BASE/reports/raw/validation_bloom/
-$BASE/reports/summary/bloom-ab-report.md
-```
-
-### Критерии успеха Bloom A/B
-
-| Проверка | Ожидание |
-|---|---|
-| Validation `orc_bloom_filters` | PASS на bloom path; PASS (absent) на nobloom |
-| Report `Bloom filter comparison` | секция заполнена (есть `bloom` и `nobloom`) |
-| `filter_high_cardinality` | `avg_bytes_read` bloom **ниже** nobloom |
-| `full_scan` | bytes_read примерно одинаково (bloom не должен ломать scan) |
-
-Primary сценарии: `filter_high_cardinality`, `filter_medium_cardinality`.
-
----
-
-## 7. Сбор логов для анализа
+## 6. Сбор логов для анализа
 
 ```bash
 APP_ID=application_XXXXXXXX_XXXX
@@ -574,36 +561,36 @@ hdfs dfs -get "$BASE"/reports/summary ./summary 2>&1 || true
   hadoop version
 } > env-versions.txt 2>&1
 
-tar -czf bench-logs.tgz smoke-*.log yarn-*.log hdfs-*.txt env-versions.txt summary 2>/dev/null
+tar -czf bench-logs.tgz smoke-*.log bloom-ab-*.log yarn-*.log hdfs-*.txt env-versions.txt summary 2>/dev/null
 ```
 
 ### Минимум при падении
 
-1. Полная команда `./scripts/submit-spark32.sh` и exit code
-2. `yarn logs -applicationId …`
+1. Полная команда `./scripts/submit-spark32.sh` / `run-*.sh` и exit code
+2. `yarn logs -applicationId …` (в diagnostics — имена упавших validation checks)
 3. `java -version`, `spark-submit --version`
-4. Текст exception / stack trace
+4. Совпадение `--orc-bloom-filter-columns` у generate и validate
 
 ### Минимум при успешном smoke
 
-1. Файлы `smoke-*.log`
+1. `smoke-*.log`
 2. `hdfs-du.txt`
-3. Каталог `summary/` (особенно `*.md`)
+3. `summary/` с Validation PASS (включая bloom present) и `avg_bytes_read`
 
-### Минимум при адекватном Pilot
+### Минимум при полном Pilot (Bloom A/B)
 
-1. Файлы `pilot-*.log`
-2. Подтверждение `--target-size-tb` ≥ `0.1` в generate-логе
-3. `summary/*.md` с `runs` ≥ 3 (лучше 5), Validation PASS, `avg_bytes_read`
+1. `bloom-ab-*.log`
+2. `--target-size-tb` ≥ `0.1` в generate-логах
+3. `bloom-ab-report.md`: Validation PASS на обоих путях, секция Bloom comparison, `runs` ≥ 5
 
 ---
 
-## 8. Типичные ошибки submit
+## 7. Типичные ошибки submit
 
 Ошибки ниже относятся к **инфраструктуре кластера**, не к коду `orc-bench`.  
 `AppMain` стартует только после успешного submit.
 
-### 8.1. YARN ResourceManager: `Connection refused` на `:8032`
+### 7.1. YARN ResourceManager: `Connection refused` на `:8032`
 
 **Симптом:** `ConfiguredRMFailoverProxyProvider` / `Call From … to …:8032 failed … Connection refused`.
 
@@ -615,13 +602,13 @@ yarn rmadmin -getAllServiceState
 grep -E 'yarn.resourcemanager\.(address|ha|hostname)' /etc/hadoop/conf/yarn-site.xml
 ```
 
-### 8.2. SSL: `SSLContext does not support … algorithms: sdp-deployer`
+### 7.2. SSL: `SSLContext does not support … algorithms: sdp-deployer`
 
 **Смысл:** в Spark SSL-конфиге указано значение `sdp-deployer` вместо валидных TLS cipher suites.
 
 **Что делать:** править платформенный SSL (Ambari / `spark.ssl.*`), не приложение.
 
-### 8.3. Hive / HBase credentials зависают submit
+### 7.3. Hive / HBase credentials зависают submit
 
 `submit-spark32.sh` по умолчанию передаёт:
 
@@ -632,14 +619,21 @@ grep -E 'yarn.resourcemanager\.(address|ha|hostname)' /etc/hadoop/conf/yarn-site
 
 Без этого Spark на submit пытается взять Hive/HBase tokens; при `Connection refused` на Metastore (`:9083`) или HBase RS (`:16020`) сабмит зависает на ретраях, и `AppMain` не стартует. Для ORC Metastore/HBase не нужны.
 
-### 8.4. `Invalid numeric argument for --target-size-tb`
+### 7.4. `Invalid numeric argument for --target-size-tb`
 
 Нужен актуальный fat JAR с поддержкой дробных ТБ (`double`).
 
-### 8.5. Чеклист перед повторным smoke
+### 7.5. Validation: `orc_bloom_filters` / «No ORC data files»
+
+- Generate и validate с **разным** `--orc-bloom-filter-columns` → present/absent не совпадает.
+- Нужен актуальный JAR (инспектор обходит Hive partition dirs и читает bloom index через `sargColumns`).
+- В diagnostics смотрите имя check и `details`.
+
+### 7.6. Чеклист перед повторным smoke
 
 1. `yarn node -list` — есть RUNNING NodeManager’ы  
 2. Нет ошибки `sdp-deployer` в SSL  
 3. В логе после submit есть строки приложения (`orc-bench` / `Writing` / `Generating`)
+4. Bloom: generate пишет с columns (не `none`), validate — с теми же columns
 
-При новом падении прислать полный `smoke-*.log` + `applicationId` + `yarn logs -applicationId …`.
+При новом падении прислать полный `smoke-*.log` / `bloom-ab-*.log` + `applicationId` + `yarn logs -applicationId …`.
