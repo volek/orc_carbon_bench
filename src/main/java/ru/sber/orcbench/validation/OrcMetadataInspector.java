@@ -60,27 +60,33 @@ public final class OrcMetadataInspector {
             }
 
             TypeDescription schema = reader.getSchema();
+            int[] columnIds = new int[expectedColumns.length];
+            for (int i = 0; i < expectedColumns.length; i++) {
+                int fieldIndex = schema.getFieldNames().indexOf(expectedColumns[i]);
+                if (fieldIndex < 0) {
+                    return InspectionResult.fail("Column not found in ORC schema: " + expectedColumns[i]);
+                }
+                columnIds[i] = schema.getChildren().get(fieldIndex).getId();
+            }
+
             List<String> missing = new ArrayList<>();
             List<String> unexpected = new ArrayList<>();
 
             try (RecordReader rows = reader.rows()) {
                 RecordReaderImpl recordReader = (RecordReaderImpl) rows;
-                OrcIndex index = recordReader.readRowIndex(0, null, null);
+                // ORC loads bloom indexes only for columns marked true in sargColumns.
+                // Passing null skips bloom streams entirely and falsely reports them missing.
+                boolean[] bloomColumns = bloomColumnMask(schema, columnIds);
+                OrcIndex index = recordReader.readRowIndex(0, null, bloomColumns);
                 OrcProto.BloomFilterIndex[] bloomIndices = index.getBloomFilterIndex();
 
-                for (String column : expectedColumns) {
-                    int fieldIndex = schema.getFieldNames().indexOf(column);
-                    if (fieldIndex < 0) {
-                        return InspectionResult.fail("Column not found in ORC schema: " + column);
-                    }
-                    int columnId = schema.getChildren().get(fieldIndex).getId();
-                    boolean present = hasBloomIndex(bloomIndices, columnId);
-
+                for (int i = 0; i < expectedColumns.length; i++) {
+                    boolean present = hasBloomIndex(bloomIndices, columnIds[i]);
                     if (expectPresent && !present) {
-                        missing.add(column);
+                        missing.add(expectedColumns[i]);
                     }
                     if (!expectPresent && present) {
-                        unexpected.add(column);
+                        unexpected.add(expectedColumns[i]);
                     }
                 }
             }
@@ -104,8 +110,21 @@ public final class OrcMetadataInspector {
         }
     }
 
+    /**
+     * Mask for {@link RecordReaderImpl#readRowIndex}: ORC reads bloom streams only where true.
+     */
+    static boolean[] bloomColumnMask(TypeDescription schema, int[] columnIds) {
+        boolean[] mask = new boolean[schema.getMaximumId() + 1];
+        for (int columnId : columnIds) {
+            if (columnId >= 0 && columnId < mask.length) {
+                mask[columnId] = true;
+            }
+        }
+        return mask;
+    }
+
     private static boolean hasBloomIndex(OrcProto.BloomFilterIndex[] bloomIndices, int columnId) {
-        if (bloomIndices == null || columnId >= bloomIndices.length) {
+        if (bloomIndices == null || columnId < 0 || columnId >= bloomIndices.length) {
             return false;
         }
         OrcProto.BloomFilterIndex index = bloomIndices[columnId];

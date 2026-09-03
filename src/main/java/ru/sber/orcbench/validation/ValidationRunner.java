@@ -86,12 +86,27 @@ public final class ValidationRunner {
 
         writeResults(spark, results, reportsValidationPath);
 
-        long failed = results.stream().filter(result -> !result.passed()).count();
-        if (failed > 0) {
-            throw new IllegalStateException("Validation failed: " + failed + " of " + results.size() + " checks failed");
+        List<ValidationResult> failedResults = results.stream()
+                .filter(result -> !result.passed())
+                .collect(Collectors.toList());
+        if (!failedResults.isEmpty()) {
+            throw new IllegalStateException(formatFailureMessage(results.size(), failedResults));
         }
 
         LOG.info("Validation completed successfully: runId={} checks={}", runId, results.size());
+    }
+
+    static String formatFailureMessage(int totalChecks, List<ValidationResult> failedResults) {
+        String details = failedResults.stream()
+                .map(result -> result.check().cliValue()
+                        + " [" + result.message()
+                        + (result.details() == null || result.details().isEmpty()
+                        ? ""
+                        : "; " + result.details())
+                        + "]")
+                .collect(Collectors.joining("; "));
+        return "Validation failed: " + failedResults.size() + " of " + totalChecks
+                + " checks failed: " + details;
     }
 
     private static ValidationResult checkRowCount(String runId, long orcRows, SparkRuntimeInfo runtime) {
