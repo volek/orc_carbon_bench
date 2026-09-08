@@ -1,6 +1,7 @@
 package ru.sber.orcbench.report;
 
 import org.apache.hadoop.fs.FSDataOutputStream;
+import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.spark.sql.Column;
@@ -61,6 +62,11 @@ public final class ReportRunner {
         if (summaryParts.isEmpty()) {
             throw new IllegalStateException(
                     "No report input data found under " + paths.reportsRawPath()
+                            + ". Expected parquet datasets in subdirectories such as "
+                            + "benchmark/, validation/, benchmark_nobloom/, benchmark_bloom/, "
+                            + "validation_nobloom/, validation_bloom/. "
+                            + "Run --mode=validate and --mode=benchmark for this --base-path "
+                            + "before --mode=report."
             );
         }
 
@@ -90,63 +96,136 @@ public final class ReportRunner {
     }
 
     private static Optional<Dataset<Row>> loadAllBenchmark(SparkSession spark, StoragePaths paths) {
-        Set<String> candidatePaths = new LinkedHashSet<>();
-        candidatePaths.add(paths.reportsBenchmarkNobloomPath());
-        candidatePaths.add(paths.reportsBenchmarkBloomPath());
-        candidatePaths.add(paths.reportsBenchmarkPath());
-        candidatePaths.add(paths.reportsRawPath());
-
-        Dataset<Row> combined = null;
-        for (String path : candidatePaths) {
-            Optional<Dataset<Row>> loaded = loadParquet(spark, path);
-            if (!loaded.isPresent()) {
-                continue;
-            }
-            LOG.info("Loaded benchmark metrics from {}", path);
-            combined = combined == null ? loaded.get() : combined.unionByName(loaded.get(), true);
-        }
-        return Optional.ofNullable(combined);
+        return combineMatching(spark, discoverInputPaths(spark, paths), true);
     }
 
     private static Optional<Dataset<Row>> loadAllValidation(SparkSession spark, StoragePaths paths) {
-        Set<String> candidatePaths = new LinkedHashSet<>();
-        candidatePaths.add(paths.reportsValidationNobloomPath());
-        candidatePaths.add(paths.reportsValidationBloomPath());
-        candidatePaths.add(paths.reportsValidationPath());
+        return combineMatching(spark, discoverInputPaths(spark, paths), false);
+    }
 
+    /**
+     * Hardcoded A/B and default locations, plus any parquet dataset sitting
+     * directly under {@code reports/raw/} (or in {@code raw/} itself for legacy writes).
+     */
+    private static Set<String> discoverInputPaths(SparkSession spark, StoragePaths paths) {
+        Set<String> candidatePaths = new LinkedHashSet<>();
+        addQualified(spark, candidatePaths, paths.reportsBenchmarkNobloomPath());
+        addQualified(spark, candidatePaths, paths.reportsBenchmarkBloomPath());
+        addQualified(spark, candidatePaths, paths.reportsBenchmarkPath());
+        addQualified(spark, candidatePaths, paths.reportsValidationNobloomPath());
+        addQualified(spark, candidatePaths, paths.reportsValidationBloomPath());
+        addQualified(spark, candidatePaths, paths.reportsValidationPath());
+        candidatePaths.addAll(listParquetDatasets(spark, paths.reportsRawPath()));
+        return candidatePaths;
+    }
+
+    private static void addQualified(SparkSession spark, Set<String> paths, String path) {
+        paths.add(qualify(spark, path));
+    }
+
+    private static String qualify(SparkSession spark, String path) {
+        try {
+            Path hadoopPath = new Path(path);
+            FileSystem fs = hadoopPath.getFileSystem(spark.sparkContext().hadoopConfiguration());
+            return fs.makeQualified(hadoopPath).toString();
+        } catch (Exception ex) {
+            return path;
+        }
+    }
+
+    private static Optional<Dataset<Row>> combineMatching(
+            SparkSession spark,
+            Set<String> candidatePaths,
+            boolean benchmark
+    ) {
         Dataset<Row> combined = null;
         for (String path : candidatePaths) {
             Optional<Dataset<Row>> loaded = loadParquet(spark, path);
             if (!loaded.isPresent()) {
                 continue;
             }
-            LOG.info("Loaded validation results from {}", path);
-            combined = combined == null ? loaded.get() : combined.unionByName(loaded.get(), true);
+            Dataset<Row> dataset = loaded.get();
+            if (benchmark && !isBenchmarkDataset(dataset)) {
+                continue;
+            }
+            if (!benchmark && !isValidationDataset(dataset)) {
+                continue;
+            }
+            LOG.info("Loaded {} metrics from {}", benchmark ? "benchmark" : "validation", path);
+            combined = combined == null ? dataset : combined.unionByName(dataset, true);
         }
         return Optional.ofNullable(combined);
     }
 
+    static boolean isBenchmarkDataset(Dataset<Row> dataset) {
+        return hasColumn(dataset, "duration_ms")
+                && hasColumn(dataset, "scenario")
+                && hasColumn(dataset, "format");
+    }
+
+    static boolean isValidationDataset(Dataset<Row> dataset) {
+        return hasColumn(dataset, "check") && hasColumn(dataset, "passed");
+    }
+
+    /**
+     * Try Spark's parquet reader directly. Do not gate on {@code FileSystem.exists}:
+     * {@code hdfs:///} URIs can resolve differently for a raw Hadoop FS client than
+     * for Spark SQL, which produced false negatives on the Pilot cluster.
+     */
     private static Optional<Dataset<Row>> loadParquet(SparkSession spark, String path) {
-        if (!pathExists(spark, path)) {
-            return Optional.empty();
-        }
         try {
-            return Optional.of(spark.read().option("recursiveFileLookup", "false").parquet(path));
+            return Optional.of(spark.read().parquet(path));
         } catch (Exception ex) {
             LOG.warn("Failed to read parquet at {}: {}", path, ex.getMessage());
             return Optional.empty();
         }
     }
 
-    private static boolean pathExists(SparkSession spark, String path) {
+    private static Set<String> listParquetDatasets(SparkSession spark, String rawPath) {
+        Set<String> datasets = new LinkedHashSet<>();
         try {
-            Path hadoopPath = new Path(path);
-            FileSystem fs = FileSystem.get(hadoopPath.toUri(), spark.sparkContext().hadoopConfiguration());
-            return fs.exists(hadoopPath);
+            Path root = new Path(rawPath);
+            FileSystem fs = root.getFileSystem(spark.sparkContext().hadoopConfiguration());
+            Path qualified = fs.makeQualified(root);
+            if (!fs.exists(qualified)) {
+                LOG.warn("Report input path not found: {}", qualified);
+                return datasets;
+            }
+            if (hasParquetFiles(fs, qualified)) {
+                datasets.add(qualified.toString());
+            }
+            FileStatus[] children = fs.listStatus(qualified);
+            for (FileStatus child : children) {
+                if (!child.isDirectory()) {
+                    continue;
+                }
+                String name = child.getPath().getName();
+                if (name.startsWith("_") || name.startsWith(".")) {
+                    continue;
+                }
+                if (hasParquetFiles(fs, child.getPath())) {
+                    datasets.add(fs.makeQualified(child.getPath()).toString());
+                }
+            }
+        } catch (Exception ex) {
+            LOG.warn("Failed to list parquet datasets under {}: {}", rawPath, ex.getMessage());
+        }
+        return datasets;
+    }
+
+    private static boolean hasParquetFiles(FileSystem fs, Path dir) throws IOException {
+        FileStatus[] statuses;
+        try {
+            statuses = fs.listStatus(dir);
         } catch (IOException ex) {
-            LOG.warn("Failed to check path {}: {}", path, ex.getMessage());
             return false;
         }
+        for (FileStatus status : statuses) {
+            if (status.isFile() && status.getPath().getName().endsWith(".parquet")) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static Dataset<Row> withRuntime(Dataset<Row> raw) {
