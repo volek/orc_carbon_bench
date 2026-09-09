@@ -20,12 +20,17 @@
 #   EXECUTOR_CORES    ядра на executor [4]
 #   DRIVER_MEMORY             память driver [4g]
 #   YARN_AM_MEMORY_OVERHEAD   overhead AM-контейнера [512m]
+#   SPARK_EVENT_LOG_DIR       каталог Spark History [hdfs:///dev1-primary/archive/sparkLogs]
 #
 # В cluster mode явно задаёт spark.yarn.am.memory из driver-memory (иначе Spark
 # наследует executor-memory и AM может занять ~9g при EXECUTOR_MEMORY=8g).
 #
 # По умолчанию отключает Hive/HBase delegation tokens (ORC не нуждается в Metastore/HBase;
 # иначе submit зависает, если сервисы недоступны).
+#
+# Перед submit создаёт spark.eventLog.dir (History Server). Если mkdir не удался
+# (нет прав / нет nameservice), event log выключается, чтобы AM не падал с
+# FileNotFoundException / exitCode 13.
 # -----------------------------------------------------------------------------
 set -euo pipefail
 
@@ -37,6 +42,8 @@ EXECUTOR_MEMORY="${EXECUTOR_MEMORY:-8g}"
 EXECUTOR_CORES="${EXECUTOR_CORES:-4}"
 DRIVER_MEMORY="${DRIVER_MEMORY:-4g}"
 YARN_AM_MEMORY_OVERHEAD="${YARN_AM_MEMORY_OVERHEAD:-512m}"
+# Cluster spark-defaults: hdfs:/dev1-primary/archive/sparkLogs (path on default FS).
+SPARK_EVENT_LOG_DIR="${SPARK_EVENT_LOG_DIR:-hdfs:///dev1-primary/archive/sparkLogs}"
 
 if [[ ! -f "$JAR" ]]; then
   echo "Missing $JAR. Build with: ./gradlew build" >&2
@@ -119,6 +126,26 @@ spark_conf_has spark.yarn.am.memory || DEFAULT_SPARK_ARGS+=(--conf "spark.yarn.a
 spark_conf_has spark.yarn.am.memoryOverhead || DEFAULT_SPARK_ARGS+=(--conf "spark.yarn.am.memoryOverhead=${YARN_AM_MEMORY_OVERHEAD}")
 
 echo "spark-submit resources: num-executors=${NUM_EXECUTORS} executor-memory=${EXECUTOR_MEMORY} executor-cores=${EXECUTOR_CORES} driver-memory=${EFFECTIVE_DRIVER_MEMORY} yarn-am-memory=${EFFECTIVE_DRIVER_MEMORY} yarn-am-overhead=${YARN_AM_MEMORY_OVERHEAD}" >&2
+
+ensure_event_log_dir() {
+  if spark_conf_has spark.eventLog.enabled; then
+    return
+  fi
+  if ! command -v hdfs >/dev/null 2>&1; then
+    echo "WARN: hdfs CLI not found; disabling spark.eventLog (cannot create $SPARK_EVENT_LOG_DIR)" >&2
+    DEFAULT_SPARK_ARGS+=(--conf "spark.eventLog.enabled=false")
+    return
+  fi
+  if hdfs dfs -mkdir -p "$SPARK_EVENT_LOG_DIR" \
+      && hdfs dfs -test -d "$SPARK_EVENT_LOG_DIR"; then
+    echo "spark event log dir: $SPARK_EVENT_LOG_DIR" >&2
+    return
+  fi
+  echo "WARN: cannot create $SPARK_EVENT_LOG_DIR; disabling spark.eventLog" >&2
+  DEFAULT_SPARK_ARGS+=(--conf "spark.eventLog.enabled=false")
+}
+
+ensure_event_log_dir
 
 exec "$SPARK_SUBMIT" \
   --master yarn \
