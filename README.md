@@ -1,341 +1,254 @@
 # orc-bench
 
-Spark / Java 8 приложение для бенчмарка формата **ORC** на кластерном **Spark 3.2**.
+Факторный бенчмарк **ORC + HDFS + Spark 3.2 (+ Hive/Tez/LLAP)** на штатном SDP-кластере.
 
-Проект рассчитан на кластер **без изменений**: используется штатный SDP Spark 3.2 (`spark-submit` на YARN). CarbonData и BYOS Spark 3.1 в проект не входят.
+Java 8 / Spark SQL приложение: `generate → validate → benchmark → report`.  
+Кластер **не меняем** — `spark-submit` на YARN. CarbonData и BYOS Spark 3.1 вне scope.
 
-## Требования
+| Документ | Содержание |
+|---|---|
+| [docs/cluster_manual_runbook.md](docs/cluster_manual_runbook.md) | Пошаговый запуск на edge-ноде |
+| [docs/orc-hive-bench-plan.md](docs/orc-hive-bench-plan.md) | План реализации P0–P10 |
+| [docs/ORC + HDFS + Spark + Hive benchmark.md](docs/ORC%20+%20HDFS%20+%20Spark%20+%20Hive%20benchmark.md) | Методика факторного эксперимента |
 
-- Java 8 (совместимо с JVM кластера)
-- Hadoop / YARN / HDFS кластера
-- Fat JAR `orc-bench-all.jar` — приложение без Spark/Hadoop (берутся с кластера)
+## Принципы
 
-## Сборка
+1. **Один фактор за раз** (partition / sort / bloom / stride / stripe / compression / file size / Spark toggles).
+2. **Cold и warm не усреднять** (`--cache-state=cold|warm`).
+3. Layout выбирают на Dataset **S/M**; финальный SLA — на Dataset **L**.
+4. Hive читает **те же** ORC-файлы, что и Spark (`layouts/best_orc/orc`).
+5. Один датасет ≤ **500 GB** (`--target-size-tb=0.5`). На HDFS ~**700 GB** свободно — лишние layout-копии удалять.
+
+## Масштабы датасетов
+
+| Имя | `--target-size-tb` | ≈ объём | Назначение |
+|---|---|---|---|
+| Smoke | `0.01` | ~10 GB | проверка пайплайна |
+| **S** | `0.1` | ~100 GB | layout-факторы |
+| **M** | `0.25` | ~250 GB | top-N подтверждение |
+| **L** | `0.5` | **~500 GB (макс.)** | BEST_ORC, Spark S0/S1, Hive, concurrency, SLA |
+
+Скрипты `run-factor.sh` / `run-layout-sweep.sh` / `run-sla-matrix.sh` отказывают при `TARGET_SIZE_TB > 0.5`.
+
+## Требования и сборка
+
+- Java 8, Hadoop / YARN / HDFS кластера
+- Артефакт для submit: **`build/libs/orc-bench-all.jar`** (Shadow JAR; Spark/Hadoop — с кластера)
+- Thin JAR `orc-bench-0.1.0-SNAPSHOT.jar` на кластер **не** копировать
 
 ```bash
-./gradlew build
-```
-
-Windows:
-
-```bash
-gradlew.bat build
-```
-
-Артефакт: `build/libs/orc-bench-all.jar` (Spark compile `3.2.1`).
-
-Локальные unit-тесты:
-
-```bash
+./gradlew build    # или gradlew.bat build
 ./gradlew test
 ```
 
-## Запуск на кластере
-
-```bash
-./scripts/submit-spark32.sh --driver-memory 8g --num-executors 16 -- \
-  --mode=generate --base-path="$BASE" --target-size-tb=0.01
-```
-
-По умолчанию скрипт уже ставит `--num-executors 16`, `--executor-memory 8g`, `--executor-cores 4`, `--driver-memory 4g`.
-Переопределение: флаги до `--` или env `NUM_EXECUTORS`, `EXECUTOR_MEMORY`, `EXECUTOR_CORES`, `DRIVER_MEMORY`.
-
-Флаги `spark-submit` — до `--`, аргументы приложения — после.
-
-Короткий smoke:
+## Быстрый старт
 
 ```bash
 export BASE=hdfs:///user/hdfs_migration_user/orc_test
+export JAR=build/libs/orc-bench-all.jar   # на edge: ~/orc-bench/orc-bench-all.jar
+
+# 1) Smoke
 ./scripts/run-smoke.sh
-```
 
-## Формат аргументов
-
-Все параметры передаются как `--ключ=значение`.
-
-- Каждый аргумент должен начинаться с `--` и содержать `=`.
-- Ключ и значение не могут быть пустыми.
-- Регистр значения `--mode` не важен.
-
-## Обзор пайплайна
-
-```text
-generate → validate → benchmark → report
-```
-
-| Шаг | `--mode` | Выход |
-|---|---|---|
-| 1. Генерация ORC | `generate` | `<orc-path>/` |
-| 2. Валидация | `validate` | `<reports-path>/raw/validation/` |
-| 3. Бенчмарки ORC | `benchmark` | `<reports-path>/raw/benchmark/` |
-| 4. Отчёт | `report` | `<reports-path>/summary/` |
-
-### Конфигурируемые пути HDFS
-
-| Параметр | По умолчанию | Описание |
-|---|---|---|
-| `--base-path` | `hdfs:///user/hdfs_migration_user/orc_test` | Корневой путь эксперимента |
-| `--orc-path` | `<base-path>/orc` | Путь для ORC-данных |
-| `--reports-path` | `<base-path>/reports` | Путь для отчётов |
-
-Структура каталогов:
-
-```text
-<orc-path>/          # ORC-файлы
-<reports-path>/
-  raw/benchmark/     # сырые метрики benchmark (duration, selectivity, bytes_read)
-  raw/validation/    # валидация (не затирается benchmark overwrite)
-  summary/           # агрегированные отчёты
-```
-
-### Общие параметры
-
-| Параметр | Обязательный | По умолчанию | Описание |
-|---|---|---|---|
-| `--mode` | да | — | `generate`, `validate`, `benchmark`, `report` |
-| `--base-path` | нет | `hdfs:///user/hdfs_migration_user/orc_test` | Корневой путь |
-| `--orc-path` | нет | `<base-path>/orc` | HDFS-путь для ORC |
-| `--reports-path` | нет | `<base-path>/reports` | HDFS-путь для отчётов |
-
----
-
-## Шаг 1. Генерация (`--mode=generate`)
-
-Генерирует синтетический датасет и сразу записывает его в ORC.
-
-| Параметр | По умолчанию | Описание |
-|---|---|---|
-| `--target-size-tb` | `0.5` | Целевой объём в ТБ (дроби OK). **Макс. на кластере: `0.5` (~500 GB)**; S=`0.1`, M=`0.25`, L=`0.5` |
-| `--seed` | `42` | Seed генератора |
-| `--avg-row-bytes` | `512` | Средний размер строки |
-| `--chunk-days` | `1` | Размер временного окна чанка в днях |
-| `--timestamp-start` | `2024-01-01` | Начало диапазона `timestamp` |
-| `--timestamp-end` | `2025-01-01` | Конец диапазона (не включительно) |
-| `--target-file-size-mb` | `384` | Целевой размер выходного файла |
-| `--write-partitions` | авто | Число партиций при записи |
-| `--partition-by` | `event_year,event_month,event_day,log_format` | Колонки партиционирования; `none` — без партиций |
-| `--orc-compression` | `snappy` | `snappy`, `zstd`, `zlib`, `none` |
-| `--orc-stripe-size-mb` | `64` | Размер ORC stripe |
-| `--orc-row-group-size-mb` | `32` | Размер row group (legacy) |
-| `--orc-row-index-stride` | `10000` | ORC `row.index.stride` |
-| `--orc-sort-columns` | `none` | `sortWithinPartitions` перед записью; `none` — без сортировки |
-| `--orc-bloom-filter-columns` | `event_id,user_id,product_id,campaign_id` | Bloom filters при записи; `none` — отключить |
-| `--orc-bloom-filter-fpp` | `0.05` | False positive rate bloom filter |
-| `--layout-id` | `default` | Factor layout; при значении ≠`default` пути → `<base>/layouts/<id>/orc` |
-| `--dictionary-path` | `<layout>/dictionary` | ORC dictionary для JOIN (Q10) |
-
-### Схема данных
-
-| Колонка | Кардинальность | Описание |
-|---|---|---|
-| `event_id` | высокая | Уникальный ID события |
-| `user_id` | высокая | ID пользователя (~50M) |
-| `session_id` | высокая | ID сессии (~100M) |
-| `country_code` | низкая | Код страны (50 значений) |
-| `device_type` | низкая | mobile, desktop, tablet, tv, iot |
-| `status` | низкая | success, failed, pending, timeout |
-| `product_id` | средняя | ID продукта (~100K, Zipf) |
-| `campaign_id` | средняя | ID кампании (~50K, Zipf) |
-| `region_id` | средняя | ID региона (~10K, Zipf) |
-| `timestamp` | — | Временная метка |
-| `amount` | — | Сумма (0–10000) |
-| `payload_json` | — | JSON события |
-| `log_format` | низкая | json, plain_text, key_value, apache_common |
-| `log_message` | — | Строка лога |
-| `event_year` / `event_month` / `event_day` / `event_hour` | — | Partition keys |
-
-Пример:
-
-```bash
-./scripts/submit-spark32.sh -- \
-  --mode=generate \
-  --base-path=hdfs:///user/hdfs_migration_user/orc_test \
-  --target-size-tb=0.1 \
-  --seed=42 \
-  --orc-compression=snappy
-```
-
----
-
-## Шаг 2. Валидация (`--mode=validate`)
-
-Проверяет корректность ORC-датасета. Результаты — в `<reports-path>/raw/validation/`. При ошибке любой проверки job падает.
-
-| Проверка | Описание |
-|---|---|
-| `row_count` | Датасет непустой |
-| `low_cardinality_bounds` | low cardinality колонки в ожидаемых пределах |
-| `timestamp_range` | `timestamp` в заданном диапазоне |
-| `log_format_distribution` | Все форматы логов с ожидаемыми долями |
-| `log_message_structure` | `log_message` не пустой; JSON начинается с `{` |
-| `orc_bloom_filters` | Bloom index в ORC footer (present / absent по `--orc-bloom-filter-columns`) |
-
-| Параметр | По умолчанию | Описание |
-|---|---|---|
-| `--validation-checks` | `all` | Список проверок или `all` |
-| `--validation-sample-fraction` | `0.01` | Доля выборки |
-| `--log-format-share-tolerance` | `0.15` | Допуск доли `log_format` |
-
-```bash
-./scripts/submit-spark32.sh -- \
-  --mode=validate \
-  --base-path=hdfs:///user/hdfs_migration_user/orc_test
-```
-
----
-
-## Шаг 3. Бенчмарки (`--mode=benchmark`)
-
-Запускает тесты производительности на ORC из `<orc-path>/`. Метрики пишутся в `<reports-path>/raw/benchmark/` (`spark_runtime=spark32-orc`).
-
-Дополнительно к wall time собираются Spark input metrics: `bytes_read`, `records_read` (прокси ORC pruning / pushdown).
-
-### Сценарии
-
-| Сценарий | Описание |
-|---|---|
-| `full_scan` | Полное сканирование (Q7b) |
-| `projection` | Выбор подмножества колонок (Q7) |
-| `partition_prune` | Фильтр по `event_year/month/day` (Q1) |
-| `filter_low_cardinality` | Фильтр по `country_code`, `status` (Q4) |
-| `filter_medium_cardinality` | Фильтр по `product_id`, `campaign_id` (Q3) |
-| `filter_high_cardinality` | Point lookup по `event_id`, `user_id` (Q2) |
-| `filter_in` | `IN` по high/medium card (Q5) |
-| `filter_timestamp_range` | Range-фильтр по `timestamp` (Q6) |
-| `filter_log_format` | Фильтр по `log_format` |
-| `filter_combined` | Комбинированный фильтр |
-| `group_by` | Агрегация `GROUP BY` (Q8) |
-| `group_by_heavy` | Тяжёлый `GROUP BY` (Q9) |
-| `join_dictionary` | JOIN с dictionary ORC (Q10) |
-| `text_search` | Поиск подстроки в `log_message` |
-
-| Параметр | По умолчанию | Описание |
-|---|---|---|
-| `--benchmark-warmup-runs` | `1` | Прогревочные запуски |
-| `--benchmark-repeat-runs` | `3` | Измеряемые повторы (нужно ≥3 для устойчивых p50/p95) |
-| `--benchmark-scenarios` | `all` | Сценарии, `all`, или `doc` (Q1–Q10) |
-| `--benchmark-timestamp-window-days` | `30` | Длина окна для `filter_timestamp_range` / `filter_combined` внутри `--timestamp-start`…`--timestamp-end` |
-| `--clear-cache-between-runs` | `true` | Очистка кэша между прогонами (без cache base DF — иначе pruning не виден) |
-| `--seed` | `42` | Seed для выборки значений фильтров и размещения timestamp-окна |
-| `--benchmark-dataset-label` | layout-id или bloom/nobloom | Метка A/B в отчёте |
-| `--cache-state` | `cold` | `cold` / `warm` (не усреднять вместе) |
-| `--engine` | `spark` | `spark` / `hive_tez` / `hive_llap` |
-| `--sla-threshold-ms` | `3000` | Порог SLA; пишет `sla_ok` |
-| `--spark-orc-filter-pushdown` | `true` | Predicate pushdown |
-| `--spark-orc-vectorized` | `true` | Vectorized ORC reader |
-| `--spark-aqe` | `true` | Adaptive Query Execution |
-| `--spark-dpp` | `true` | Dynamic Partition Pruning |
-| `--spark-cbo` | `true` | Cost-based optimizer |
-| `--reports-benchmark-path` | `<reports>/raw/benchmark` | Куда писать raw benchmark (для A/B: `benchmark_nobloom`, `benchmark_bloom`) |
-| `--reports-validation-path` | `<reports>/raw/validation` | Куда писать validation |
-
-Сценарии для оценки **bloom**: `filter_high_cardinality`, `filter_medium_cardinality` (equality на колонках с bloom).
-
-```bash
-./scripts/submit-spark32.sh -- \
-  --mode=benchmark \
-  --base-path=hdfs:///user/hdfs_migration_user/orc_test \
-  --seed=42 \
-  --benchmark-repeat-runs=3 \
-  --benchmark-timestamp-window-days=30
-```
-
-Повтор validate+benchmark+report без generate: `./scripts/run-bench-pipeline.sh`.
-
-**Bloom A/B** (nobloom vs bloom, один объединённый отчёт):
-
-```bash
-TARGET_SIZE_TB=0.1 ./scripts/run-bloom-ab.sh
-```
-
-Отчёт: `reports/summary/bloom-ab-report.md` — секции `Benchmark Summary` (колонки `dataset`, `bloom_columns`) и `Bloom filter comparison`.
-
----
-
-## Шаг 4. Отчёт (`--mode=report`)
-
-Агрегирует метрики из `<reports-path>/raw/benchmark/` и validation в `<reports-path>/summary/`.
-(Старые прогоны с parquet прямо в `raw/` тоже читаются как fallback.)
-
-| Параметр | По умолчанию | Описание |
-|---|---|---|
-| `--report-formats` | `parquet,csv,json,markdown` | Форматы выходных отчётов |
-| `--report-name` | `benchmark-report` | Имя Markdown-отчёта |
-
-Выход:
-
-| Файл | Описание |
-|---|---|
-| `results.parquet` / `.csv` / `.json` | Агрегированные метрики |
-| `<report-name>.md` | Сводка: benchmark, validation, рекомендации |
-
-```bash
-./scripts/submit-spark32.sh -- \
-  --mode=report \
-  --base-path=hdfs:///user/hdfs_migration_user/orc_test
-```
-
----
-
-## Factor experiment (ORC → Spark → Hive)
-
-Поэтапный прогон по [docs/ORC + HDFS + Spark + Hive benchmark.md](docs/ORC%20+%20HDFS%20+%20Spark%20+%20Hive%20benchmark.md).  
-Масштабы: Smoke `0.01` (~10 GB) → **S** `0.1` (~100 GB) → **M** `0.25` (~250 GB) → **L** `0.5` (**≤500 GB**).  
-Свободно на HDFS ~**700 GB** — layout-копии удалять после выбора победителей.
-
-```bash
-# P1 baseline (B0) на S
+# 2) Baseline B0 на Dataset S
 TARGET_SIZE_TB=0.1 ./scripts/run-factor.sh --layout=b0
 
-# P3–P6 layout sweep на S (лучше по группам, не SWEEP=all)
+# 3) Layout-факторы по группам (не SWEEP=all без очистки HDFS)
 TARGET_SIZE_TB=0.1 SWEEP=partition ./scripts/run-layout-sweep.sh
 
-# Freeze winners → best_orc, затем Spark exec matrix (P7)
+# 4) Freeze BEST_ORC → Spark matrix → Hive → SLA на L
 TARGET_SIZE_TB=0.1 ./scripts/run-factor.sh --layout=best_orc
 ./scripts/run-spark-exec-matrix.sh
-
-# Hive/Tez/LLAP on the same ORC (P8)
 ./scripts/hive/run-hive-factor.sh h0
-./scripts/hive/run-hive-factor.sh h4
-
-# Concurrency + SLA на L (макс. 500 GB) — сначала очистить лишние layouts
-CONCURRENCY_LEVELS="1 5 10" ./scripts/run-concurrency.sh
+# очистить лишние layouts/*, затем:
 TARGET_SIZE_TB=0.5 ./scripts/run-factor.sh --layout=best_orc
 TARGET_SIZE_TB=0.5 ./scripts/run-sla-matrix.sh
 ```
 
-Метрики в raw parquet: `layout_id`, `engine`, `cache_state`, `scan_ratio`, `sla_ok`. В markdown-отчёте — секции SLA и bloom A/B.
+Порядок R&D:
 
----
-
-## Полный прогон
-
-```bash
-export BASE=hdfs:///user/hdfs_migration_user/orc_test
-
-# Не больше 0.5 ТБ (~500 GB) на этом кластере
-./scripts/submit-spark32.sh -- --mode=generate --base-path="$BASE" \
-  --target-size-tb=0.5 --seed=42
-
-./scripts/submit-spark32.sh -- --mode=validate --base-path="$BASE"
-
-./scripts/submit-spark32.sh -- --mode=benchmark --base-path="$BASE"
-
-./scripts/submit-spark32.sh -- --mode=report --base-path="$BASE"
+```text
+smoke → B0 → layout sweep (S) → BEST_ORC → Spark S0/S1
+      → Hive H0–H4 → concurrency → SLA (L ≤ 500 GB)
 ```
 
-Перед L-прогоном сделайте smoke: `./scripts/run-smoke.sh` (`--target-size-tb=0.01`).
+## Скрипты
 
-Подробности — в [docs/cluster_manual_runbook.md](docs/cluster_manual_runbook.md).
+| Скрипт | Назначение |
+|---|---|
+| [`scripts/submit-spark32.sh`](scripts/submit-spark32.sh) | один YARN job (`--mode=…`); ресурсы до `--` |
+| [`scripts/run-smoke.sh`](scripts/run-smoke.sh) | e2e smoke `0.01` |
+| [`scripts/run-factor.sh`](scripts/run-factor.sh) | **основной** фактор: generate→validate→benchmark→report для одного layout |
+| [`scripts/run-layout-sweep.sh`](scripts/run-layout-sweep.sh) | пачка layout’ов (P3–P6) |
+| [`scripts/run-spark-exec-matrix.sh`](scripts/run-spark-exec-matrix.sh) | S0/S1 + toggles pushdown/AQE/DPP/CBO на BEST_ORC |
+| [`scripts/hive/run-hive-factor.sh`](scripts/hive/run-hive-factor.sh) | Hive/Tez/LLAP H0–H4 на тех же ORC |
+| [`scripts/run-concurrency.sh`](scripts/run-concurrency.sh) | concurrent 1/5/10/25/50 |
+| [`scripts/run-sla-matrix.sh`](scripts/run-sla-matrix.sh) | финальная SLA-матрица на L |
+| [`scripts/run-bloom-ab.sh`](scripts/run-bloom-ab.sh) | legacy bloom A/B (`orc` vs `orc_bloom`) |
+| [`scripts/run-bench-pipeline.sh`](scripts/run-bench-pipeline.sh) | validate→benchmark→report без generate |
 
----
+`submit-spark32.sh`: флаги `spark-submit` **до** `--`, аргументы приложения **после**.  
+Дефолты: `NUM_EXECUTORS=16`, `EXECUTOR_MEMORY=8g`, `EXECUTOR_CORES=4`, `DRIVER_MEMORY=4g`.  
+Hive/HBase credentials на submit отключены (для Spark ORC); Hive-бенчмарк — через Beeline.
 
-## Ошибки валидации аргументов
+## Режимы приложения
+
+Формат аргументов: **`--ключ=значение`**.
+
+| `--mode` | Действие | Выход |
+|---|---|---|
+| `generate` | синтетика → ORC + dictionary (Q10) | `<orc-path>/`, `<dictionary-path>/` |
+| `validate` | качество + bloom metadata | `…/raw/validation/` |
+| `benchmark` | query suite + метрики/SLA | `…/raw/benchmark/` |
+| `report` | агрегация | `…/summary/` |
+
+### Пути HDFS
+
+Без `--layout-id` (или `default`):
+
+```text
+$BASE/orc/
+$BASE/dictionary/
+$BASE/reports/raw/{benchmark,validation}/
+$BASE/reports/summary/
+```
+
+С `--layout-id=<id>` (рекомендуется для факторов):
+
+```text
+$BASE/layouts/<id>/orc/
+$BASE/layouts/<id>/dictionary/
+$BASE/layouts/<id>/reports/raw/...
+$BASE/layouts/<id>/reports/summary/
+```
+
+Переопределение: `--orc-path`, `--dictionary-path`, `--reports-path`, `--reports-benchmark-path`, `--reports-validation-path`.
+
+### Layout’ы `run-factor.sh`
+
+| ID | Смысл |
+|---|---|
+| `b0` | ORC baseline (без bloom/sort) |
+| `d0` / `d1` / `d2` | partitioning none / date / date+hour |
+| `e1` / `e2` / `e3` | sort high / medium / timestamp+high |
+| `f0`–`f3`, `g005`/`g001`/`g0001` | bloom columns / FPP |
+| `h5k`…`h50k`, `i64`…`i256` | stride / stripe |
+| `jsnappy` / `jzstd` / `jzlib` | compression |
+| `k32` / `k256` / `k1024` | target file size |
+| `best_orc` | зафиксированный профиль победителей |
+| `s0` / `s1` | Spark baseline OFF / optimized ON (читает `best_orc`) |
+
+## Схема данных
+
+| Колонка | Card. | Роль в Q1–Q10 |
+|---|---|---|
+| `event_id`, `user_id` | высокая | Q2, Q5, bloom |
+| `product_id`, `campaign_id` | средняя | Q3, Q5, Q10 |
+| `country_code`, `status`, `device_type`, `log_format` | низкая | Q4 |
+| `timestamp` | — | Q6 |
+| `log_message` / `payload_json` | — | column pruning, text_search |
+| `event_year` / `month` / `day` / `hour` | — | partition prune (Q1) |
+
+## Query suite
+
+| Сценарий | Документ | Что меряем |
+|---|---|---|
+| `partition_prune` | Q1 | partition pruning |
+| `filter_high_cardinality` | Q2 | equality high / bloom / min-max |
+| `filter_medium_cardinality` | Q3 | medium |
+| `filter_low_cardinality` | Q4 | low (bloom часто слаб) |
+| `filter_in` | Q5 | `IN` |
+| `filter_timestamp_range` | Q6 | range |
+| `projection` / `full_scan` | Q7 | column pruning |
+| `group_by` / `group_by_heavy` | Q8 / Q9 | aggregation / AQE |
+| `join_dictionary` | Q10 | JOIN + DPP |
+| `filter_log_format`, `filter_combined`, `text_search` | доп. | в `all`, не в `doc` |
+
+`--benchmark-scenarios=doc` — suite Q1–Q10; `all` — полный набор.
+
+## Метрики
+
+Raw parquet / отчёт:
+
+| Поле | Смысл |
+|---|---|
+| `duration_ms`, p50/p95/p99 | latency |
+| `bytes_read`, `records_read`, `selectivity` | I/O / pruning |
+| `layout_id`, `engine`, `cache_state` | фактор эксперимента |
+| `scan_ratio` | `bytes_read / dataset_bytes` |
+| `sla_ok` | `duration_ms ≤ --sla-threshold-ms` (дефолт 3000) |
+
+Markdown: Benchmark Summary, **SLA ≤ 3s**, Bloom comparison, Validation, Recommendations.
+
+## Основные CLI-параметры
+
+### Generate / ORC write
+
+| Параметр | Дефолт | Описание |
+|---|---|---|
+| `--target-size-tb` | `0.5` | объём; **макс. 0.5** на кластере |
+| `--layout-id` | `default` | → `layouts/<id>/…` |
+| `--partition-by` | date + `log_format` | или `none` |
+| `--orc-sort-columns` | `none` | sortWithinPartitions |
+| `--orc-bloom-filter-columns` | high+medium ids | или `none` |
+| `--orc-bloom-filter-fpp` | `0.05` | FPP |
+| `--orc-row-index-stride` | `10000` | ORC stride |
+| `--orc-stripe-size-mb` | `64` | stripe |
+| `--orc-compression` | `snappy` | `snappy` / `zstd` / `zlib` / `none` |
+| `--target-file-size-mb` | `384` | целевой размер файла |
+| `--seed` | `42` | воспроизводимость |
+
+У **generate** и **validate** одинаковый `--orc-bloom-filter-columns`.
+
+### Benchmark / Spark exec
+
+| Параметр | Дефолт | Описание |
+|---|---|---|
+| `--benchmark-scenarios` | `all` | CSV / `all` / `doc` |
+| `--benchmark-warmup-runs` | `1` | прогрев |
+| `--benchmark-repeat-runs` | `3` | измерения (≥3 для p50/p95) |
+| `--clear-cache-between-runs` | `true` | cold protocol |
+| `--cache-state` | `cold` | метка `cold` / `warm` |
+| `--engine` | `spark` | `spark` / `hive_tez` / `hive_llap` |
+| `--sla-threshold-ms` | `3000` | порог SLA |
+| `--spark-orc-filter-pushdown` | `true` | |
+| `--spark-orc-vectorized` | `true` | |
+| `--spark-aqe` | `true` | |
+| `--spark-dpp` | `true` | |
+| `--spark-cbo` | `true` | |
+
+### Hive (отдельный runner)
+
+```bash
+./scripts/hive/run-hive-factor.sh h0   # Tez, vec off
+./scripts/hive/run-hive-factor.sh h1   # + vectorization
+./scripts/hive/run-hive-factor.sh h2   # + CBO
+./scripts/hive/run-hive-factor.sh h3   # LLAP cold
+./scripts/hive/run-hive-factor.sh h4   # LLAP warm
+```
+
+Нужны `beeline` и (для h3/h4) Hive ≥ 2.0 с LLAP. DDL/SQL: [`scripts/hive/`](scripts/hive/).
+
+## Ручной вызов одного mode
+
+```bash
+./scripts/submit-spark32.sh --num-executors 16 --executor-memory 8g -- \
+  --mode=generate \
+  --base-path="$BASE" \
+  --layout-id=b0 \
+  --target-size-tb=0.1 \
+  --orc-bloom-filter-columns=none \
+  --orc-sort-columns=none
+```
+
+## Ошибки аргументов
 
 | Ситуация | Сообщение |
 |---|---|
-| Не передан `--mode` | `Missing required argument: --mode=...` |
-| Неизвестный режим | `Unknown mode: <value>` |
-| Неверный формат аргумента | `Invalid argument: <arg>. Use --key=value` |
-| Неположительное число | `Argument --<key> must be positive: <value>` |
-| `timestamp-end` <= `timestamp-start` | `--timestamp-end must be greater than --timestamp-start` |
+| Нет `--mode` | `Missing required argument: --mode=...` |
+| Неверный формат | `Invalid argument: …. Use --key=value` |
+| Неположительное число | `Argument --<key> must be positive` |
+| `timestamp-end` ≤ start | `--timestamp-end must be greater than --timestamp-start` |
+| `TARGET_SIZE_TB > 0.5` в factor-скриптах | отказ: max dataset 500 GB |
+
+Подробности кластера, troubleshooting YARN/Hive и сбор логов — в [docs/cluster_manual_runbook.md](docs/cluster_manual_runbook.md).
