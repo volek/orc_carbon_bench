@@ -64,6 +64,7 @@ public final class ReportRunner {
                     "No report input data found under " + paths.reportsRawPath()
                             + ". Expected parquet datasets in subdirectories such as "
                             + "benchmark/, validation/, benchmark_nobloom/, benchmark_bloom/, "
+                            + "layouts/*/reports/raw/benchmark*/, "
                             + "validation_nobloom/, validation_bloom/. "
                             + "Run --mode=validate and --mode=benchmark for this --base-path "
                             + "before --mode=report."
@@ -116,6 +117,8 @@ public final class ReportRunner {
         addQualified(spark, candidatePaths, paths.reportsValidationBloomPath());
         addQualified(spark, candidatePaths, paths.reportsValidationPath());
         candidatePaths.addAll(listParquetDatasets(spark, paths.reportsRawPath()));
+        // Factor layouts live under <base>/layouts/*/reports/raw/
+        candidatePaths.addAll(listParquetDatasetsRecursive(spark, paths.basePath() + "/layouts", 3));
         return candidatePaths;
     }
 
@@ -182,6 +185,10 @@ public final class ReportRunner {
     }
 
     private static Set<String> listParquetDatasets(SparkSession spark, String rawPath) {
+        return listParquetDatasetsRecursive(spark, rawPath, 1);
+    }
+
+    private static Set<String> listParquetDatasetsRecursive(SparkSession spark, String rawPath, int maxDepth) {
         Set<String> datasets = new LinkedHashSet<>();
         try {
             Path root = new Path(rawPath);
@@ -191,26 +198,42 @@ public final class ReportRunner {
                 LOG.warn("Report input path not found: {}", qualified);
                 return datasets;
             }
-            if (hasParquetFiles(fs, qualified)) {
-                datasets.add(qualified.toString());
-            }
-            FileStatus[] children = fs.listStatus(qualified);
-            for (FileStatus child : children) {
-                if (!child.isDirectory()) {
-                    continue;
-                }
-                String name = child.getPath().getName();
-                if (name.startsWith("_") || name.startsWith(".")) {
-                    continue;
-                }
-                if (hasParquetFiles(fs, child.getPath())) {
-                    datasets.add(fs.makeQualified(child.getPath()).toString());
-                }
-            }
+            collectParquetDatasets(fs, qualified, datasets, 0, maxDepth);
         } catch (Exception ex) {
             LOG.warn("Failed to list parquet datasets under {}: {}", rawPath, ex.getMessage());
         }
         return datasets;
+    }
+
+    private static void collectParquetDatasets(
+            FileSystem fs,
+            Path dir,
+            Set<String> datasets,
+            int depth,
+            int maxDepth
+    ) throws IOException {
+        if (hasParquetFiles(fs, dir)) {
+            datasets.add(fs.makeQualified(dir).toString());
+        }
+        if (depth >= maxDepth) {
+            return;
+        }
+        FileStatus[] children;
+        try {
+            children = fs.listStatus(dir);
+        } catch (IOException ex) {
+            return;
+        }
+        for (FileStatus child : children) {
+            if (!child.isDirectory()) {
+                continue;
+            }
+            String name = child.getPath().getName();
+            if (name.startsWith("_") || name.startsWith(".")) {
+                continue;
+            }
+            collectParquetDatasets(fs, child.getPath(), datasets, depth + 1, maxDepth);
+        }
     }
 
     private static boolean hasParquetFiles(FileSystem fs, Path dir) throws IOException {
@@ -269,26 +292,39 @@ public final class ReportRunner {
         Column bloomColumns = hasColumn(measured, "orc_bloom_columns")
                 ? max("orc_bloom_columns").alias("orc_bloom_columns")
                 : lit(null).cast("string").alias("orc_bloom_columns");
+        Column avgScanRatio = hasColumn(measured, "scan_ratio")
+                ? avg("scan_ratio").alias("avg_scan_ratio")
+                : lit(null).cast("double").alias("avg_scan_ratio");
+        Column slaSuccessRate = hasColumn(measured, "sla_ok")
+                ? avg(expr("cast(sla_ok as double)")).alias("sla_success_rate")
+                : lit(null).cast("double").alias("sla_success_rate");
+        Column p99Duration = expr("cast(percentile_approx(duration_ms, 0.99) as double)").alias("p99_duration_ms");
 
         return measured.groupBy(
                         lit("benchmark").alias("source"),
                         col("scenario"),
                         col("format"),
                         col("spark_runtime"),
-                        col("dataset_label")
+                        col("dataset_label"),
+                        hasColumn(measured, "layout_id") ? col("layout_id") : lit("default").alias("layout_id"),
+                        hasColumn(measured, "engine") ? col("engine") : lit("spark").alias("engine"),
+                        hasColumn(measured, "cache_state") ? col("cache_state") : lit("cold").alias("cache_state")
                 )
                 .agg(
                         count(lit(1)).alias("runs"),
                         avg("duration_ms").alias("avg_duration_ms"),
                         expr("cast(percentile_approx(duration_ms, 0.5) as double)").alias("p50_duration_ms"),
                         expr("cast(percentile_approx(duration_ms, 0.95) as double)").alias("p95_duration_ms"),
+                        p99Duration,
                         min("duration_ms").alias("min_duration_ms"),
                         max("duration_ms").alias("max_duration_ms"),
                         avg("selectivity").alias("avg_selectivity"),
                         avgBytes,
                         avgRecords,
                         bloomColumns,
-                        sparkVersionAgg
+                        sparkVersionAgg,
+                        avgScanRatio,
+                        slaSuccessRate
                 )
                 .withColumn("passed", lit(null).cast("boolean"));
     }
@@ -303,6 +339,7 @@ public final class ReportRunner {
                 lit(null).cast("double").alias("avg_duration_ms"),
                 lit(null).cast("double").alias("p50_duration_ms"),
                 lit(null).cast("double").alias("p95_duration_ms"),
+                lit(null).cast("double").alias("p99_duration_ms"),
                 lit(null).cast("long").alias("min_duration_ms"),
                 lit(null).cast("long").alias("max_duration_ms"),
                 lit(null).cast("double").alias("avg_selectivity"),
@@ -312,7 +349,12 @@ public final class ReportRunner {
                 col("passed"),
                 col("spark_runtime"),
                 col("spark_version"),
-                lit("-").alias("dataset_label")
+                lit("-").alias("dataset_label"),
+                lit("default").alias("layout_id"),
+                lit("spark").alias("engine"),
+                lit("-").alias("cache_state"),
+                lit(null).cast("double").alias("avg_scan_ratio"),
+                lit(null).cast("double").alias("sla_success_rate")
         );
     }
 

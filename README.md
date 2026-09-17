@@ -105,7 +105,7 @@ generate → validate → benchmark → report
 
 | Параметр | По умолчанию | Описание |
 |---|---|---|
-| `--target-size-tb` | `5` | Целевой объём в ТБ (дроби допустимы, например `0.01`) |
+| `--target-size-tb` | `0.5` | Целевой объём в ТБ (дроби OK). **Макс. на кластере: `0.5` (~500 GB)**; S=`0.1`, M=`0.25`, L=`0.5` |
 | `--seed` | `42` | Seed генератора |
 | `--avg-row-bytes` | `512` | Средний размер строки |
 | `--chunk-days` | `1` | Размер временного окна чанка в днях |
@@ -113,12 +113,16 @@ generate → validate → benchmark → report
 | `--timestamp-end` | `2025-01-01` | Конец диапазона (не включительно) |
 | `--target-file-size-mb` | `384` | Целевой размер выходного файла |
 | `--write-partitions` | авто | Число партиций при записи |
-| `--partition-by` | `event_year,event_month,event_day,log_format` | Колонки партиционирования |
-| `--orc-compression` | `snappy` | `snappy`, `zstd`, `none` |
+| `--partition-by` | `event_year,event_month,event_day,log_format` | Колонки партиционирования; `none` — без партиций |
+| `--orc-compression` | `snappy` | `snappy`, `zstd`, `zlib`, `none` |
 | `--orc-stripe-size-mb` | `64` | Размер ORC stripe |
-| `--orc-row-group-size-mb` | `32` | Размер row group |
+| `--orc-row-group-size-mb` | `32` | Размер row group (legacy) |
+| `--orc-row-index-stride` | `10000` | ORC `row.index.stride` |
+| `--orc-sort-columns` | `none` | `sortWithinPartitions` перед записью; `none` — без сортировки |
 | `--orc-bloom-filter-columns` | `event_id,user_id,product_id,campaign_id` | Bloom filters при записи; `none` — отключить |
 | `--orc-bloom-filter-fpp` | `0.05` | False positive rate bloom filter |
+| `--layout-id` | `default` | Factor layout; при значении ≠`default` пути → `<base>/layouts/<id>/orc` |
+| `--dictionary-path` | `<layout>/dictionary` | ORC dictionary для JOIN (Q10) |
 
 ### Схема данных
 
@@ -138,6 +142,7 @@ generate → validate → benchmark → report
 | `payload_json` | — | JSON события |
 | `log_format` | низкая | json, plain_text, key_value, apache_common |
 | `log_message` | — | Строка лога |
+| `event_year` / `event_month` / `event_day` / `event_hour` | — | Partition keys |
 
 Пример:
 
@@ -145,7 +150,7 @@ generate → validate → benchmark → report
 ./scripts/submit-spark32.sh -- \
   --mode=generate \
   --base-path=hdfs:///user/hdfs_migration_user/orc_test \
-  --target-size-tb=1 \
+  --target-size-tb=0.1 \
   --seed=42 \
   --orc-compression=snappy
 ```
@@ -189,26 +194,38 @@ generate → validate → benchmark → report
 
 | Сценарий | Описание |
 |---|---|
-| `full_scan` | Полное сканирование |
-| `projection` | Выбор подмножества колонок |
-| `filter_low_cardinality` | Фильтр по `country_code`, `status` |
-| `filter_medium_cardinality` | Фильтр по `product_id`, `campaign_id` |
-| `filter_high_cardinality` | Point lookup по `event_id`, `user_id` |
-| `filter_timestamp_range` | Range-фильтр по `timestamp` (окно внутри generate-диапазона) |
+| `full_scan` | Полное сканирование (Q7b) |
+| `projection` | Выбор подмножества колонок (Q7) |
+| `partition_prune` | Фильтр по `event_year/month/day` (Q1) |
+| `filter_low_cardinality` | Фильтр по `country_code`, `status` (Q4) |
+| `filter_medium_cardinality` | Фильтр по `product_id`, `campaign_id` (Q3) |
+| `filter_high_cardinality` | Point lookup по `event_id`, `user_id` (Q2) |
+| `filter_in` | `IN` по high/medium card (Q5) |
+| `filter_timestamp_range` | Range-фильтр по `timestamp` (Q6) |
 | `filter_log_format` | Фильтр по `log_format` |
 | `filter_combined` | Комбинированный фильтр |
-| `group_by` | Агрегация `GROUP BY` |
+| `group_by` | Агрегация `GROUP BY` (Q8) |
+| `group_by_heavy` | Тяжёлый `GROUP BY` (Q9) |
+| `join_dictionary` | JOIN с dictionary ORC (Q10) |
 | `text_search` | Поиск подстроки в `log_message` |
 
 | Параметр | По умолчанию | Описание |
 |---|---|---|
 | `--benchmark-warmup-runs` | `1` | Прогревочные запуски |
 | `--benchmark-repeat-runs` | `3` | Измеряемые повторы (нужно ≥3 для устойчивых p50/p95) |
-| `--benchmark-scenarios` | `all` | Сценарии через запятую или `all` |
+| `--benchmark-scenarios` | `all` | Сценарии, `all`, или `doc` (Q1–Q10) |
 | `--benchmark-timestamp-window-days` | `30` | Длина окна для `filter_timestamp_range` / `filter_combined` внутри `--timestamp-start`…`--timestamp-end` |
 | `--clear-cache-between-runs` | `true` | Очистка кэша между прогонами (без cache base DF — иначе pruning не виден) |
 | `--seed` | `42` | Seed для выборки значений фильтров и размещения timestamp-окна |
-| `--benchmark-dataset-label` | `bloom` / `nobloom` по `--orc-bloom-filter-columns` | Метка A/B в отчёте (`bloom` / `nobloom`) |
+| `--benchmark-dataset-label` | layout-id или bloom/nobloom | Метка A/B в отчёте |
+| `--cache-state` | `cold` | `cold` / `warm` (не усреднять вместе) |
+| `--engine` | `spark` | `spark` / `hive_tez` / `hive_llap` |
+| `--sla-threshold-ms` | `3000` | Порог SLA; пишет `sla_ok` |
+| `--spark-orc-filter-pushdown` | `true` | Predicate pushdown |
+| `--spark-orc-vectorized` | `true` | Vectorized ORC reader |
+| `--spark-aqe` | `true` | Adaptive Query Execution |
+| `--spark-dpp` | `true` | Dynamic Partition Pruning |
+| `--spark-cbo` | `true` | Cost-based optimizer |
 | `--reports-benchmark-path` | `<reports>/raw/benchmark` | Куда писать raw benchmark (для A/B: `benchmark_nobloom`, `benchmark_bloom`) |
 | `--reports-validation-path` | `<reports>/raw/validation` | Куда писать validation |
 
@@ -260,13 +277,45 @@ TARGET_SIZE_TB=0.1 ./scripts/run-bloom-ab.sh
 
 ---
 
+## Factor experiment (ORC → Spark → Hive)
+
+Поэтапный прогон по [docs/ORC + HDFS + Spark + Hive benchmark.md](docs/ORC%20+%20HDFS%20+%20Spark%20+%20Hive%20benchmark.md).  
+Масштабы: Smoke `0.01` (~10 GB) → **S** `0.1` (~100 GB) → **M** `0.25` (~250 GB) → **L** `0.5` (**≤500 GB**).  
+Свободно на HDFS ~**700 GB** — layout-копии удалять после выбора победителей.
+
+```bash
+# P1 baseline (B0) на S
+TARGET_SIZE_TB=0.1 ./scripts/run-factor.sh --layout=b0
+
+# P3–P6 layout sweep на S (лучше по группам, не SWEEP=all)
+TARGET_SIZE_TB=0.1 SWEEP=partition ./scripts/run-layout-sweep.sh
+
+# Freeze winners → best_orc, затем Spark exec matrix (P7)
+TARGET_SIZE_TB=0.1 ./scripts/run-factor.sh --layout=best_orc
+./scripts/run-spark-exec-matrix.sh
+
+# Hive/Tez/LLAP on the same ORC (P8)
+./scripts/hive/run-hive-factor.sh h0
+./scripts/hive/run-hive-factor.sh h4
+
+# Concurrency + SLA на L (макс. 500 GB) — сначала очистить лишние layouts
+CONCURRENCY_LEVELS="1 5 10" ./scripts/run-concurrency.sh
+TARGET_SIZE_TB=0.5 ./scripts/run-factor.sh --layout=best_orc
+TARGET_SIZE_TB=0.5 ./scripts/run-sla-matrix.sh
+```
+
+Метрики в raw parquet: `layout_id`, `engine`, `cache_state`, `scan_ratio`, `sla_ok`. В markdown-отчёте — секции SLA и bloom A/B.
+
+---
+
 ## Полный прогон
 
 ```bash
 export BASE=hdfs:///user/hdfs_migration_user/orc_test
 
+# Не больше 0.5 ТБ (~500 GB) на этом кластере
 ./scripts/submit-spark32.sh -- --mode=generate --base-path="$BASE" \
-  --target-size-tb=5 --seed=42
+  --target-size-tb=0.5 --seed=42
 
 ./scripts/submit-spark32.sh -- --mode=validate --base-path="$BASE"
 
@@ -275,7 +324,7 @@ export BASE=hdfs:///user/hdfs_migration_user/orc_test
 ./scripts/submit-spark32.sh -- --mode=report --base-path="$BASE"
 ```
 
-Перед ТБ-прогоном сделайте smoke: `./scripts/run-smoke.sh` (`--target-size-tb=0.01`).
+Перед L-прогоном сделайте smoke: `./scripts/run-smoke.sh` (`--target-size-tb=0.01`).
 
 Подробности — в [docs/cluster_manual_runbook.md](docs/cluster_manual_runbook.md).
 

@@ -1,8 +1,5 @@
 package ru.sber.orcbench.config;
 
-import java.util.Arrays;
-import java.util.Locale;
-
 public final class OrcWriteSettings {
     public static final String[] DEFAULT_PARTITION_BY =
             {"event_year", "event_month", "event_day", "log_format"};
@@ -10,15 +7,21 @@ public final class OrcWriteSettings {
     public static final String[] DEFAULT_BLOOM_FILTER_COLUMNS =
             {"event_id", "user_id", "product_id", "campaign_id"};
 
+    public static final String[] BLOOM_HIGH_COLUMNS = {"event_id", "user_id"};
+    public static final String[] BLOOM_MEDIUM_COLUMNS = {"product_id", "campaign_id"};
+
     private static final double DEFAULT_BLOOM_FILTER_FPP = 0.05d;
+    public static final int DEFAULT_ROW_INDEX_STRIDE = 10_000;
 
     private final String compression;
     private final int stripeSizeMb;
     private final int rowGroupSizeMb;
+    private final int rowIndexStride;
     private final int writePartitions;
     private final String[] partitionBy;
     private final String[] bloomFilterColumns;
     private final double bloomFilterFpp;
+    private final String[] sortColumns;
 
     public OrcWriteSettings(
             String compression,
@@ -29,13 +32,39 @@ public final class OrcWriteSettings {
             String[] bloomFilterColumns,
             double bloomFilterFpp
     ) {
+        this(
+                compression,
+                stripeSizeMb,
+                rowGroupSizeMb,
+                DEFAULT_ROW_INDEX_STRIDE,
+                writePartitions,
+                partitionBy,
+                bloomFilterColumns,
+                bloomFilterFpp,
+                new String[0]
+        );
+    }
+
+    public OrcWriteSettings(
+            String compression,
+            int stripeSizeMb,
+            int rowGroupSizeMb,
+            int rowIndexStride,
+            int writePartitions,
+            String[] partitionBy,
+            String[] bloomFilterColumns,
+            double bloomFilterFpp,
+            String[] sortColumns
+    ) {
         this.compression = compression;
         this.stripeSizeMb = stripeSizeMb;
         this.rowGroupSizeMb = rowGroupSizeMb;
+        this.rowIndexStride = rowIndexStride;
         this.writePartitions = writePartitions;
         this.partitionBy = partitionBy;
         this.bloomFilterColumns = bloomFilterColumns;
         this.bloomFilterFpp = bloomFilterFpp;
+        this.sortColumns = sortColumns;
     }
 
     public String compression() {
@@ -50,12 +79,20 @@ public final class OrcWriteSettings {
         return rowGroupSizeMb;
     }
 
+    public int rowIndexStride() {
+        return rowIndexStride;
+    }
+
     public int writePartitions() {
         return writePartitions;
     }
 
     public String[] partitionBy() {
         return partitionBy;
+    }
+
+    public boolean partitioned() {
+        return partitionBy.length > 0;
     }
 
     public String[] bloomFilterColumns() {
@@ -72,6 +109,18 @@ public final class OrcWriteSettings {
 
     public String bloomFilterColumnsCsv() {
         return String.join(",", bloomFilterColumns);
+    }
+
+    public String[] sortColumns() {
+        return sortColumns;
+    }
+
+    public boolean sorted() {
+        return sortColumns.length > 0;
+    }
+
+    public String sortColumnsCsv() {
+        return sorted() ? String.join(",", sortColumns) : "none";
     }
 
     public boolean hasExplicitWritePartitions() {
@@ -115,14 +164,50 @@ public final class OrcWriteSettings {
         }
     }
 
+    /**
+     * Parses partition columns; {@code none} disables Hive-style partitioning.
+     */
+    public static String[] parsePartitionBy(String raw) {
+        if (raw == null || raw.trim().isEmpty()) {
+            return DEFAULT_PARTITION_BY.clone();
+        }
+        if ("none".equalsIgnoreCase(raw.trim())) {
+            return new String[0];
+        }
+        return ArgParser.parseCsv(raw);
+    }
+
+    /**
+     * Parses sort columns; {@code none} / empty means unsorted write.
+     */
+    public static String[] parseSortColumns(String raw) {
+        if (raw == null || raw.trim().isEmpty() || "none".equalsIgnoreCase(raw.trim())) {
+            return new String[0];
+        }
+        return ArgParser.parseCsv(raw);
+    }
+
+    public static int parseRowIndexStride(String raw) {
+        if (raw == null || raw.trim().isEmpty()) {
+            return DEFAULT_ROW_INDEX_STRIDE;
+        }
+        return ArgParser.parsePositiveInt(raw, "orc-row-index-stride");
+    }
+
     @Override
     public String toString() {
         return "OrcWriteSettings{compression="
                 + compression
+                + ", stride="
+                + rowIndexStride
                 + ", bloom="
                 + (bloomFiltersEnabled() ? bloomFilterColumnsCsv() : "none")
                 + ", fpp="
                 + bloomFilterFpp
+                + ", sort="
+                + sortColumnsCsv()
+                + ", partitionBy="
+                + (partitioned() ? String.join(",", partitionBy) : "none")
                 + "}";
     }
 }

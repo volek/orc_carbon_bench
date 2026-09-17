@@ -5,7 +5,12 @@ import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import ru.sber.orcbench.config.AppConfig;
 import ru.sber.orcbench.writer.OrcWriter;
+
+import static org.apache.spark.sql.functions.col;
+import static org.apache.spark.sql.functions.lit;
+import static org.apache.spark.sql.functions.when;
 
 public final class GenerateRunner {
     private static final Logger LOG = LoggerFactory.getLogger(GenerateRunner.class);
@@ -14,13 +19,17 @@ public final class GenerateRunner {
     }
 
     public static void run(SparkSession spark, GeneratorConfig config) {
+        run(spark, config, null);
+    }
+
+    public static void run(SparkSession spark, GeneratorConfig config, AppConfig appConfig) {
         long totalRows = config.estimatedTotalRows();
         int chunkCount = config.chunkCount();
         long rowsPerChunk = config.rowsPerChunk();
 
         LOG.info(
                 "Generator plan: orcPath={} targetSizeTb={} estimatedRows={} "
-                        + "chunks={} rowsPerChunk={} timeRange=[{} .. {}] chunkDays={} avgRowBytes={}",
+                        + "chunks={} rowsPerChunk={} timeRange=[{} .. {}] chunkDays={} avgRowBytes={} sort={}",
                 config.orcPath(),
                 config.targetSizeTb(),
                 totalRows,
@@ -29,7 +38,8 @@ public final class GenerateRunner {
                 config.timestampStart(),
                 config.timestampEnd(),
                 config.chunkDays(),
-                config.avgRowBytes()
+                config.avgRowBytes(),
+                config.orcWrite().sortColumnsCsv()
         );
 
         long timeSpanMs = config.timeRangeMs();
@@ -67,7 +77,9 @@ public final class GenerateRunner {
                     chunkEndMs
             );
 
-            int writePartitions = estimateWritePartitions(rowsInChunk, config.avgRowBytes(), config.targetFileSizeMb());
+            int writePartitions = config.orcWrite().hasExplicitWritePartitions()
+                    ? config.orcWrite().writePartitions()
+                    : estimateWritePartitions(rowsInChunk, config.avgRowBytes(), config.targetFileSizeMb());
             Dataset<Row> prepared = chunk.repartition(writePartitions);
 
             OrcWriter.write(spark, prepared, config.orcPath(), config.orcWrite(), saveMode);
@@ -75,7 +87,31 @@ public final class GenerateRunner {
             globalOffset += rowsInChunk;
         }
 
+        if (appConfig != null) {
+            writeDictionary(spark, appConfig.dictionaryPath(), config.seed());
+        }
+
         LOG.info("Generation completed: rowsWritten={} orcPath={}", globalOffset, config.orcPath());
+    }
+
+    /**
+     * Small dimension table for Q10 JOIN benchmarks (product_id → product_type).
+     */
+    static void writeDictionary(SparkSession spark, String dictionaryPath, long seed) {
+        LOG.info("Writing dictionary ORC path={}", dictionaryPath);
+        Dataset<Row> dictionary = spark.range(0, 100_000L)
+                .withColumnRenamed("id", "product_id")
+                .withColumn(
+                        "product_type",
+                        when(col("product_id").plus(lit(seed)).mod(lit(10)).equalTo(lit(0)), lit("featured"))
+                                .otherwise(lit("standard"))
+                )
+                .withColumn("product_name", org.apache.spark.sql.functions.concat(lit("product-"), col("product_id")));
+        dictionary.coalesce(4)
+                .write()
+                .mode("overwrite")
+                .option("compression", "snappy")
+                .orc(dictionaryPath);
     }
 
     private static int estimateWritePartitions(long rowsInChunk, long avgRowBytes, int targetFileSizeMb) {

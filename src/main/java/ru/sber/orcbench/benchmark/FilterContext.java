@@ -4,9 +4,12 @@ import org.apache.spark.sql.Row;
 
 import java.io.Serializable;
 import java.time.Instant;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 public final class FilterContext implements Serializable {
-    private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 2L;
 
     private final String eventId;
     private final long userId;
@@ -18,6 +21,11 @@ public final class FilterContext implements Serializable {
     private final String searchToken;
     private final Instant timestampStart;
     private final Instant timestampEnd;
+    private final int eventYear;
+    private final int eventMonth;
+    private final int eventDay;
+    private final List<String> eventIdInList;
+    private final List<Long> productIdInList;
 
     public FilterContext(
             String eventId,
@@ -29,7 +37,12 @@ public final class FilterContext implements Serializable {
             String logFormat,
             String searchToken,
             Instant timestampStart,
-            Instant timestampEnd
+            Instant timestampEnd,
+            int eventYear,
+            int eventMonth,
+            int eventDay,
+            List<String> eventIdInList,
+            List<Long> productIdInList
     ) {
         this.eventId = eventId;
         this.userId = userId;
@@ -41,6 +54,11 @@ public final class FilterContext implements Serializable {
         this.searchToken = searchToken;
         this.timestampStart = timestampStart;
         this.timestampEnd = timestampEnd;
+        this.eventYear = eventYear;
+        this.eventMonth = eventMonth;
+        this.eventDay = eventDay;
+        this.eventIdInList = eventIdInList;
+        this.productIdInList = productIdInList;
     }
 
     /**
@@ -66,17 +84,41 @@ public final class FilterContext implements Serializable {
                 timestampWindowDays
         );
 
+        String eventId = row.getAs("event_id");
+        long productId = row.getLong(row.fieldIndex("product_id"));
+        int year = row.getInt(row.fieldIndex("event_year"));
+        int month = row.getInt(row.fieldIndex("event_month"));
+        int day = row.getInt(row.fieldIndex("event_day"));
+
+        List<String> eventIds = Collections.unmodifiableList(Arrays.asList(
+                eventId,
+                eventId + "-missing-a",
+                eventId + "-missing-b",
+                eventId + "-missing-c"
+        ));
+        List<Long> productIds = Collections.unmodifiableList(Arrays.asList(
+                productId,
+                productId + 1L,
+                productId + 2L,
+                productId + 3L
+        ));
+
         return new FilterContext(
-                row.getAs("event_id"),
+                eventId,
                 row.getLong(row.fieldIndex("user_id")),
                 row.getAs("country_code"),
                 row.getAs("status"),
-                row.getLong(row.fieldIndex("product_id")),
+                productId,
                 row.getLong(row.fieldIndex("campaign_id")),
                 row.getAs("log_format"),
                 token,
                 window[0],
-                window[1]
+                window[1],
+                year,
+                month,
+                day,
+                eventIds,
+                productIds
         );
     }
 
@@ -118,5 +160,25 @@ public final class FilterContext implements Serializable {
 
     public Instant timestampEnd() {
         return timestampEnd;
+    }
+
+    public int eventYear() {
+        return eventYear;
+    }
+
+    public int eventMonth() {
+        return eventMonth;
+    }
+
+    public int eventDay() {
+        return eventDay;
+    }
+
+    public List<String> eventIdInList() {
+        return eventIdInList;
+    }
+
+    public List<Long> productIdInList() {
+        return productIdInList;
     }
 }

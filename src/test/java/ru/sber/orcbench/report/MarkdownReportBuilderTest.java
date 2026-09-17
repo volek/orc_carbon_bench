@@ -32,7 +32,13 @@ class MarkdownReportBuilderTest {
             .add("orc_bloom_columns", DataTypes.StringType, true)
             .add("passed", DataTypes.BooleanType, true)
             .add("spark_runtime", DataTypes.StringType, true)
-            .add("spark_version", DataTypes.StringType, true);
+            .add("spark_version", DataTypes.StringType, true)
+            .add("layout_id", DataTypes.StringType, true)
+            .add("engine", DataTypes.StringType, true)
+            .add("cache_state", DataTypes.StringType, true)
+            .add("avg_scan_ratio", DataTypes.DoubleType, true)
+            .add("sla_success_rate", DataTypes.DoubleType, true)
+            .add("p99_duration_ms", DataTypes.DoubleType, true);
 
     @Test
     void buildsOrcBenchmarkReport() {
@@ -53,6 +59,7 @@ class MarkdownReportBuilderTest {
         assertTrue(markdown.contains("PASS"));
         assertTrue(markdown.contains("Recommendations"));
         assertTrue(markdown.contains("spark32-orc"));
+        assertTrue(markdown.contains("SLA"));
     }
 
     @Test
@@ -110,14 +117,16 @@ class MarkdownReportBuilderTest {
     ) {
         return new GenericRowWithSchema(new Object[]{
                 "benchmark", scenario, "orc", datasetLabel, runs, p50, p50, p50, 1L, 2L, 0.01,
-                avgBytes, avgBytes / 100.0, bloomColumns, null, SparkRuntime.SPARK32_ORC, "3.2.1"
+                avgBytes, avgBytes / 100.0, bloomColumns, null, SparkRuntime.SPARK32_ORC, "3.2.1",
+                "b0", "spark", "cold", 0.01, 0.85, p50
         }, SCHEMA);
     }
 
     private static Row validationRow(String check, boolean passed) {
         return new GenericRowWithSchema(new Object[]{
                 "validation", check, "orc", "-", 1L, null, null, null, null, null, null,
-                null, null, null, passed, SparkRuntime.SPARK32_ORC, "3.2.1"
+                null, null, null, passed, SparkRuntime.SPARK32_ORC, "3.2.1",
+                "default", "spark", "-", null, null, null
         }, SCHEMA);
     }
 }

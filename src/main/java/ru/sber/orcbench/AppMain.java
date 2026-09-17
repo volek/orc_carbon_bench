@@ -30,19 +30,23 @@ public final class AppMain {
         SparkRuntimeInfo runtime = SparkRuntimeInfo.from(spark);
         try {
             LOG.info(
-                    "Starting mode={} sparkVersion={} sparkRuntime={} basePath={} orcPath={} reportsPath={} bloom={}",
+                    "Starting mode={} sparkVersion={} sparkRuntime={} basePath={} orcPath={} "
+                            + "reportsPath={} layoutId={} engine={} cacheState={} bloom={}",
                     config.mode(),
                     runtime.sparkVersion(),
                     runtime.sparkRuntime(),
                     config.basePath(),
                     config.orcPath(),
                     config.reportsPath(),
+                    config.experiment().layoutId(),
+                    config.experiment().engine().cliValue(),
+                    config.experiment().cacheState().cliValue(),
                     config.orcWrite()
             );
 
             switch (config.mode()) {
                 case GENERATE:
-                    GenerateRunner.run(spark, GeneratorConfig.from(config));
+                    GenerateRunner.run(spark, GeneratorConfig.from(config), config);
                     break;
                 case VALIDATE:
                     ValidationRunner.run(
@@ -68,7 +72,9 @@ public final class AppMain {
                             config.timestampEndEpochMs(),
                             config.benchmarkDatasetLabel(),
                             resolveOrcBloomColumns(config),
-                            runtime
+                            runtime,
+                            config.experiment(),
+                            config.dictionaryPath()
                     );
                     break;
                 case REPORT:

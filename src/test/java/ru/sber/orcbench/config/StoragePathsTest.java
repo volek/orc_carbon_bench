@@ -30,6 +30,18 @@ class StoragePathsTest {
                 paths.reportsValidationPath()
         );
         assertEquals("hdfs:///user/hdfs_migration_user/orc_test/reports/summary", paths.reportsSummaryPath());
+        assertEquals("hdfs:///user/hdfs_migration_user/orc_test/dictionary", paths.dictionaryPath());
+        assertEquals("default", paths.layoutId());
+    }
+
+    @Test
+    void derivesLayoutScopedPaths() {
+        StoragePaths paths = StoragePaths.from(
+                "hdfs:///base", null, null, null, null, null, "b0");
+        assertEquals("hdfs:///base/layouts/b0/orc", paths.orcPath());
+        assertEquals("hdfs:///base/layouts/b0/dictionary", paths.dictionaryPath());
+        assertEquals("hdfs:///base/layouts/b0/reports/raw/benchmark", paths.reportsBenchmarkPath());
+        assertEquals("b0", paths.layoutId());
     }
 
     @Test

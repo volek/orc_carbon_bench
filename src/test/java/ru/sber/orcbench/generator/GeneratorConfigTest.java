@@ -60,7 +60,9 @@ class GeneratorConfigTest {
                 ru.sber.orcbench.config.BenchmarkSettings.defaults(),
                 ru.sber.orcbench.config.ValidationSettings.defaults(),
                 ru.sber.orcbench.config.ReportSettings.from(Collections.<String, String>emptyMap()),
-                "default"
+                "default",
+                ru.sber.orcbench.config.ExperimentMeta.defaults(),
+                ru.sber.orcbench.config.SparkExecSettings.defaults()
         );
     }
 }

@@ -21,6 +21,8 @@ public final class AppConfig {
     private final ValidationSettings validation;
     private final ReportSettings report;
     private final String benchmarkDatasetLabel;
+    private final ExperimentMeta experiment;
+    private final SparkExecSettings sparkExec;
 
     public AppConfig(
             Mode mode,
@@ -36,7 +38,9 @@ public final class AppConfig {
             BenchmarkSettings benchmark,
             ValidationSettings validation,
             ReportSettings report,
-            String benchmarkDatasetLabel
+            String benchmarkDatasetLabel,
+            ExperimentMeta experiment,
+            SparkExecSettings sparkExec
     ) {
         this.mode = mode;
         this.paths = paths;
@@ -52,6 +56,8 @@ public final class AppConfig {
         this.validation = validation;
         this.report = report;
         this.benchmarkDatasetLabel = benchmarkDatasetLabel;
+        this.experiment = experiment;
+        this.sparkExec = sparkExec;
     }
 
     public static AppConfig fromArgs(String[] args) {
@@ -68,18 +74,23 @@ public final class AppConfig {
             throw new IllegalArgumentException("--timestamp-end must be greater than --timestamp-start");
         }
 
+        ExperimentMeta experiment = ExperimentMeta.from(kv);
+        SparkExecSettings sparkExec = SparkExecSettings.from(kv);
+
         String basePath = kv.getOrDefault("base-path", "hdfs:///user/hdfs_migration_user/orc_test");
         StoragePaths paths = StoragePaths.from(
                 basePath,
                 kv.get("orc-path"),
                 kv.get("reports-path"),
                 kv.get("reports-benchmark-path"),
-                kv.get("reports-validation-path")
+                kv.get("reports-validation-path"),
+                kv.get("dictionary-path"),
+                experiment.layoutId()
         );
 
-        String[] partitionBy = kv.containsKey("partition-by")
-                ? ArgParser.parseCsv(kv.get("partition-by"))
-                : OrcWriteSettings.DEFAULT_PARTITION_BY;
+        String[] partitionBy = OrcWriteSettings.parsePartitionBy(
+                kv.getOrDefault("partition-by", String.join(",", OrcWriteSettings.DEFAULT_PARTITION_BY))
+        );
 
         OptionalInt writePartitions = ArgParser.parseOptionalPositiveInt(kv, "write-partitions");
         int partitions = writePartitions.orElse(0);
@@ -88,15 +99,19 @@ public final class AppConfig {
                 kv.getOrDefault("orc-bloom-filter-columns", String.join(",", OrcWriteSettings.DEFAULT_BLOOM_FILTER_COLUMNS))
         );
         double bloomFpp = OrcWriteSettings.parseBloomFilterFpp(kv.get("orc-bloom-filter-fpp"));
+        String[] sortColumns = OrcWriteSettings.parseSortColumns(kv.get("orc-sort-columns"));
+        int rowIndexStride = OrcWriteSettings.parseRowIndexStride(kv.get("orc-row-index-stride"));
 
         OrcWriteSettings orcWrite = new OrcWriteSettings(
-                ArgParser.parseEnum(kv.getOrDefault("orc-compression", "snappy"), "orc-compression", "snappy", "zstd", "none"),
+                ArgParser.parseEnum(kv.getOrDefault("orc-compression", "snappy"), "orc-compression", "snappy", "zstd", "zlib", "none"),
                 (int) ArgParser.parsePositiveLong(kv.getOrDefault("orc-stripe-size-mb", "64"), "orc-stripe-size-mb"),
                 (int) ArgParser.parsePositiveLong(kv.getOrDefault("orc-row-group-size-mb", "32"), "orc-row-group-size-mb"),
+                rowIndexStride,
                 partitions,
                 partitionBy,
                 bloomColumns,
-                bloomFpp
+                bloomFpp,
+                sortColumns
         );
 
         BenchmarkSettings benchmark = new BenchmarkSettings(
@@ -120,12 +135,23 @@ public final class AppConfig {
 
         String datasetLabel = kv.containsKey("benchmark-dataset-label")
                 ? kv.get("benchmark-dataset-label").trim()
-                : (orcWrite.bloomFiltersEnabled() ? "bloom" : "nobloom");
+                : resolveDefaultDatasetLabel(experiment, orcWrite);
+
+        double targetSizeTb = ArgParser.parsePositiveDouble(kv.getOrDefault("target-size-tb", "0.5"), "target-size-tb");
+        ExperimentMeta experimentWithBytes = experiment.datasetBytes() > 0
+                ? experiment
+                : new ExperimentMeta(
+                        experiment.layoutId(),
+                        experiment.engine(),
+                        experiment.cacheState(),
+                        experiment.slaThresholdMs(),
+                        Math.max(1L, Math.round(targetSizeTb * (1L << 40)))
+                );
 
         return new AppConfig(
                 Mode.fromCli(modeValue),
                 paths,
-                ArgParser.parsePositiveDouble(kv.getOrDefault("target-size-tb", "5"), "target-size-tb"),
+                targetSizeTb,
                 parseLong(kv.getOrDefault("seed", "42"), "seed"),
                 parseLong(kv.getOrDefault("avg-row-bytes", "512"), "avg-row-bytes"),
                 (int) parseLong(kv.getOrDefault("chunk-days", "1"), "chunk-days"),
@@ -136,8 +162,17 @@ public final class AppConfig {
                 benchmark,
                 validation,
                 report,
-                datasetLabel
+                datasetLabel,
+                experimentWithBytes,
+                sparkExec
         );
+    }
+
+    private static String resolveDefaultDatasetLabel(ExperimentMeta experiment, OrcWriteSettings orcWrite) {
+        if (!"default".equals(experiment.layoutId())) {
+            return experiment.layoutId();
+        }
+        return orcWrite.bloomFiltersEnabled() ? "bloom" : "nobloom";
     }
 
     static String inferBenchmarkDatasetLabel(String orcPath) {
@@ -212,12 +247,24 @@ public final class AppConfig {
         return benchmarkDatasetLabel;
     }
 
+    public ExperimentMeta experiment() {
+        return experiment;
+    }
+
+    public SparkExecSettings sparkExec() {
+        return sparkExec;
+    }
+
     public String basePath() {
         return paths.basePath();
     }
 
     public String orcPath() {
         return paths.orcPath();
+    }
+
+    public String dictionaryPath() {
+        return paths.dictionaryPath();
     }
 
     public String reportsPath() {

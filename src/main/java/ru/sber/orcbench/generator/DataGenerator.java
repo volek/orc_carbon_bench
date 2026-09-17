@@ -100,6 +100,7 @@ public final class DataGenerator {
                 .withColumn("event_year", expr("year(timestamp)"))
                 .withColumn("event_month", expr("month(timestamp)"))
                 .withColumn("event_day", expr("dayofmonth(timestamp)"))
+                .withColumn("event_hour", expr("hour(timestamp)"))
                 .drop("row_idx", "timestamp_ms");
 
         return base.select(
@@ -119,7 +120,8 @@ public final class DataGenerator {
                 "log_message",
                 "event_year",
                 "event_month",
-                "event_day"
+                "event_day",
+                "event_hour"
         );
     }
 

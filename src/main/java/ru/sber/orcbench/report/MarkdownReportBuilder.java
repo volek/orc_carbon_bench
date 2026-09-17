@@ -17,6 +17,7 @@ public final class MarkdownReportBuilder {
     private static final List<String> BLOOM_SCENARIOS = Arrays.asList(
             "filter_high_cardinality",
             "filter_medium_cardinality",
+            "filter_in",
             "filter_combined"
     );
 
@@ -30,10 +31,11 @@ public final class MarkdownReportBuilder {
     public static String build(List<Row> rows, String reportName) {
         StringBuilder md = new StringBuilder();
         md.append("# ").append(reportName).append("\n\n");
-        md.append("Сводный отчёт бенчмарка ORC на кластерном Spark 3.2.\n\n");
+        md.append("Сводный отчёт бенчмарка ORC (Spark 3.2 / Hive factor matrix).\n\n");
 
         List<Row> benchmark = filterSource(rows, "benchmark");
         appendSection(md, "Benchmark Summary", benchmark);
+        appendSlaSection(md, benchmark);
         appendBloomSummary(md, benchmark);
         appendValidationSection(md, filterSource(rows, "validation"));
         appendRecommendations(md, rows);
@@ -46,6 +48,8 @@ public final class MarkdownReportBuilder {
                 .filter(row -> source.equals(row.getString(row.fieldIndex("source"))))
                 .sorted(Comparator.comparing((Row r) -> r.getString(r.fieldIndex("scenario")))
                         .thenComparing(r -> nullableString(r, "dataset_label"))
+                        .thenComparing(r -> nullableString(r, "layout_id"))
+                        .thenComparing(r -> nullableString(r, "cache_state"))
                         .thenComparing(r -> nullableString(r, "spark_runtime")))
                 .collect(Collectors.toList());
     }
@@ -59,33 +63,72 @@ public final class MarkdownReportBuilder {
 
         boolean hasDatasetLabel = rows.stream().anyMatch(row -> hasField(row, "dataset_label"));
         boolean hasIo = rows.stream().anyMatch(row -> asDouble(row, "avg_bytes_read").isPresent());
+        boolean hasLayout = rows.stream().anyMatch(row -> hasField(row, "layout_id"));
+        boolean hasSla = rows.stream().anyMatch(row -> asDouble(row, "sla_success_rate").isPresent());
 
-        md.append("| scenario | dataset | bloom_columns | spark_runtime | runs | avg_ms | p50_ms | p95_ms | avg_selectivity");
+        md.append("| scenario | dataset | layout | engine | cache | bloom_columns | spark_runtime | runs | avg_ms | p50_ms | p95_ms | p99_ms | avg_selectivity");
         if (hasIo) {
-            md.append(" | avg_bytes_read | avg_records_read");
+            md.append(" | avg_bytes_read | avg_scan_ratio");
+        }
+        if (hasSla) {
+            md.append(" | sla_success");
         }
         md.append(" |\n");
-        md.append("|---|---|---|---|---:|---:|---:|---:|---:");
+        md.append("|---|---|---|---|---|---|---|---:|---:|---:|---:|---:|---:");
         if (hasIo) {
             md.append("|---:|---:");
+        }
+        if (hasSla) {
+            md.append("|---:");
         }
         md.append("|\n");
 
         for (Row row : rows) {
             md.append("| ").append(row.getString(row.fieldIndex("scenario")))
                     .append(" | ").append(hasDatasetLabel ? nullableString(row, "dataset_label") : "-")
+                    .append(" | ").append(hasLayout ? nullableString(row, "layout_id") : "-")
+                    .append(" | ").append(nullableString(row, "engine"))
+                    .append(" | ").append(nullableString(row, "cache_state"))
                     .append(" | ").append(formatBloomColumns(row))
                     .append(" | ").append(nullableString(row, "spark_runtime"))
                     .append(" | ").append(row.getLong(row.fieldIndex("runs")))
                     .append(" | ").append(formatDouble(row, "avg_duration_ms"))
                     .append(" | ").append(formatDouble(row, "p50_duration_ms"))
                     .append(" | ").append(formatDouble(row, "p95_duration_ms"))
+                    .append(" | ").append(formatDouble(row, "p99_duration_ms"))
                     .append(" | ").append(formatDouble(row, "avg_selectivity"));
             if (hasIo) {
                 md.append(" | ").append(formatDouble(row, "avg_bytes_read"))
-                        .append(" | ").append(formatDouble(row, "avg_records_read"));
+                        .append(" | ").append(formatDouble(row, "avg_scan_ratio"));
+            }
+            if (hasSla) {
+                md.append(" | ").append(formatPercent(row, "sla_success_rate"));
             }
             md.append(" |\n");
+        }
+        md.append("\n");
+    }
+
+    private static void appendSlaSection(StringBuilder md, List<Row> benchmark) {
+        md.append("## SLA ≤ 3s\n\n");
+        List<Row> withSla = benchmark.stream()
+                .filter(row -> asDouble(row, "sla_success_rate").isPresent())
+                .collect(Collectors.toList());
+        if (withSla.isEmpty()) {
+            md.append("_Нет SLA-метрик (нужны прогоны с `sla_ok` / `sla_threshold_ms`)._\n\n");
+            return;
+        }
+        md.append("| scenario | layout | cache | engine | sla_success | p95_ms | p99_ms |\n");
+        md.append("|---|---|---|---|---:|---:|---:|\n");
+        for (Row row : withSla) {
+            md.append("| ").append(row.getString(row.fieldIndex("scenario")))
+                    .append(" | ").append(nullableString(row, "layout_id"))
+                    .append(" | ").append(nullableString(row, "cache_state"))
+                    .append(" | ").append(nullableString(row, "engine"))
+                    .append(" | ").append(formatPercent(row, "sla_success_rate"))
+                    .append(" | ").append(formatDouble(row, "p95_duration_ms"))
+                    .append(" | ").append(formatDouble(row, "p99_duration_ms"))
+                    .append(" |\n");
         }
         md.append("\n");
     }
@@ -181,6 +224,7 @@ public final class MarkdownReportBuilder {
 
         List<Row> benchmark = filterSource(rows, "benchmark");
         appendBloomRecommendations(recommendations, benchmark);
+        appendSlaRecommendations(recommendations, benchmark);
 
         if (!benchmark.isEmpty()) {
             Row slowest = benchmark.stream()
@@ -191,7 +235,9 @@ public final class MarkdownReportBuilder {
                 asDouble(slowest, "p50_duration_ms").ifPresent(p50 ->
                         recommendations.add("Самый медленный сценарий по p50: `"
                                 + slowest.getString(slowest.fieldIndex("scenario"))
-                                + "` / dataset="
+                                + "` / layout="
+                                + nullableString(slowest, "layout_id")
+                                + " / dataset="
                                 + nullableString(slowest, "dataset_label")
                                 + " (" + String.format(Locale.US, "%.2f", p50)
                                 + " ms).")
@@ -200,14 +246,27 @@ public final class MarkdownReportBuilder {
         }
 
         if (recommendations.isEmpty()) {
-            recommendations.add("Метрики ORC на Spark 3.2 собраны; сравнивайте bloom vs nobloom по avg_bytes_read "
-                    + "на `filter_high_cardinality` и `filter_medium_cardinality`.");
+            recommendations.add("Метрики собраны; сравнивайте layout_id и bloom vs nobloom по avg_bytes_read "
+                    + "и sla_success_rate на selective queries.");
         }
 
         for (String recommendation : recommendations) {
             md.append("- ").append(recommendation).append("\n");
         }
         md.append("\n");
+    }
+
+    private static void appendSlaRecommendations(List<String> recommendations, List<Row> benchmark) {
+        OptionalDouble minSla = benchmark.stream()
+                .map(row -> asDouble(row, "sla_success_rate"))
+                .filter(OptionalDouble::isPresent)
+                .mapToDouble(OptionalDouble::getAsDouble)
+                .min();
+        if (minSla.isPresent() && minSla.getAsDouble() < 0.98d) {
+            recommendations.add(String.format(Locale.US,
+                    "SLA success ниже 98%% (мин=%.1f%%). Смотрите p95/p99 и cold vs warm отдельно.",
+                    minSla.getAsDouble() * 100.0));
+        }
     }
 
     private static void appendBloomRecommendations(List<String> recommendations, List<Row> benchmark) {
@@ -251,6 +310,13 @@ public final class MarkdownReportBuilder {
         }
         OptionalDouble value = asDouble(row, field);
         return value.isPresent() ? String.format(Locale.US, "%.2f", value.getAsDouble()) : "-";
+    }
+
+    private static String formatPercent(Row row, String field) {
+        OptionalDouble value = asDouble(row, field);
+        return value.isPresent()
+                ? String.format(Locale.US, "%.1f%%", value.getAsDouble() * 100.0)
+                : "-";
     }
 
     /** Accepts Double/Long/Integer (percentile_approx often returns Long). */

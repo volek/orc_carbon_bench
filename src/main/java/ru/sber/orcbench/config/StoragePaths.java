@@ -6,6 +6,8 @@ public final class StoragePaths {
     private final String reportsPath;
     private final String reportsBenchmarkPath;
     private final String reportsValidationPath;
+    private final String dictionaryPath;
+    private final String layoutId;
 
     public StoragePaths(
             String basePath,
@@ -14,11 +16,25 @@ public final class StoragePaths {
             String reportsBenchmarkPath,
             String reportsValidationPath
     ) {
+        this(basePath, orcPath, reportsPath, reportsBenchmarkPath, reportsValidationPath, null, "default");
+    }
+
+    public StoragePaths(
+            String basePath,
+            String orcPath,
+            String reportsPath,
+            String reportsBenchmarkPath,
+            String reportsValidationPath,
+            String dictionaryPath,
+            String layoutId
+    ) {
         this.basePath = basePath;
         this.orcPath = orcPath;
         this.reportsPath = reportsPath;
         this.reportsBenchmarkPath = reportsBenchmarkPath;
         this.reportsValidationPath = reportsValidationPath;
+        this.dictionaryPath = dictionaryPath;
+        this.layoutId = layoutId;
     }
 
     public static StoragePaths from(
@@ -28,21 +44,55 @@ public final class StoragePaths {
             String reportsBenchmarkPath,
             String reportsValidationPath
     ) {
+        return from(basePath, orcPath, reportsPath, reportsBenchmarkPath, reportsValidationPath, null, "default");
+    }
+
+    /**
+     * Resolves paths. When {@code layoutId} is not {@code default} and orc/reports paths
+     * are omitted, uses {@code <base>/layouts/<layoutId>/orc} and nested reports.
+     */
+    public static StoragePaths from(
+            String basePath,
+            String orcPath,
+            String reportsPath,
+            String reportsBenchmarkPath,
+            String reportsValidationPath,
+            String dictionaryPath,
+            String layoutId
+    ) {
         String normalizedBase = normalize(basePath);
+        String resolvedLayout = layoutId == null || layoutId.trim().isEmpty() ? "default" : layoutId.trim();
+        boolean layoutScoped = !"default".equals(resolvedLayout);
+
+        String layoutRoot = layoutScoped
+                ? joinPath(joinPath(normalizedBase, "layouts"), resolvedLayout)
+                : normalizedBase;
+
+        String resolvedOrc = orcPath != null
+                ? normalize(orcPath)
+                : joinPath(layoutRoot, "orc");
+
         String normalizedReports = reportsPath != null
                 ? normalize(reportsPath)
-                : joinPath(normalizedBase, "reports");
+                : joinPath(layoutRoot, "reports");
         String raw = joinPath(normalizedReports, "raw");
+
+        String resolvedDictionary = dictionaryPath != null
+                ? normalize(dictionaryPath)
+                : joinPath(layoutRoot, "dictionary");
+
         return new StoragePaths(
                 normalizedBase,
-                orcPath != null ? normalize(orcPath) : joinPath(normalizedBase, "orc"),
+                resolvedOrc,
                 normalizedReports,
                 reportsBenchmarkPath != null
                         ? normalize(reportsBenchmarkPath)
                         : joinPath(raw, "benchmark"),
                 reportsValidationPath != null
                         ? normalize(reportsValidationPath)
-                        : joinPath(raw, "validation")
+                        : joinPath(raw, "validation"),
+                resolvedDictionary,
+                resolvedLayout
         );
     }
 
@@ -52,6 +102,14 @@ public final class StoragePaths {
 
     public String orcPath() {
         return orcPath;
+    }
+
+    public String layoutId() {
+        return layoutId;
+    }
+
+    public String dictionaryPath() {
+        return dictionaryPath;
     }
 
     /** Default bloom-enabled dataset path for A/B runs. */
@@ -93,6 +151,11 @@ public final class StoragePaths {
 
     public String reportsSummaryPath() {
         return joinPath(reportsPath, "summary");
+    }
+
+    /** Layout-scoped report raw dir under a named factor run, e.g. {@code cold}. */
+    public String reportsBenchmarkFor(String suffix) {
+        return joinPath(reportsRawPath(), "benchmark_" + suffix);
     }
 
     private static String normalize(String path) {

@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.sber.orcbench.config.BenchmarkScenario;
 import ru.sber.orcbench.config.BenchmarkSettings;
+import ru.sber.orcbench.config.ExperimentMeta;
 import ru.sber.orcbench.config.SparkRuntimeInfo;
 
 import java.util.List;
@@ -33,12 +34,44 @@ public final class BenchmarkRunner {
             String orcBloomColumns,
             SparkRuntimeInfo runtime
     ) {
+        run(
+                spark,
+                settings,
+                orcPath,
+                reportsBenchmarkPath,
+                seed,
+                timestampStartMs,
+                timestampEndMs,
+                datasetLabel,
+                orcBloomColumns,
+                runtime,
+                ExperimentMeta.defaults(),
+                null
+        );
+    }
+
+    public static void run(
+            SparkSession spark,
+            BenchmarkSettings settings,
+            String orcPath,
+            String reportsBenchmarkPath,
+            long seed,
+            long timestampStartMs,
+            long timestampEndMs,
+            String datasetLabel,
+            String orcBloomColumns,
+            SparkRuntimeInfo runtime,
+            ExperimentMeta experiment,
+            String dictionaryPath
+    ) {
         String runId = UUID.randomUUID().toString();
         List<BenchmarkResult> results = new java.util.ArrayList<>();
+        ExperimentMeta meta = experiment == null ? ExperimentMeta.defaults() : experiment;
 
         LOG.info(
                 "Benchmark runId={} scenarios={} warmupRuns={} repeatRuns={} clearCache={} "
-                        + "timestampWindowDays={} datasetLabel={} orcBloomColumns={} reportsPath={}",
+                        + "timestampWindowDays={} datasetLabel={} orcBloomColumns={} layoutId={} "
+                        + "engine={} cacheState={} slaThresholdMs={} reportsPath={}",
                 runId,
                 settings.scenarios(),
                 settings.warmupRuns(),
@@ -47,6 +80,10 @@ public final class BenchmarkRunner {
                 settings.timestampWindowDays(),
                 datasetLabel,
                 orcBloomColumns,
+                meta.layoutId(),
+                meta.engine().cliValue(),
+                meta.cacheState().cliValue(),
+                meta.slaThresholdMs(),
                 reportsBenchmarkPath
         );
 
@@ -77,14 +114,12 @@ public final class BenchmarkRunner {
                     spark.catalog().clearCache();
                     dataset = DatasetLoader.load(spark, orcPath);
                 }
-                executeScenario(spark, dataset, scenario, filterContext, false);
+                executeScenario(spark, dataset, scenario, filterContext, dictionaryPath);
             }
 
             for (int runIndex = 0; runIndex < settings.repeatRuns(); runIndex++) {
                 if (settings.clearCacheBetweenRuns()) {
                     spark.catalog().clearCache();
-                    // Do not cache the base DF: caching the full table prevents ORC predicate
-                    // pushdown / stripe pruning from being visible in wall time and bytes_read.
                     dataset = DatasetLoader.load(spark, orcPath);
                 }
 
@@ -92,7 +127,7 @@ public final class BenchmarkRunner {
                 long startedAt = System.nanoTime();
                 InputMetricsCollector.Measured<Long> measured = InputMetricsCollector.measure(
                         spark,
-                        () -> executeScenario(spark, runDataset, scenario, filterContext, false)
+                        () -> executeScenario(spark, runDataset, scenario, filterContext, dictionaryPath)
                 );
                 long durationMs = (System.nanoTime() - startedAt) / 1_000_000L;
                 long rowsReturned = measured.value();
@@ -112,20 +147,23 @@ public final class BenchmarkRunner {
                         datasetLabel,
                         orcPath,
                         orcBloomColumns,
-                        runtime
+                        runtime,
+                        meta
                 );
                 results.add(result);
 
                 LOG.info(
                         "Measured scenario={} run={} durationMs={} rowsReturned={} selectivity={} "
-                                + "bytesRead={} recordsRead={}",
+                                + "bytesRead={} recordsRead={} scanRatio={} slaOk={}",
                         scenario.cliValue(),
                         runIndex,
                         durationMs,
                         rowsReturned,
                         result.selectivity(),
                         io.bytesRead(),
-                        io.recordsRead()
+                        io.recordsRead(),
+                        result.scanRatio(),
+                        result.slaOk()
                 );
             }
         }
@@ -168,13 +206,9 @@ public final class BenchmarkRunner {
             Dataset<Row> dataset,
             BenchmarkScenario scenario,
             FilterContext filterContext,
-            boolean clearCache
+            String dictionaryPath
     ) {
-        if (clearCache) {
-            spark.catalog().clearCache();
-        }
-
-        Dataset<Row> query = BenchmarkQueries.apply(dataset, scenario, filterContext);
+        Dataset<Row> query = BenchmarkQueries.apply(dataset, scenario, filterContext, spark, dictionaryPath);
         return query.count();
     }
 
@@ -197,7 +231,13 @@ public final class BenchmarkRunner {
                 .add("orc_bloom_columns", DataTypes.StringType, false)
                 .add("executed_at", DataTypes.StringType, false)
                 .add("spark_version", DataTypes.StringType, false)
-                .add("spark_runtime", DataTypes.StringType, false);
+                .add("spark_runtime", DataTypes.StringType, false)
+                .add("layout_id", DataTypes.StringType, false)
+                .add("engine", DataTypes.StringType, false)
+                .add("cache_state", DataTypes.StringType, false)
+                .add("scan_ratio", DataTypes.DoubleType, false)
+                .add("sla_ok", DataTypes.BooleanType, false)
+                .add("sla_threshold_ms", DataTypes.LongType, false);
 
         List<Row> rows = results.stream()
                 .map(result -> org.apache.spark.sql.RowFactory.create(
@@ -218,7 +258,13 @@ public final class BenchmarkRunner {
                         result.orcBloomColumns(),
                         result.executedAt().toString(),
                         result.sparkVersion(),
-                        result.sparkRuntime()
+                        result.sparkRuntime(),
+                        result.layoutId(),
+                        result.engine(),
+                        result.cacheState(),
+                        result.scanRatio(),
+                        result.slaOk(),
+                        result.slaThresholdMs()
                 ))
                 .collect(Collectors.toList());
 

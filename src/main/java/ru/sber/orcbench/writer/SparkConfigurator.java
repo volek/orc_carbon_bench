@@ -14,7 +14,7 @@ public final class SparkConfigurator {
 
     public static void configure(SparkSession spark, AppConfig config) {
         if (modeNeedsOrc(config)) {
-            OrcWriter.configureSpark(spark, config.orcWrite());
+            OrcWriter.configureSpark(spark, config.orcWrite(), config.sparkExec());
         }
     }
 
