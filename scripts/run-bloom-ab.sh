@@ -3,19 +3,20 @@
 # Bloom A/B: generate nobloom + bloom datasets, validate, benchmark both, report.
 #
 #   ./scripts/run-bloom-ab.sh
-#   TARGET_SIZE_TB=0.1 BASE=hdfs:///user/.../orc_test_pilot ./scripts/run-bloom-ab.sh
+#   TARGET_SIZE_TB=0.02 BASE=hdfs:///user/.../orc_test_pilot ./scripts/run-bloom-ab.sh
 #
 # Env: BASE, SEED, TARGET_SIZE_TB, BENCHMARK_REPEAT_RUNS, NUM_EXECUTORS, EXECUTOR_MEMORY
+# Max dataset on cluster: 0.1 TB (~100 GB).
 # -----------------------------------------------------------------------------
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 BASE="${BASE:-hdfs:///user/hdfs_migration_user/orc_test_pilot}"
 SEED="${SEED:-42}"
-TARGET_SIZE_TB="${TARGET_SIZE_TB:-0.1}"
+TARGET_SIZE_TB="${TARGET_SIZE_TB:-0.02}"
 BENCHMARK_REPEAT_RUNS="${BENCHMARK_REPEAT_RUNS:-5}"
 BENCHMARK_WARMUP_RUNS="${BENCHMARK_WARMUP_RUNS:-1}"
-BLOOM_COLUMNS="event_id,user_id,product_id,campaign_id"
+BLOOM_COLUMNS="epk_id,event_id"
 
 ORC_NOBLOOM="$BASE/orc"
 ORC_BLOOM="$BASE/orc_bloom"

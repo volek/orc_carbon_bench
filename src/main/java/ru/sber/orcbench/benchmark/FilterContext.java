@@ -8,62 +8,86 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+/**
+ * Filter values sampled from an AUDEI-shaped audit row, plus AUDEI/ST windows and LIKE tokens.
+ */
 public final class FilterContext implements Serializable {
-    private static final long serialVersionUID = 2L;
+    private static final long serialVersionUID = 4L;
 
+    public static final int EPK_PAGE_LIMIT = 1000;
+    public static final int EPK_PAGE_LIMIT_MAX = 2000;
+
+    private final String epkId;
     private final String eventId;
-    private final long userId;
-    private final String countryCode;
-    private final String status;
-    private final long productId;
-    private final long campaignId;
-    private final String logFormat;
+    private final String name;
+    private final String channelType;
+    private final String state;
+    private final String module;
     private final String searchToken;
     private final Instant timestampStart;
     private final Instant timestampEnd;
+    private final Instant window1dStart;
+    private final Instant window1dEnd;
+    private final Instant window14dStart;
+    private final Instant window14dEnd;
+    private final Instant window31dStart;
+    private final Instant window31dEnd;
     private final int eventYear;
     private final int eventMonth;
     private final int eventDay;
     private final List<String> eventIdInList;
-    private final List<Long> productIdInList;
+    private final List<String> epkIdInList;
+    private final List<String> likeTokens;
+    private final String rlikePattern;
 
     public FilterContext(
+            String epkId,
             String eventId,
-            long userId,
-            String countryCode,
-            String status,
-            long productId,
-            long campaignId,
-            String logFormat,
+            String name,
+            String channelType,
+            String state,
+            String module,
             String searchToken,
             Instant timestampStart,
             Instant timestampEnd,
+            Instant window1dStart,
+            Instant window1dEnd,
+            Instant window14dStart,
+            Instant window14dEnd,
+            Instant window31dStart,
+            Instant window31dEnd,
             int eventYear,
             int eventMonth,
             int eventDay,
             List<String> eventIdInList,
-            List<Long> productIdInList
+            List<String> epkIdInList,
+            List<String> likeTokens,
+            String rlikePattern
     ) {
+        this.epkId = epkId;
         this.eventId = eventId;
-        this.userId = userId;
-        this.countryCode = countryCode;
-        this.status = status;
-        this.productId = productId;
-        this.campaignId = campaignId;
-        this.logFormat = logFormat;
+        this.name = name;
+        this.channelType = channelType;
+        this.state = state;
+        this.module = module;
         this.searchToken = searchToken;
         this.timestampStart = timestampStart;
         this.timestampEnd = timestampEnd;
+        this.window1dStart = window1dStart;
+        this.window1dEnd = window1dEnd;
+        this.window14dStart = window14dStart;
+        this.window14dEnd = window14dEnd;
+        this.window31dStart = window31dStart;
+        this.window31dEnd = window31dEnd;
         this.eventYear = eventYear;
         this.eventMonth = eventMonth;
         this.eventDay = eventDay;
         this.eventIdInList = eventIdInList;
-        this.productIdInList = productIdInList;
+        this.epkIdInList = epkIdInList;
+        this.likeTokens = likeTokens;
+        this.rlikePattern = rlikePattern;
     }
 
-    /**
-     * Builds filter values from a sample row and a selective timestamp window inside the generate span.
-     */
     public static FilterContext fromSample(
             Row row,
             long dataTimestampStartMs,
@@ -71,21 +95,25 @@ public final class FilterContext implements Serializable {
             long seed,
             int timestampWindowDays
     ) {
-        String logMessage = row.getAs("log_message");
-        String token = "mobile";
-        if (logMessage != null && logMessage.length() > 8) {
-            token = logMessage.substring(0, Math.min(8, logMessage.length()));
+        String payload = row.getAs("payload_json");
+        String token = "audit-event";
+        if (payload != null && payload.contains("\"message\"")) {
+            token = "audit-event";
+        } else if (payload != null && payload.length() > 12) {
+            token = payload.substring(Math.max(0, payload.length() / 2), Math.min(payload.length(), payload.length() / 2 + 8));
         }
 
-        Instant[] window = TimestampWindow.selective(
-                dataTimestampStartMs,
-                dataTimestampEndMs,
-                seed,
-                timestampWindowDays
+        Instant[] defaultWindow = TimestampWindow.selective(
+                dataTimestampStartMs, dataTimestampEndMs, seed, timestampWindowDays
         );
+        Instant[] w1 = TimestampWindow.selective(dataTimestampStartMs, dataTimestampEndMs, seed + 11, 1);
+        Instant[] w14 = TimestampWindow.selective(dataTimestampStartMs, dataTimestampEndMs, seed + 14, 14);
+        Instant[] w31 = TimestampWindow.selective(dataTimestampStartMs, dataTimestampEndMs, seed + 31, 31);
 
         String eventId = row.getAs("event_id");
-        long productId = row.getLong(row.fieldIndex("product_id"));
+        String epkId = row.getAs("epk_id");
+        String name = row.getAs("name");
+        String channel = row.getAs("channel_type");
         int year = row.getInt(row.fieldIndex("event_year"));
         int month = row.getInt(row.fieldIndex("event_month"));
         int day = row.getInt(row.fieldIndex("event_day"));
@@ -96,58 +124,80 @@ public final class FilterContext implements Serializable {
                 eventId + "-missing-b",
                 eventId + "-missing-c"
         ));
-        List<Long> productIds = Collections.unmodifiableList(Arrays.asList(
-                productId,
-                productId + 1L,
-                productId + 2L,
-                productId + 3L
+        String prefix = epkId.length() >= 8 ? epkId.substring(0, 8) : epkId;
+        List<String> epkIds = Collections.unmodifiableList(Arrays.asList(
+                epkId,
+                prefix + "-0000-4000-8000-000000000001",
+                prefix + "-0000-4000-8000-000000000002",
+                prefix + "-0000-4000-8000-000000000003"
         ));
 
-        return new FilterContext(
-                eventId,
-                row.getLong(row.fieldIndex("user_id")),
-                row.getAs("country_code"),
-                row.getAs("status"),
-                productId,
-                row.getLong(row.fieldIndex("campaign_id")),
-                row.getAs("log_format"),
+        // ≥10 tokens for LIKE_FULLTEXT; first used for LIKE_SINGLE; 2–9 for LIKE_MULTI.
+        List<String> likes = Collections.unmodifiableList(Arrays.asList(
                 token,
-                window[0],
-                window[1],
+                name == null ? "LOGON" : name,
+                channel == null ? "WEB" : channel.substring(0, Math.min(3, channel.length())),
+                "AUDEI",
+                "sms",
+                "param",
+                "session",
+                "device",
+                "confirm",
+                "metamodel",
+                "pad",
+                "event"
+        ));
+
+        String rlike = "(LOGON|FIND|ESA|LAUNCHER)";
+
+        return new FilterContext(
+                epkId,
+                eventId,
+                name,
+                channel,
+                row.getAs("state"),
+                row.getAs("module"),
+                token,
+                defaultWindow[0],
+                defaultWindow[1],
+                w1[0],
+                w1[1],
+                w14[0],
+                w14[1],
+                w31[0],
+                w31[1],
                 year,
                 month,
                 day,
                 eventIds,
-                productIds
+                epkIds,
+                likes,
+                rlike
         );
+    }
+
+    public String epkId() {
+        return epkId;
     }
 
     public String eventId() {
         return eventId;
     }
 
-    public long userId() {
-        return userId;
+    public String name() {
+        return name;
     }
 
-    public String countryCode() {
-        return countryCode;
+    public String channelType() {
+        return channelType;
     }
 
-    public String status() {
-        return status;
+    public String state() {
+        return state;
     }
 
-    public long productId() {
-        return productId;
-    }
-
-    public long campaignId() {
-        return campaignId;
-    }
-
-    public String logFormat() {
-        return logFormat;
+    public String module() {
+        return module;
     }
 
     public String searchToken() {
@@ -160,6 +210,30 @@ public final class FilterContext implements Serializable {
 
     public Instant timestampEnd() {
         return timestampEnd;
+    }
+
+    public Instant window1dStart() {
+        return window1dStart;
+    }
+
+    public Instant window1dEnd() {
+        return window1dEnd;
+    }
+
+    public Instant window14dStart() {
+        return window14dStart;
+    }
+
+    public Instant window14dEnd() {
+        return window14dEnd;
+    }
+
+    public Instant window31dStart() {
+        return window31dStart;
+    }
+
+    public Instant window31dEnd() {
+        return window31dEnd;
     }
 
     public int eventYear() {
@@ -178,7 +252,15 @@ public final class FilterContext implements Serializable {
         return eventIdInList;
     }
 
-    public List<Long> productIdInList() {
-        return productIdInList;
+    public List<String> epkIdInList() {
+        return epkIdInList;
+    }
+
+    public List<String> likeTokens() {
+        return likeTokens;
+    }
+
+    public String rlikePattern() {
+        return rlikePattern;
     }
 }

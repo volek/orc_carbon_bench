@@ -1,11 +1,15 @@
 #!/usr/bin/env bash
 # -----------------------------------------------------------------------------
-# Concurrency benchmark (P9): parallel single-query clients against Spark or Hive.
+# Concurrency / QPS helper for AUDEI interactive path (epk_eq_14d).
 #
-#   ENGINE=spark CONCURRENCY=10 ./scripts/run-concurrency.sh
-#   ENGINE=hive_llap CONCURRENCY=25 ./scripts/run-concurrency.sh
+# Defaults target AUDEI load profile: ~9 TPS / 18 QPS (2× headroom).
+# Each "client" is one Spark (or Hive) benchmark job of a single scenario.
 #
-# Levels: CONCURRENCY_LEVELS="1 5 10 25 50"
+#   ENGINE=spark ./scripts/run-concurrency.sh
+#   CONCURRENCY_LEVELS="9 18" SCENARIO=epk_eq_14d ./scripts/run-concurrency.sh
+#   ENGINE=hive_llap HIVE_PROFILE=h4 CONCURRENCY_LEVELS="9 18" ./scripts/run-concurrency.sh
+#
+# Legacy wide fan-out: CONCURRENCY_LEVELS="1 5 10 25 50"
 # -----------------------------------------------------------------------------
 set -euo pipefail
 
@@ -13,11 +17,12 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 BASE="${BASE:-hdfs:///user/hdfs_migration_user/orc_test}"
 LAYOUT="${LAYOUT:-best_orc}"
 ENGINE="${ENGINE:-spark}"
-SCENARIO="${SCENARIO:-filter_high_cardinality}"
-CONCURRENCY_LEVELS="${CONCURRENCY_LEVELS:-1 5 10 25 50}"
+SCENARIO="${SCENARIO:-epk_eq_14d}"
+CONCURRENCY_LEVELS="${CONCURRENCY_LEVELS:-9 18}"
 CACHE_STATE="${CACHE_STATE:-warm}"
-TARGET_SIZE_TB="${TARGET_SIZE_TB:-0.01}"
+TARGET_SIZE_TB="${TARGET_SIZE_TB:-0.02}"
 SLA_THRESHOLD_MS="${SLA_THRESHOLD_MS:-3000}"
+ARCHIVE_SLA_THRESHOLD_MS="${ARCHIVE_SLA_THRESHOLD_MS:-120000}"
 RESULT_DIR="${RESULT_DIR:-$ROOT/result/concurrency}"
 mkdir -p "$RESULT_DIR"
 
@@ -33,6 +38,7 @@ run_spark_client() {
     --engine=spark \
     --cache-state="$CACHE_STATE" \
     --sla-threshold-ms="$SLA_THRESHOLD_MS" \
+    --archive-sla-threshold-ms="$ARCHIVE_SLA_THRESHOLD_MS" \
     --target-size-tb="$TARGET_SIZE_TB" \
     --benchmark-scenarios="$SCENARIO" \
     --benchmark-warmup-runs=0 \
@@ -45,13 +51,13 @@ run_spark_client() {
 run_hive_client() {
   local out="$1"
   PROFILE="${HIVE_PROFILE:-h4}" \
-    BASE="$BASE" LAYOUT="$LAYOUT" \
+    BASE="$BASE" LAYOUT="$LAYOUT" SUITE=audei \
     BENCHMARK_WARMUP_RUNS=0 BENCHMARK_REPEAT_RUNS=1 \
     "$ROOT/scripts/hive/run-hive-factor.sh" "$PROFILE" >"$out" 2>&1 || true
 }
 
 for conc in $CONCURRENCY_LEVELS; do
-  echo "=== concurrency=$conc engine=$ENGINE ==="
+  echo "=== concurrency=$conc engine=$ENGINE scenario=$SCENARIO ==="
   pids=()
   outs=()
   for ((i = 0; i < conc; i++)); do
@@ -68,7 +74,6 @@ for conc in $CONCURRENCY_LEVELS; do
     wait "$pid" || true
   done
 
-  # Extract duration_ms from logs when present
   durations_file="$RESULT_DIR/${ENGINE}-c${conc}-durations.txt"
   : > "$durations_file"
   for out in "${outs[@]}"; do
@@ -107,3 +112,4 @@ PY
 done
 
 echo "Concurrency summary: $summary_csv"
+echo "AUDEI targets: ~9 TPS / 18 QPS on scenario=$SCENARIO (interactive SLA ${SLA_THRESHOLD_MS} ms)."

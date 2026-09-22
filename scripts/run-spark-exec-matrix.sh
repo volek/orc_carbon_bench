@@ -11,9 +11,10 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 BASE="${BASE:-hdfs:///user/hdfs_migration_user/orc_test}"
-TARGET_SIZE_TB="${TARGET_SIZE_TB:-0.01}"
+TARGET_SIZE_TB="${TARGET_SIZE_TB:-0.02}"
 CACHE_STATE="${CACHE_STATE:-cold}"
-export BASE TARGET_SIZE_TB CACHE_STATE
+SCENARIOS="${SCENARIOS:-audei}"
+export BASE TARGET_SIZE_TB CACHE_STATE SCENARIOS
 export SKIP_GENERATE=1
 export SKIP_VALIDATE=1
 

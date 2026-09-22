@@ -154,7 +154,8 @@ public final class BenchmarkRunner {
 
                 LOG.info(
                         "Measured scenario={} run={} durationMs={} rowsReturned={} selectivity={} "
-                                + "bytesRead={} recordsRead={} scanRatio={} slaOk={}",
+                                + "bytesRead={} recordsRead={} scanRatio={} secondsPerGb={} "
+                                + "slaClass={} slaOk={} category={} durationGroup={} rowsCapOk={}",
                         scenario.cliValue(),
                         runIndex,
                         durationMs,
@@ -163,7 +164,12 @@ public final class BenchmarkRunner {
                         io.bytesRead(),
                         io.recordsRead(),
                         result.scanRatio(),
-                        result.slaOk()
+                        result.secondsPerGb(),
+                        result.slaClass(),
+                        result.slaOk(),
+                        result.queryCategory(),
+                        result.durationGroup(),
+                        result.rowsCapOk()
                 );
             }
         }
@@ -237,7 +243,12 @@ public final class BenchmarkRunner {
                 .add("cache_state", DataTypes.StringType, false)
                 .add("scan_ratio", DataTypes.DoubleType, false)
                 .add("sla_ok", DataTypes.BooleanType, false)
-                .add("sla_threshold_ms", DataTypes.LongType, false);
+                .add("sla_threshold_ms", DataTypes.LongType, false)
+                .add("sla_class", DataTypes.StringType, false)
+                .add("query_category", DataTypes.StringType, true)
+                .add("duration_group", DataTypes.StringType, false)
+                .add("seconds_per_gb", DataTypes.DoubleType, false)
+                .add("rows_cap_ok", DataTypes.BooleanType, false);
 
         List<Row> rows = results.stream()
                 .map(result -> org.apache.spark.sql.RowFactory.create(
@@ -264,7 +275,12 @@ public final class BenchmarkRunner {
                         result.cacheState(),
                         result.scanRatio(),
                         result.slaOk(),
-                        result.slaThresholdMs()
+                        result.slaThresholdMs(),
+                        result.slaClass(),
+                        result.queryCategory().isEmpty() ? null : result.queryCategory(),
+                        result.durationGroup(),
+                        result.secondsPerGb(),
+                        result.rowsCapOk()
                 ))
                 .collect(Collectors.toList());
 

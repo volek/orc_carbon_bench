@@ -11,7 +11,7 @@ class OrcWriteSettingsTest {
 
     @Test
     void parseBloomColumnsDefaultList() {
-        String[] columns = OrcWriteSettings.parseBloomFilterColumns("event_id,user_id,product_id,campaign_id");
+        String[] columns = OrcWriteSettings.parseBloomFilterColumns("epk_id");
         assertArrayEquals(OrcWriteSettings.DEFAULT_BLOOM_FILTER_COLUMNS, columns);
     }
 
@@ -27,8 +27,9 @@ class OrcWriteSettingsTest {
 
     @Test
     void parseSortColumnsAndStride() {
-        assertArrayEquals(new String[]{"event_id", "timestamp"}, OrcWriteSettings.parseSortColumns("event_id,timestamp"));
+        assertArrayEquals(new String[]{"epk_id", "event_ts"}, OrcWriteSettings.parseSortColumns("epk_id,event_ts"));
         assertEquals(0, OrcWriteSettings.parseSortColumns("none").length);
+        assertArrayEquals(OrcWriteSettings.DEFAULT_SORT_COLUMNS, OrcWriteSettings.parseSortColumns(null));
         assertEquals(5000, OrcWriteSettings.parseRowIndexStride("5000"));
         assertEquals(OrcWriteSettings.DEFAULT_ROW_INDEX_STRIDE, OrcWriteSettings.parseRowIndexStride(null));
     }
@@ -40,7 +41,7 @@ class OrcWriteSettingsTest {
                 OrcWriteSettings.DEFAULT_BLOOM_FILTER_COLUMNS,
                 0.05d);
         assertTrue(settings.bloomFiltersEnabled());
-        assertEquals("event_id,user_id,product_id,campaign_id", settings.bloomFilterColumnsCsv());
+        assertEquals("epk_id", settings.bloomFilterColumnsCsv());
         assertFalse(settings.sorted());
         assertEquals(OrcWriteSettings.DEFAULT_ROW_INDEX_STRIDE, settings.rowIndexStride());
     }
@@ -61,10 +62,10 @@ class OrcWriteSettingsTest {
                 new String[]{"event_year", "event_month", "event_day"},
                 OrcWriteSettings.BLOOM_HIGH_COLUMNS,
                 0.01d,
-                new String[]{"event_id"}
+                new String[]{"epk_id"}
         );
         assertTrue(settings.sorted());
-        assertEquals("event_id", settings.sortColumnsCsv());
+        assertEquals("epk_id", settings.sortColumnsCsv());
         assertEquals(5000, settings.rowIndexStride());
         assertEquals("zstd", settings.compression());
     }

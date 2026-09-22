@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class AppConfigFactorArgsTest {
@@ -18,8 +19,8 @@ class AppConfigFactorArgsTest {
                 "--cache-state=warm",
                 "--sla-threshold-ms=3000",
                 "--target-size-tb=0.01",
-                "--orc-bloom-filter-columns=event_id,user_id",
-                "--orc-sort-columns=event_id",
+                "--orc-bloom-filter-columns=epk_id,event_id",
+                "--orc-sort-columns=epk_id",
                 "--orc-row-index-stride=5000",
                 "--partition-by=event_year,event_month,event_day",
                 "--spark-orc-filter-pushdown=false",
@@ -45,9 +46,19 @@ class AppConfigFactorArgsTest {
                 "--mode=generate",
                 "--partition-by=none",
                 "--orc-bloom-filter-columns=none",
+                "--orc-sort-columns=none",
                 "--target-size-tb=0.01"
         });
         assertFalse(config.orcWrite().partitioned());
         assertFalse(config.orcWrite().bloomFiltersEnabled());
+        assertFalse(config.orcWrite().sorted());
+    }
+
+    @Test
+    void rejectsTargetSizeAboveClusterMax() {
+        assertThrows(IllegalArgumentException.class, () -> AppConfig.fromArgs(new String[]{
+                "--mode=generate",
+                "--target-size-tb=0.2"
+        }));
     }
 }
