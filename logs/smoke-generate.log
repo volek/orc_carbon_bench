@@ -1,3 +1,314 @@
 spark-submit resources: num-executors=16 executor-memory=8g executor-cores=4 driver-memory=4g yarn-am-memory=4g yarn-am-overhead=512m
 spark event log dir: hdfs:///dev1-primary/archive/sparkLogs
-/home/portos/orc_bench/scripts/submit-spark32.sh: line 150: SPARK_ARGS[@]: unbound variable
+26/09/30 11:54:58 WARN NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
+26/09/30 11:54:59 INFO ConfiguredRMFailoverProxyProvider: Failing over to rm2
+26/09/30 11:54:59 INFO Client: Requesting a new application from cluster with 6 NodeManagers
+26/09/30 11:55:00 WARN DomainSocketFactory: The short-circuit local reads feature cannot be used because libhadoop cannot be loaded.
+26/09/30 11:55:00 INFO Configuration: found resource resource-types.xml at file:/etc/hadoop/3.5.4.1-1/0/resource-types.xml
+26/09/30 11:55:00 INFO Client: Verifying our application has not requested more than the maximum memory capability of the cluster (46080 MB per container)
+26/09/30 11:55:00 INFO Client: Will allocate AM container, with 4505 MB memory including 409 MB overhead
+26/09/30 11:55:00 INFO Client: Setting up container launch context for our AM
+26/09/30 11:55:00 INFO Client: Setting up the launch environment for our AM container
+26/09/30 11:55:00 INFO Client: Preparing resources for our AM container
+26/09/30 11:55:00 WARN Client: Neither spark.yarn.jars nor spark.yarn.archive is set, falling back to uploading libraries under SPARK_HOME.
+26/09/30 11:55:05 INFO Client: Uploading resource file:/tmp/spark-1954378a-7bd1-4270-9600-1ad2f2c0c9db/__spark_libs__4146522298293971707.zip -> hdfs://sdp-dzo-lt-omlt/user/pvm-omltp-sdp/.sparkStaging/application_1790656441704_0005/__spark_libs__4146522298293971707.zip
+26/09/30 11:55:07 INFO Client: Uploading resource file:/home/portos/orc_bench/build/libs/orc-bench-all.jar -> hdfs://sdp-dzo-lt-omlt/user/pvm-omltp-sdp/.sparkStaging/application_1790656441704_0005/orc-bench-all.jar
+26/09/30 11:55:07 INFO Client: Uploading resource file:/tmp/spark-1954378a-7bd1-4270-9600-1ad2f2c0c9db/__spark_conf__7697825985087453588.zip -> hdfs://sdp-dzo-lt-omlt/user/pvm-omltp-sdp/.sparkStaging/application_1790656441704_0005/__spark_conf__.zip
+26/09/30 11:55:07 INFO SecurityManager: Changing view acls to: portos,pvm-omltp-sdp
+26/09/30 11:55:07 INFO SecurityManager: Changing modify acls to: portos,pvm-omltp-sdp
+26/09/30 11:55:07 INFO SecurityManager: Changing view acls groups to: 
+26/09/30 11:55:07 INFO SecurityManager: Changing modify acls groups to: 
+26/09/30 11:55:07 INFO SecurityManager: SecurityManager: authentication disabled; ui acls enabled; users  with view permissions: Set(portos, pvm-omltp-sdp); groups with view permissions: Set(); users  with modify permissions: Set(portos, pvm-omltp-sdp); groups with modify permissions: Set()
+26/09/30 11:55:07 INFO HadoopDelegationTokenManager: Attempting to load user's ticket cache.
+26/09/30 11:55:07 INFO HadoopFSDelegationTokenProvider: getting token for: DFS[DFSClient[clientName=DFSClient_NONMAPREDUCE_-1469959187_1, ugi=pvm-omltp-sdp@OPSMON.SBT (auth:KERBEROS)]] with renewer rm/omlt-abyss-sdp-namenode-02.opsmon.sbt@OPSMON.SBT
+26/09/30 11:55:07 INFO DFSClient: Created token for pvm-omltp-sdp: HDFS_DELEGATION_TOKEN owner=pvm-omltp-sdp@OPSMON.SBT, renewer=yarn, realUser=, issueDate=1790758507648, maxDate=1791363307648, sequenceNumber=190004, masterKeyId=1139 on ha-hdfs:sdp-dzo-lt-omlt
+26/09/30 11:55:07 INFO HadoopFSDelegationTokenProvider: getting token for: DFS[DFSClient[clientName=DFSClient_NONMAPREDUCE_-1469959187_1, ugi=pvm-omltp-sdp@OPSMON.SBT (auth:KERBEROS)]] with renewer pvm-omltp-sdp@OPSMON.SBT
+26/09/30 11:55:07 INFO DFSClient: Created token for pvm-omltp-sdp: HDFS_DELEGATION_TOKEN owner=pvm-omltp-sdp@OPSMON.SBT, renewer=pvm-omltp-sdp, realUser=, issueDate=1790758507666, maxDate=1791363307666, sequenceNumber=190005, masterKeyId=1139 on ha-hdfs:sdp-dzo-lt-omlt
+26/09/30 11:55:07 INFO HadoopFSDelegationTokenProvider: Renewal interval is 86400056 for token HDFS_DELEGATION_TOKEN
+26/09/30 11:55:07 INFO Client: Submitting application application_1790656441704_0005 to ResourceManager
+26/09/30 11:55:07 INFO YarnClientImpl: Submitted application application_1790656441704_0005
+26/09/30 11:55:08 INFO Client: Application report for application_1790656441704_0005 (state: ACCEPTED)
+26/09/30 11:55:08 INFO Client: 
+	 client token: Token { kind: YARN_CLIENT_TOKEN, service:  }
+	 diagnostics: AM container is launched, waiting for AM container to Register with RM
+	 ApplicationMaster host: N/A
+	 ApplicationMaster RPC port: -1
+	 queue: default
+	 start time: 1790758507754
+	 final status: UNDEFINED
+	 tracking URL: https://omlt-abyss-sdp-namenode-01.opsmon.sbt:8090/proxy/application_1790656441704_0005/
+	 user: pvm-omltp-sdp
+26/09/30 11:55:09 INFO Client: Application report for application_1790656441704_0005 (state: ACCEPTED)
+26/09/30 11:55:10 INFO Client: Application report for application_1790656441704_0005 (state: ACCEPTED)
+26/09/30 11:55:11 INFO Client: Application report for application_1790656441704_0005 (state: ACCEPTED)
+26/09/30 11:55:12 INFO Client: Application report for application_1790656441704_0005 (state: ACCEPTED)
+26/09/30 11:55:14 INFO Client: Application report for application_1790656441704_0005 (state: ACCEPTED)
+26/09/30 11:55:15 INFO Client: Application report for application_1790656441704_0005 (state: ACCEPTED)
+26/09/30 11:55:16 INFO Client: Application report for application_1790656441704_0005 (state: ACCEPTED)
+26/09/30 11:55:17 INFO Client: Application report for application_1790656441704_0005 (state: ACCEPTED)
+26/09/30 11:55:18 INFO Client: Application report for application_1790656441704_0005 (state: ACCEPTED)
+26/09/30 11:55:19 INFO Client: Application report for application_1790656441704_0005 (state: ACCEPTED)
+26/09/30 11:55:20 INFO Client: Application report for application_1790656441704_0005 (state: RUNNING)
+26/09/30 11:55:20 INFO Client: 
+	 client token: Token { kind: YARN_CLIENT_TOKEN, service:  }
+	 diagnostics: N/A
+	 ApplicationMaster host: omlt-abyss-sdp-datanode-02.opsmon.sbt
+	 ApplicationMaster RPC port: 41055
+	 queue: default
+	 start time: 1790758507754
+	 final status: UNDEFINED
+	 tracking URL: https://omlt-abyss-sdp-namenode-01.opsmon.sbt:8090/proxy/application_1790656441704_0005/
+	 user: pvm-omltp-sdp
+26/09/30 11:55:21 INFO Client: Application report for application_1790656441704_0005 (state: RUNNING)
+26/09/30 11:55:22 INFO Client: Application report for application_1790656441704_0005 (state: RUNNING)
+26/09/30 11:55:23 INFO Client: Application report for application_1790656441704_0005 (state: RUNNING)
+26/09/30 11:55:24 INFO Client: Application report for application_1790656441704_0005 (state: RUNNING)
+26/09/30 11:55:25 INFO Client: Application report for application_1790656441704_0005 (state: RUNNING)
+26/09/30 11:55:26 INFO Client: Application report for application_1790656441704_0005 (state: RUNNING)
+26/09/30 11:55:27 INFO Client: Application report for application_1790656441704_0005 (state: RUNNING)
+26/09/30 11:55:28 INFO Client: Application report for application_1790656441704_0005 (state: RUNNING)
+26/09/30 11:55:29 INFO Client: Application report for application_1790656441704_0005 (state: RUNNING)
+26/09/30 11:55:30 INFO Client: Application report for application_1790656441704_0005 (state: RUNNING)
+26/09/30 11:55:31 INFO Client: Application report for application_1790656441704_0005 (state: RUNNING)
+26/09/30 11:55:32 INFO Client: Application report for application_1790656441704_0005 (state: RUNNING)
+26/09/30 11:55:33 INFO Client: Application report for application_1790656441704_0005 (state: RUNNING)
+26/09/30 11:55:34 INFO Client: Application report for application_1790656441704_0005 (state: RUNNING)
+26/09/30 11:55:35 INFO Client: Application report for application_1790656441704_0005 (state: RUNNING)
+26/09/30 11:55:36 INFO Client: Application report for application_1790656441704_0005 (state: RUNNING)
+26/09/30 11:55:37 INFO Client: Application report for application_1790656441704_0005 (state: RUNNING)
+26/09/30 11:55:38 INFO Client: Application report for application_1790656441704_0005 (state: ACCEPTED)
+26/09/30 11:55:38 INFO Client: 
+	 client token: Token { kind: YARN_CLIENT_TOKEN, service:  }
+	 diagnostics: AM container is launched, waiting for AM container to Register with RM
+	 ApplicationMaster host: N/A
+	 ApplicationMaster RPC port: -1
+	 queue: default
+	 start time: 1790758507754
+	 final status: UNDEFINED
+	 tracking URL: https://omlt-abyss-sdp-namenode-01.opsmon.sbt:8090/proxy/application_1790656441704_0005/
+	 user: pvm-omltp-sdp
+26/09/30 11:55:39 INFO Client: Application report for application_1790656441704_0005 (state: ACCEPTED)
+26/09/30 11:55:40 INFO Client: Application report for application_1790656441704_0005 (state: ACCEPTED)
+26/09/30 11:55:41 INFO Client: Application report for application_1790656441704_0005 (state: ACCEPTED)
+26/09/30 11:55:42 INFO Client: Application report for application_1790656441704_0005 (state: RUNNING)
+26/09/30 11:55:42 INFO Client: 
+	 client token: Token { kind: YARN_CLIENT_TOKEN, service:  }
+	 diagnostics: N/A
+	 ApplicationMaster host: omlt-abyss-sdp-datanode-02.opsmon.sbt
+	 ApplicationMaster RPC port: 43698
+	 queue: default
+	 start time: 1790758507754
+	 final status: UNDEFINED
+	 tracking URL: https://omlt-abyss-sdp-namenode-01.opsmon.sbt:8090/proxy/application_1790656441704_0005/
+	 user: pvm-omltp-sdp
+26/09/30 11:55:43 INFO Client: Application report for application_1790656441704_0005 (state: RUNNING)
+26/09/30 11:55:44 INFO Client: Application report for application_1790656441704_0005 (state: RUNNING)
+26/09/30 11:55:45 INFO Client: Application report for application_1790656441704_0005 (state: RUNNING)
+26/09/30 11:55:46 INFO Client: Application report for application_1790656441704_0005 (state: RUNNING)
+26/09/30 11:55:47 INFO Client: Application report for application_1790656441704_0005 (state: RUNNING)
+26/09/30 11:55:48 INFO Client: Application report for application_1790656441704_0005 (state: RUNNING)
+26/09/30 11:55:49 INFO Client: Application report for application_1790656441704_0005 (state: RUNNING)
+26/09/30 11:55:50 INFO Client: Application report for application_1790656441704_0005 (state: RUNNING)
+26/09/30 11:55:51 INFO Client: Application report for application_1790656441704_0005 (state: FINISHED)
+26/09/30 11:55:51 INFO Client: 
+	 client token: N/A
+	 diagnostics: User class threw exception: org.apache.spark.sql.AnalysisException: cannot resolve 'epk_id' given input columns: [amount, campaign_id, country_code, device_type, event_day, event_hour, event_id, event_month, event_year, log_format, log_message, payload_json, product_id, region_id, session_id, status, timestamp, user_id];
+'Sort ['epk_id ASC NULLS FIRST], false
++- Repartition 1, true
+   +- Project [event_id#7, user_id#11L, session_id#16, country_code#22, device_type#29, status#37, product_id#46L, campaign_id#56L, region_id#67, timestamp#79, amount#106, payload_json#137, log_format#121, log_message#154, event_year#172, event_month#191, event_day#211, event_hour#232]
+      +- Project [global_id#4L, event_id#7, user_id#11L, session_id#16, country_code#22, device_type#29, status#37, product_id#46L, campaign_id#56L, region_id#67, timestamp#79, amount#106, log_format#121, payload_json#137, log_message#154, event_year#172, event_month#191, event_day#211, event_hour#232]
+         +- Project [row_idx#2L, global_id#4L, event_id#7, user_id#11L, session_id#16, country_code#22, device_type#29, status#37, product_id#46L, campaign_id#56L, region_id#67, timestamp#79, timestamp_ms#92L, amount#106, log_format#121, payload_json#137, log_message#154, event_year#172, event_month#191, event_day#211, hour(timestamp#79, Some(Europe/Moscow)) AS event_hour#232]
+            +- Project [row_idx#2L, global_id#4L, event_id#7, user_id#11L, session_id#16, country_code#22, device_type#29, status#37, product_id#46L, campaign_id#56L, region_id#67, timestamp#79, timestamp_ms#92L, amount#106, log_format#121, payload_json#137, log_message#154, event_year#172, event_month#191, dayofmonth(cast(timestamp#79 as date)) AS event_day#211]
+               +- Project [row_idx#2L, global_id#4L, event_id#7, user_id#11L, session_id#16, country_code#22, device_type#29, status#37, product_id#46L, campaign_id#56L, region_id#67, timestamp#79, timestamp_ms#92L, amount#106, log_format#121, payload_json#137, log_message#154, event_year#172, month(cast(timestamp#79 as date)) AS event_month#191]
+                  +- Project [row_idx#2L, global_id#4L, event_id#7, user_id#11L, session_id#16, country_code#22, device_type#29, status#37, product_id#46L, campaign_id#56L, region_id#67, timestamp#79, timestamp_ms#92L, amount#106, log_format#121, payload_json#137, log_message#154, year(cast(timestamp#79 as date)) AS event_year#172]
+                     +- Project [row_idx#2L, global_id#4L, event_id#7, user_id#11L, session_id#16, country_code#22, device_type#29, status#37, product_id#46L, campaign_id#56L, region_id#67, timestamp#79, timestamp_ms#92L, amount#106, log_format#121, payload_json#137, build_log_message(log_format#121, event_id#7, user_id#11L, session_id#16, country_code#22, device_type#29, status#37, product_id#46L, campaign_id#56L, region_id#67, timestamp_ms#92L, amount#106) AS log_message#154]
+                        +- Project [row_idx#2L, global_id#4L, event_id#7, user_id#11L, session_id#16, country_code#22, device_type#29, status#37, product_id#46L, campaign_id#56L, region_id#67, timestamp#79, timestamp_ms#92L, amount#106, log_format#121, build_log_message(json, event_id#7, user_id#11L, session_id#16, country_code#22, device_type#29, status#37, product_id#46L, campaign_id#56L, region_id#67, timestamp_ms#92L, amount#106) AS payload_json#137]
+                           +- Project [row_idx#2L, global_id#4L, event_id#7, user_id#11L, session_id#16, country_code#22, device_type#29, status#37, product_id#46L, campaign_id#56L, region_id#67, timestamp#79, timestamp_ms#92L, amount#106, element_at(array(json, plain_text, key_value, apache_common), cast((pmod((global_id#4L + 61), cast(4 as bigint)) + cast(1 as bigint)) as int), false) AS log_format#121]
+                              +- Project [row_idx#2L, global_id#4L, event_id#7, user_id#11L, session_id#16, country_code#22, device_type#29, status#37, product_id#46L, campaign_id#56L, region_id#67, timestamp#79, timestamp_ms#92L, round((rand(42) * 10000.0), 2) AS amount#106]
+                                 +- Project [row_idx#2L, global_id#4L, event_id#7, user_id#11L, session_id#16, country_code#22, device_type#29, status#37, product_id#46L, campaign_id#56L, region_id#67, timestamp#79, cast((unix_timestamp(timestamp#79, yyyy-MM-dd HH:mm:ss, Some(Europe/Moscow), false) * cast(1000 as bigint)) as bigint) AS timestamp_ms#92L]
+                                    +- Project [row_idx#2L, global_id#4L, event_id#7, user_id#11L, session_id#16, country_code#22, device_type#29, status#37, product_id#46L, campaign_id#56L, region_id#67, timestamp_millis((1704067200000 + cast((cast((row_idx#2L * cast(86400000 as bigint)) as double) / cast(58675 as double)) as bigint))) AS timestamp#79]
+                                       +- Project [row_idx#2L, global_id#4L, event_id#7, user_id#11L, session_id#16, country_code#22, device_type#29, status#37, product_id#46L, campaign_id#56L, cast(CASE WHEN (rand(58) > 0.3) THEN cast((POWER(rand(55), 2.0) * cast(9999 as double)) as bigint) ELSE pmod(((global_id#4L * 1009491) + 55), 10000) END as int) AS region_id#67]
+                                          +- Project [row_idx#2L, global_id#4L, event_id#7, user_id#11L, session_id#16, country_code#22, device_type#29, status#37, product_id#46L, CASE WHEN (rand(52) > 0.3) THEN cast((POWER(rand(49), 2.0) * cast(49999 as double)) as bigint) ELSE pmod(((global_id#4L * 1009491) + 49), 50000) END AS campaign_id#56L]
+                                             +- Project [row_idx#2L, global_id#4L, event_id#7, user_id#11L, session_id#16, country_code#22, device_type#29, status#37, CASE WHEN (rand(45) > 0.3) THEN cast((POWER(rand(42), 2.0) * cast(99999 as double)) as bigint) ELSE pmod(((global_id#4L * 1009491) + 42), 100000) END AS product_id#46L]
+                                                +- Project [row_idx#2L, global_id#4L, event_id#7, user_id#11L, session_id#16, country_code#22, device_type#29, element_at(array(success, failed, pending, timeout), cast((pmod((global_id#4L + 44), cast(4 as bigint)) + cast(1 as bigint)) as int), false) AS status#37]
+                                                   +- Project [row_idx#2L, global_id#4L, event_id#7, user_id#11L, session_id#16, country_code#22, element_at(array(mobile, desktop, tablet, tv, iot), cast((pmod((global_id#4L + 43), cast(5 as bigint)) + cast(1 as bigint)) as int), false) AS device_type#29]
+                                                      +- Project [row_idx#2L, global_id#4L, event_id#7, user_id#11L, session_id#16, element_at(array(RU, US, DE, FR, GB, CN, JP, IN, BR, CA, AU, IT, ES, NL, SE, NO, FI, PL, TR, MX, KR, SG, AE, SA, ... 26 more fields), cast((pmod((global_id#4L + 42), cast(50 as bigint)) + cast(1 as bigint)) as int), false) AS country_code#22]
+                                                         +- Project [row_idx#2L, global_id#4L, event_id#7, user_id#11L, concat(sess-, cast(pmod(((global_id#4L * 12345) + 42), 100000000) as string)) AS session_id#16]
+                                                            +- Project [row_idx#2L, global_id#4L, event_id#7, pmod(((global_id#4L * 1103515245) + 42), 50000000) AS user_id#11L]
+                                                               +- Project [row_idx#2L, global_id#4L, concat(evt-, sha2(cast(cast(global_id#4L as string) as binary), 256)) AS event_id#7]
+                                                                  +- Project [row_idx#2L, (row_idx#2L + 0) AS global_id#4L]
+                                                                     +- Project [id#0L AS row_idx#2L]
+                                                                        +- Range (0, 58675, step=1, splits=Some(2000))
+
+	at org.apache.spark.sql.catalyst.analysis.package$AnalysisErrorAt.failAnalysis(package.scala:54)
+	at org.apache.spark.sql.catalyst.analysis.CheckAnalysis$$anonfun$$nestedInanonfun$checkAnalysis$1$2.applyOrElse(CheckAnalysis.scala:179)
+	at org.apache.spark.sql.catalyst.analysis.CheckAnalysis$$anonfun$$nestedInanonfun$checkAnalysis$1$2.applyOrElse(CheckAnalysis.scala:175)
+	at org.apache.spark.sql.catalyst.trees.TreeNode.$anonfun$transformUpWithPruning$2(TreeNode.scala:535)
+	at org.apache.spark.sql.catalyst.trees.CurrentOrigin$.withOrigin(TreeNode.scala:82)
+	at org.apache.spark.sql.catalyst.trees.TreeNode.transformUpWithPruning(TreeNode.scala:535)
+	at org.apache.spark.sql.catalyst.trees.TreeNode.$anonfun$transformUpWithPruning$1(TreeNode.scala:532)
+	at scala.collection.immutable.List.map(List.scala:293)
+	at org.apache.spark.sql.catalyst.trees.TreeNode.mapChildren(TreeNode.scala:595)
+	at org.apache.spark.sql.catalyst.trees.TreeNode.transformUpWithPruning(TreeNode.scala:532)
+	at org.apache.spark.sql.catalyst.plans.QueryPlan.$anonfun$transformExpressionsUpWithPruning$1(QueryPlan.scala:181)
+	at org.apache.spark.sql.catalyst.plans.QueryPlan.$anonfun$mapExpressions$1(QueryPlan.scala:193)
+	at org.apache.spark.sql.catalyst.trees.CurrentOrigin$.withOrigin(TreeNode.scala:82)
+	at org.apache.spark.sql.catalyst.plans.QueryPlan.transformExpression$1(QueryPlan.scala:193)
+	at org.apache.spark.sql.catalyst.plans.QueryPlan.recursiveTransform$1(QueryPlan.scala:204)
+	at org.apache.spark.sql.catalyst.plans.QueryPlan.$anonfun$mapExpressions$3(QueryPlan.scala:209)
+	at scala.collection.TraversableLike.$anonfun$map$1(TraversableLike.scala:286)
+	at scala.collection.mutable.ResizableArray.foreach(ResizableArray.scala:62)
+	at scala.collection.mutable.ResizableArray.foreach$(ResizableArray.scala:55)
+	at scala.collection.mutable.ArrayBuffer.foreach(ArrayBuffer.scala:49)
+	at scala.collection.TraversableLike.map(TraversableLike.scala:286)
+	at scala.collection.TraversableLike.map$(TraversableLike.scala:279)
+	at scala.collection.AbstractTraversable.map(Traversable.scala:108)
+	at org.apache.spark.sql.catalyst.plans.QueryPlan.recursiveTransform$1(QueryPlan.scala:209)
+	at org.apache.spark.sql.catalyst.plans.QueryPlan.$anonfun$mapExpressions$4(QueryPlan.scala:214)
+	at org.apache.spark.sql.catalyst.trees.TreeNode.mapProductIterator(TreeNode.scala:323)
+	at org.apache.spark.sql.catalyst.plans.QueryPlan.mapExpressions(QueryPlan.scala:214)
+	at org.apache.spark.sql.catalyst.plans.QueryPlan.transformExpressionsUpWithPruning(QueryPlan.scala:181)
+	at org.apache.spark.sql.catalyst.plans.QueryPlan.transformExpressionsUp(QueryPlan.scala:161)
+	at org.apache.spark.sql.catalyst.analysis.CheckAnalysis.$anonfun$checkAnalysis$1(CheckAnalysis.scala:175)
+	at org.apache.spark.sql.catalyst.analysis.CheckAnalysis.$anonfun$checkAnalysis$1$adapted(CheckAnalysis.scala:94)
+	at org.apache.spark.sql.catalyst.trees.TreeNode.foreachUp(TreeNode.scala:263)
+	at org.apache.spark.sql.catalyst.analysis.CheckAnalysis.checkAnalysis(CheckAnalysis.scala:94)
+	at org.apache.spark.sql.catalyst.analysis.CheckAnalysis.checkAnalysis$(CheckAnalysis.scala:91)
+	at org.apache.spark.sql.catalyst.analysis.Analyzer.checkAnalysis(Analyzer.scala:182)
+	at org.apache.spark.sql.catalyst.analysis.Analyzer.$anonfun$executeAndCheck$1(Analyzer.scala:205)
+	at org.apache.spark.sql.catalyst.plans.logical.AnalysisHelper$.markInAnalyzer(AnalysisHelper.scala:330)
+	at org.apache.spark.sql.catalyst.analysis.Analyzer.executeAndCheck(Analyzer.scala:202)
+	at org.apache.spark.sql.execution.QueryExecution.$anonfun$analyzed$1(QueryExecution.scala:88)
+	at org.apache.spark.sql.catalyst.QueryPlanningTracker.measurePhase(QueryPlanningTracker.scala:111)
+	at org.apache.spark.sql.execution.QueryExecution.$anonfun$executePhase$1(QueryExecution.scala:196)
+	at org.apache.spark.sql.SparkSession.withActive(SparkSession.scala:775)
+	at org.apache.spark.sql.execution.QueryExecution.executePhase(QueryExecution.scala:196)
+	at org.apache.spark.sql.execution.QueryExecution.analyzed$lzycompute(QueryExecution.scala:88)
+	at org.apache.spark.sql.execution.QueryExecution.analyzed(QueryExecution.scala:86)
+	at org.apache.spark.sql.execution.QueryExecution.assertAnalyzed(QueryExecution.scala:78)
+	at org.apache.spark.sql.Dataset.<init>(Dataset.scala:205)
+	at org.apache.spark.sql.Dataset.<init>(Dataset.scala:211)
+	at org.apache.spark.sql.Dataset$.apply(Dataset.scala:75)
+	at org.apache.spark.sql.Dataset.withTypedPlan(Dataset.scala:3739)
+	at org.apache.spark.sql.Dataset.sortInternal(Dataset.scala:3727)
+	at org.apache.spark.sql.Dataset.sortWithinPartitions(Dataset.scala:1257)
+	at org.apache.spark.sql.Dataset.sortWithinPartitions(Dataset.scala:1256)
+	at ru.sber.orcbench.writer.OrcWriter.write(OrcWriter.java:51)
+	at ru.sber.orcbench.generator.GenerateRunner.run(GenerateRunner.java:85)
+	at ru.sber.orcbench.AppMain.main(AppMain.java:49)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.spark.deploy.yarn.ApplicationMaster$$anon$2.run(ApplicationMaster.scala:737)
+
+	 ApplicationMaster host: omlt-abyss-sdp-datanode-02.opsmon.sbt
+	 ApplicationMaster RPC port: 43698
+	 queue: default
+	 start time: 1790758507754
+	 final status: FAILED
+	 tracking URL: https://omlt-abyss-sdp-namenode-01.opsmon.sbt:8090/proxy/application_1790656441704_0005/
+	 user: pvm-omltp-sdp
+26/09/30 11:55:51 ERROR Client: Application diagnostics message: User class threw exception: org.apache.spark.sql.AnalysisException: cannot resolve 'epk_id' given input columns: [amount, campaign_id, country_code, device_type, event_day, event_hour, event_id, event_month, event_year, log_format, log_message, payload_json, product_id, region_id, session_id, status, timestamp, user_id];
+'Sort ['epk_id ASC NULLS FIRST], false
++- Repartition 1, true
+   +- Project [event_id#7, user_id#11L, session_id#16, country_code#22, device_type#29, status#37, product_id#46L, campaign_id#56L, region_id#67, timestamp#79, amount#106, payload_json#137, log_format#121, log_message#154, event_year#172, event_month#191, event_day#211, event_hour#232]
+      +- Project [global_id#4L, event_id#7, user_id#11L, session_id#16, country_code#22, device_type#29, status#37, product_id#46L, campaign_id#56L, region_id#67, timestamp#79, amount#106, log_format#121, payload_json#137, log_message#154, event_year#172, event_month#191, event_day#211, event_hour#232]
+         +- Project [row_idx#2L, global_id#4L, event_id#7, user_id#11L, session_id#16, country_code#22, device_type#29, status#37, product_id#46L, campaign_id#56L, region_id#67, timestamp#79, timestamp_ms#92L, amount#106, log_format#121, payload_json#137, log_message#154, event_year#172, event_month#191, event_day#211, hour(timestamp#79, Some(Europe/Moscow)) AS event_hour#232]
+            +- Project [row_idx#2L, global_id#4L, event_id#7, user_id#11L, session_id#16, country_code#22, device_type#29, status#37, product_id#46L, campaign_id#56L, region_id#67, timestamp#79, timestamp_ms#92L, amount#106, log_format#121, payload_json#137, log_message#154, event_year#172, event_month#191, dayofmonth(cast(timestamp#79 as date)) AS event_day#211]
+               +- Project [row_idx#2L, global_id#4L, event_id#7, user_id#11L, session_id#16, country_code#22, device_type#29, status#37, product_id#46L, campaign_id#56L, region_id#67, timestamp#79, timestamp_ms#92L, amount#106, log_format#121, payload_json#137, log_message#154, event_year#172, month(cast(timestamp#79 as date)) AS event_month#191]
+                  +- Project [row_idx#2L, global_id#4L, event_id#7, user_id#11L, session_id#16, country_code#22, device_type#29, status#37, product_id#46L, campaign_id#56L, region_id#67, timestamp#79, timestamp_ms#92L, amount#106, log_format#121, payload_json#137, log_message#154, year(cast(timestamp#79 as date)) AS event_year#172]
+                     +- Project [row_idx#2L, global_id#4L, event_id#7, user_id#11L, session_id#16, country_code#22, device_type#29, status#37, product_id#46L, campaign_id#56L, region_id#67, timestamp#79, timestamp_ms#92L, amount#106, log_format#121, payload_json#137, build_log_message(log_format#121, event_id#7, user_id#11L, session_id#16, country_code#22, device_type#29, status#37, product_id#46L, campaign_id#56L, region_id#67, timestamp_ms#92L, amount#106) AS log_message#154]
+                        +- Project [row_idx#2L, global_id#4L, event_id#7, user_id#11L, session_id#16, country_code#22, device_type#29, status#37, product_id#46L, campaign_id#56L, region_id#67, timestamp#79, timestamp_ms#92L, amount#106, log_format#121, build_log_message(json, event_id#7, user_id#11L, session_id#16, country_code#22, device_type#29, status#37, product_id#46L, campaign_id#56L, region_id#67, timestamp_ms#92L, amount#106) AS payload_json#137]
+                           +- Project [row_idx#2L, global_id#4L, event_id#7, user_id#11L, session_id#16, country_code#22, device_type#29, status#37, product_id#46L, campaign_id#56L, region_id#67, timestamp#79, timestamp_ms#92L, amount#106, element_at(array(json, plain_text, key_value, apache_common), cast((pmod((global_id#4L + 61), cast(4 as bigint)) + cast(1 as bigint)) as int), false) AS log_format#121]
+                              +- Project [row_idx#2L, global_id#4L, event_id#7, user_id#11L, session_id#16, country_code#22, device_type#29, status#37, product_id#46L, campaign_id#56L, region_id#67, timestamp#79, timestamp_ms#92L, round((rand(42) * 10000.0), 2) AS amount#106]
+                                 +- Project [row_idx#2L, global_id#4L, event_id#7, user_id#11L, session_id#16, country_code#22, device_type#29, status#37, product_id#46L, campaign_id#56L, region_id#67, timestamp#79, cast((unix_timestamp(timestamp#79, yyyy-MM-dd HH:mm:ss, Some(Europe/Moscow), false) * cast(1000 as bigint)) as bigint) AS timestamp_ms#92L]
+                                    +- Project [row_idx#2L, global_id#4L, event_id#7, user_id#11L, session_id#16, country_code#22, device_type#29, status#37, product_id#46L, campaign_id#56L, region_id#67, timestamp_millis((1704067200000 + cast((cast((row_idx#2L * cast(86400000 as bigint)) as double) / cast(58675 as double)) as bigint))) AS timestamp#79]
+                                       +- Project [row_idx#2L, global_id#4L, event_id#7, user_id#11L, session_id#16, country_code#22, device_type#29, status#37, product_id#46L, campaign_id#56L, cast(CASE WHEN (rand(58) > 0.3) THEN cast((POWER(rand(55), 2.0) * cast(9999 as double)) as bigint) ELSE pmod(((global_id#4L * 1009491) + 55), 10000) END as int) AS region_id#67]
+                                          +- Project [row_idx#2L, global_id#4L, event_id#7, user_id#11L, session_id#16, country_code#22, device_type#29, status#37, product_id#46L, CASE WHEN (rand(52) > 0.3) THEN cast((POWER(rand(49), 2.0) * cast(49999 as double)) as bigint) ELSE pmod(((global_id#4L * 1009491) + 49), 50000) END AS campaign_id#56L]
+                                             +- Project [row_idx#2L, global_id#4L, event_id#7, user_id#11L, session_id#16, country_code#22, device_type#29, status#37, CASE WHEN (rand(45) > 0.3) THEN cast((POWER(rand(42), 2.0) * cast(99999 as double)) as bigint) ELSE pmod(((global_id#4L * 1009491) + 42), 100000) END AS product_id#46L]
+                                                +- Project [row_idx#2L, global_id#4L, event_id#7, user_id#11L, session_id#16, country_code#22, device_type#29, element_at(array(success, failed, pending, timeout), cast((pmod((global_id#4L + 44), cast(4 as bigint)) + cast(1 as bigint)) as int), false) AS status#37]
+                                                   +- Project [row_idx#2L, global_id#4L, event_id#7, user_id#11L, session_id#16, country_code#22, element_at(array(mobile, desktop, tablet, tv, iot), cast((pmod((global_id#4L + 43), cast(5 as bigint)) + cast(1 as bigint)) as int), false) AS device_type#29]
+                                                      +- Project [row_idx#2L, global_id#4L, event_id#7, user_id#11L, session_id#16, element_at(array(RU, US, DE, FR, GB, CN, JP, IN, BR, CA, AU, IT, ES, NL, SE, NO, FI, PL, TR, MX, KR, SG, AE, SA, ... 26 more fields), cast((pmod((global_id#4L + 42), cast(50 as bigint)) + cast(1 as bigint)) as int), false) AS country_code#22]
+                                                         +- Project [row_idx#2L, global_id#4L, event_id#7, user_id#11L, concat(sess-, cast(pmod(((global_id#4L * 12345) + 42), 100000000) as string)) AS session_id#16]
+                                                            +- Project [row_idx#2L, global_id#4L, event_id#7, pmod(((global_id#4L * 1103515245) + 42), 50000000) AS user_id#11L]
+                                                               +- Project [row_idx#2L, global_id#4L, concat(evt-, sha2(cast(cast(global_id#4L as string) as binary), 256)) AS event_id#7]
+                                                                  +- Project [row_idx#2L, (row_idx#2L + 0) AS global_id#4L]
+                                                                     +- Project [id#0L AS row_idx#2L]
+                                                                        +- Range (0, 58675, step=1, splits=Some(2000))
+
+	at org.apache.spark.sql.catalyst.analysis.package$AnalysisErrorAt.failAnalysis(package.scala:54)
+	at org.apache.spark.sql.catalyst.analysis.CheckAnalysis$$anonfun$$nestedInanonfun$checkAnalysis$1$2.applyOrElse(CheckAnalysis.scala:179)
+	at org.apache.spark.sql.catalyst.analysis.CheckAnalysis$$anonfun$$nestedInanonfun$checkAnalysis$1$2.applyOrElse(CheckAnalysis.scala:175)
+	at org.apache.spark.sql.catalyst.trees.TreeNode.$anonfun$transformUpWithPruning$2(TreeNode.scala:535)
+	at org.apache.spark.sql.catalyst.trees.CurrentOrigin$.withOrigin(TreeNode.scala:82)
+	at org.apache.spark.sql.catalyst.trees.TreeNode.transformUpWithPruning(TreeNode.scala:535)
+	at org.apache.spark.sql.catalyst.trees.TreeNode.$anonfun$transformUpWithPruning$1(TreeNode.scala:532)
+	at scala.collection.immutable.List.map(List.scala:293)
+	at org.apache.spark.sql.catalyst.trees.TreeNode.mapChildren(TreeNode.scala:595)
+	at org.apache.spark.sql.catalyst.trees.TreeNode.transformUpWithPruning(TreeNode.scala:532)
+	at org.apache.spark.sql.catalyst.plans.QueryPlan.$anonfun$transformExpressionsUpWithPruning$1(QueryPlan.scala:181)
+	at org.apache.spark.sql.catalyst.plans.QueryPlan.$anonfun$mapExpressions$1(QueryPlan.scala:193)
+	at org.apache.spark.sql.catalyst.trees.CurrentOrigin$.withOrigin(TreeNode.scala:82)
+	at org.apache.spark.sql.catalyst.plans.QueryPlan.transformExpression$1(QueryPlan.scala:193)
+	at org.apache.spark.sql.catalyst.plans.QueryPlan.recursiveTransform$1(QueryPlan.scala:204)
+	at org.apache.spark.sql.catalyst.plans.QueryPlan.$anonfun$mapExpressions$3(QueryPlan.scala:209)
+	at scala.collection.TraversableLike.$anonfun$map$1(TraversableLike.scala:286)
+	at scala.collection.mutable.ResizableArray.foreach(ResizableArray.scala:62)
+	at scala.collection.mutable.ResizableArray.foreach$(ResizableArray.scala:55)
+	at scala.collection.mutable.ArrayBuffer.foreach(ArrayBuffer.scala:49)
+	at scala.collection.TraversableLike.map(TraversableLike.scala:286)
+	at scala.collection.TraversableLike.map$(TraversableLike.scala:279)
+	at scala.collection.AbstractTraversable.map(Traversable.scala:108)
+	at org.apache.spark.sql.catalyst.plans.QueryPlan.recursiveTransform$1(QueryPlan.scala:209)
+	at org.apache.spark.sql.catalyst.plans.QueryPlan.$anonfun$mapExpressions$4(QueryPlan.scala:214)
+	at org.apache.spark.sql.catalyst.trees.TreeNode.mapProductIterator(TreeNode.scala:323)
+	at org.apache.spark.sql.catalyst.plans.QueryPlan.mapExpressions(QueryPlan.scala:214)
+	at org.apache.spark.sql.catalyst.plans.QueryPlan.transformExpressionsUpWithPruning(QueryPlan.scala:181)
+	at org.apache.spark.sql.catalyst.plans.QueryPlan.transformExpressionsUp(QueryPlan.scala:161)
+	at org.apache.spark.sql.catalyst.analysis.CheckAnalysis.$anonfun$checkAnalysis$1(CheckAnalysis.scala:175)
+	at org.apache.spark.sql.catalyst.analysis.CheckAnalysis.$anonfun$checkAnalysis$1$adapted(CheckAnalysis.scala:94)
+	at org.apache.spark.sql.catalyst.trees.TreeNode.foreachUp(TreeNode.scala:263)
+	at org.apache.spark.sql.catalyst.analysis.CheckAnalysis.checkAnalysis(CheckAnalysis.scala:94)
+	at org.apache.spark.sql.catalyst.analysis.CheckAnalysis.checkAnalysis$(CheckAnalysis.scala:91)
+	at org.apache.spark.sql.catalyst.analysis.Analyzer.checkAnalysis(Analyzer.scala:182)
+	at org.apache.spark.sql.catalyst.analysis.Analyzer.$anonfun$executeAndCheck$1(Analyzer.scala:205)
+	at org.apache.spark.sql.catalyst.plans.logical.AnalysisHelper$.markInAnalyzer(AnalysisHelper.scala:330)
+	at org.apache.spark.sql.catalyst.analysis.Analyzer.executeAndCheck(Analyzer.scala:202)
+	at org.apache.spark.sql.execution.QueryExecution.$anonfun$analyzed$1(QueryExecution.scala:88)
+	at org.apache.spark.sql.catalyst.QueryPlanningTracker.measurePhase(QueryPlanningTracker.scala:111)
+	at org.apache.spark.sql.execution.QueryExecution.$anonfun$executePhase$1(QueryExecution.scala:196)
+	at org.apache.spark.sql.SparkSession.withActive(SparkSession.scala:775)
+	at org.apache.spark.sql.execution.QueryExecution.executePhase(QueryExecution.scala:196)
+	at org.apache.spark.sql.execution.QueryExecution.analyzed$lzycompute(QueryExecution.scala:88)
+	at org.apache.spark.sql.execution.QueryExecution.analyzed(QueryExecution.scala:86)
+	at org.apache.spark.sql.execution.QueryExecution.assertAnalyzed(QueryExecution.scala:78)
+	at org.apache.spark.sql.Dataset.<init>(Dataset.scala:205)
+	at org.apache.spark.sql.Dataset.<init>(Dataset.scala:211)
+	at org.apache.spark.sql.Dataset$.apply(Dataset.scala:75)
+	at org.apache.spark.sql.Dataset.withTypedPlan(Dataset.scala:3739)
+	at org.apache.spark.sql.Dataset.sortInternal(Dataset.scala:3727)
+	at org.apache.spark.sql.Dataset.sortWithinPartitions(Dataset.scala:1257)
+	at org.apache.spark.sql.Dataset.sortWithinPartitions(Dataset.scala:1256)
+	at ru.sber.orcbench.writer.OrcWriter.write(OrcWriter.java:51)
+	at ru.sber.orcbench.generator.GenerateRunner.run(GenerateRunner.java:85)
+	at ru.sber.orcbench.AppMain.main(AppMain.java:49)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.spark.deploy.yarn.ApplicationMaster$$anon$2.run(ApplicationMaster.scala:737)
+
+Exception in thread "main" org.apache.spark.SparkException: Application application_1790656441704_0005 finished with failed status
+	at org.apache.spark.deploy.yarn.Client.run(Client.scala:1289)
+	at org.apache.spark.deploy.yarn.YarnClusterApplication.start(Client.scala:1683)
+	at org.apache.spark.deploy.SparkSubmit.org$apache$spark$deploy$SparkSubmit$$runMain(SparkSubmit.scala:968)
+	at org.apache.spark.deploy.SparkSubmit.doRunMain$1(SparkSubmit.scala:180)
+	at org.apache.spark.deploy.SparkSubmit.submit(SparkSubmit.scala:203)
+	at org.apache.spark.deploy.SparkSubmit.doSubmit(SparkSubmit.scala:90)
+	at org.apache.spark.deploy.SparkSubmit$$anon$2.doSubmit(SparkSubmit.scala:1056)
+	at org.apache.spark.deploy.SparkSubmit$.main(SparkSubmit.scala:1065)
+	at org.apache.spark.deploy.SparkSubmit.main(SparkSubmit.scala)
+26/09/30 11:55:51 INFO ShutdownHookManager: Shutdown hook called
+26/09/30 11:55:51 INFO ShutdownHookManager: Deleting directory /tmp/spark-1954378a-7bd1-4270-9600-1ad2f2c0c9db
+26/09/30 11:55:51 INFO ShutdownHookManager: Deleting directory /tmp/spark-efd0e0fa-0466-443d-a4fe-0148765d4d4a
