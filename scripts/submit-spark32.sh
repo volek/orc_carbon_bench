@@ -67,7 +67,7 @@ for arg in "$@"; do
   fi
 done
 if [[ $has_separator -eq 0 ]]; then
-  APP_ARGS=("${SPARK_ARGS[@]}")
+  APP_ARGS=("${SPARK_ARGS[@]+"${SPARK_ARGS[@]}"}")
   SPARK_ARGS=()
 fi
 
@@ -147,13 +147,15 @@ ensure_event_log_dir() {
 
 ensure_event_log_dir
 
+# Empty-array expansions must be nounset-safe: smoke/factor call with only "--" app args,
+# so SPARK_ARGS is empty and "${SPARK_ARGS[@]}" fails under set -u.
 exec "$SPARK_SUBMIT" \
   --master yarn \
   --deploy-mode cluster \
   --conf spark.security.credentials.hive.enabled=false \
   --conf spark.security.credentials.hbase.enabled=false \
-  "${DEFAULT_SPARK_ARGS[@]}" \
-  "${SPARK_ARGS[@]}" \
+  "${DEFAULT_SPARK_ARGS[@]+"${DEFAULT_SPARK_ARGS[@]}"}" \
+  "${SPARK_ARGS[@]+"${SPARK_ARGS[@]}"}" \
   --class ru.sber.orcbench.AppMain \
   "$JAR" \
-  "${APP_ARGS[@]}"
+  "${APP_ARGS[@]+"${APP_ARGS[@]}"}"
