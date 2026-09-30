@@ -30,7 +30,7 @@ isProject: false
 
 Опираемся на итоговую последовательность из [ORC + HDFS + Spark + Hive benchmark.md](ORC%20+%20HDFS%20+%20Spark%20+%20Hive%20benchmark.md) (§35) и на уже работающий пайплайн `generate → validate → benchmark → report` в [README.md](../README.md). Практический запуск: [cluster_manual_runbook.md](cluster_manual_runbook.md).
 
-**Принцип:** один фактор за раз; cold/warm не смешивать; решения по layout — на Dataset S/M; финальный SLA — на Dataset L (≤500 GB); Hive читает **те же** ORC-файлы, что и Spark.
+**Принцип:** один фактор за раз; cold/warm не смешивать; решения по layout — на Dataset S/M; финальный SLA — на Dataset L (≤100 GB); Hive читает **те же** ORC-файлы, что и Spark.
 
 ```mermaid
 flowchart TD
@@ -59,9 +59,9 @@ flowchart TD
 | Метрики | duration, bytes_read, records_read, selectivity | partitions/files read, scan ratio, planning vs execution, shuffle/spill, SLA success rate ≤3s |
 | Bloom A/B | [`scripts/run-bloom-ab.sh`](../scripts/run-bloom-ab.sh) | Обобщить до factor-runner (layout × engine × cold/warm) |
 | Hive/Tez/LLAP | нет (submit даже отключает Hive tokens) | DDL на external ORC, Beeline/JDBC runner, LLAP cold/warm/cache-size |
-| Dataset S/M/L | `--target-size-tb` | **S≈100 GB** (`0.1`), **M≈250 GB** (`0.25`), **L≤500 GB** (`0.5` макс.); HDFS свободно ~700 GB — не копить layout’ы |
+| Dataset S/M/L | `--target-size-tb` | **S≈20 GB** (`0.02`), **M≈50 GB** (`0.05`), **L≤100 GB** (`0.1` макс.); HDFS свободно ~700 GB — не копить layout’ы |
 
-Схема документа (`event_date`, `field_high/medium/low`, `msg`) **не совпадает** с текущей (`event_id`, `user_id`, `country_code`, `log_message`, …). **Решение:** не менять генератор; маппить Q1–Q10 на существующие колонки и сценарии (high→`event_id`/`user_id`, medium→`product_id`/`campaign_id`, low→`status`/`country_code`, msg→`log_message`, partition→`event_year/month/day`).
+Схема AUDEI audit (`epk_id`, `event_ts`, `name`, `channel_type`, `state`, `payload_json`, …) — см. [audei-st-workload-mapping.md](audei-st-workload-mapping.md). Suites: `audei` (interactive SLA), `st` (archive ST mix), `doc` (legacy Q1–Q10 на тех же колонках).
 
 ---
 
@@ -216,7 +216,7 @@ flowchart TD
 4. **Hive runner + DDL** (P8) — новый модуль/скрипты; не ломать текущий Spark path.  
 5. **Concurrency + SLA report** (P9–P10).
 
-Масштабы прогонов: все факторы на **S** (~100 GB); спорные top-N на **M** (~250 GB); финал S0/S1/H0–H3 + concurrency на **L** (≤**500 GB**). Перед L очищать лишние `layouts/*` (на кластере ~700 GB свободно).
+Масштабы прогонов: все факторы на **S** (~20 GB); спорные top-N на **M** (~50 GB); финал S0/S1/H0–H3 + concurrency на **L** (≤**100 GB**). Перед L очищать лишние `layouts/*` (на кластере ~700 GB свободно).
 
 ---
 
@@ -224,4 +224,4 @@ flowchart TD
 
 - Hive/LLAP может быть недоступен или иной версии на SDP — P8 стартует с inventory версий Tez/Hive/LLAP.  
 - Short-circuit / HDFS centralized cache требуют admin-доступа — помечать N/A, не блокировать BEST_ORC.  
-- 20–30 repeats × много layout’ов дорого по времени и **месту на HDFS** (~700 GB свободно, макс. датасет 500 GB) — жёстко резать матрицу после S (только победители факторов) и удалять проигравшие layout’ы перед M/L.
+- 20–30 repeats × много layout’ов дорого по времени и **месту на HDFS** (~700 GB свободно, макс. датасет 100 GB) — жёстко резать матрицу после S (только победители факторов) и удалять проигравшие layout’ы перед M/L.

@@ -22,7 +22,7 @@ public final class ValidationSettings {
         return new ValidationSettings(
                 EnumSet.allOf(ValidationCheck.class),
                 0.01,
-                0.15
+                0.20
         );
     }
 
@@ -32,7 +32,7 @@ public final class ValidationSettings {
                 : defaults().checks();
 
         double sampleFraction = parseSampleFraction(kv.getOrDefault("validation-sample-fraction", "0.01"));
-        double tolerance = parseShareTolerance(kv.getOrDefault("log-format-share-tolerance", "0.15"));
+        double tolerance = parseShareTolerance(kv.getOrDefault("log-format-share-tolerance", "0.20"));
 
         return new ValidationSettings(checks, sampleFraction, tolerance);
     }

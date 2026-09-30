@@ -10,11 +10,9 @@
 #   h4  LLAP warm
 #
 # Requires: beeline, Hive ≥2.0 for LLAP profiles.
-# Env: BASE, LAYOUT (default best_orc), BEELINE, HIVE_JDBC_URL, FILTER_* placeholders
-#
-#   ./scripts/hive/run-hive-factor.sh h0
-#   ./scripts/hive/run-hive-factor.sh h4
-# -----------------------------------------------------------------------------
+#   SUITE=audei ./scripts/hive/run-hive-factor.sh h0
+#   SUITE=st ./scripts/hive/run-hive-factor.sh h0
+# Env: BASE, LAYOUT (default best_orc), SUITE (doc|audei|st), BEELINE, HIVE_JDBC_URL, FILTER_*
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
@@ -36,13 +34,25 @@ Y="${FILTER_Y:-2024}"
 M="${FILTER_M:-6}"
 D="${FILTER_D:-15}"
 EVENT_ID="${FILTER_EVENT_ID:-evt-sample}"
-USER_ID="${FILTER_USER_ID:-1}"
-PRODUCT_ID="${FILTER_PRODUCT_ID:-1}"
-CAMPAIGN_ID="${FILTER_CAMPAIGN_ID:-1}"
+EPK_ID="${FILTER_EPK_ID:-003a75de-2a9b-45bc-89c9-1f9a8ebd9b0c}"
+MODULE="${FILTER_MODULE:-CI02001608_sm_uko}"
+NAME="${FILTER_NAME:-LOGON}"
 STATUS="${FILTER_STATUS:-success}"
-COUNTRY="${FILTER_COUNTRY:-RU}"
+CHANNEL="${FILTER_CHANNEL:-WEB_SBOL}"
 TS_START="${FILTER_TS_START:-2024-06-01 00:00:00}"
 TS_END="${FILTER_TS_END:-2024-07-01 00:00:00}"
+TS_1D_START="${FILTER_TS_1D_START:-2024-06-15 00:00:00}"
+TS_1D_END="${FILTER_TS_1D_END:-2024-06-16 00:00:00}"
+TS_14D_START="${FILTER_TS_14D_START:-2024-06-01 00:00:00}"
+TS_14D_END="${FILTER_TS_14D_END:-2024-06-15 00:00:00}"
+TS_31D_START="${FILTER_TS_31D_START:-2024-05-15 00:00:00}"
+TS_31D_END="${FILTER_TS_31D_END:-2024-06-15 00:00:00}"
+LIKE_TOKEN="${FILTER_LIKE_TOKEN:-audit-event}"
+RLIKE="${FILTER_RLIKE:-(LOGON|FIND|ESA|LAUNCHER)}"
+EPK_ID_B="${FILTER_EPK_ID_B:-003a75de-0000-4000-8000-000000000001}"
+EPK_ID_C="${FILTER_EPK_ID_C:-003a75de-0000-4000-8000-000000000002}"
+EPK_ID_D="${FILTER_EPK_ID_D:-003a75de-0000-4000-8000-000000000003}"
+SUITE="${SUITE:-doc}"
 
 SESSION_INIT=()
 CACHE_STATE="cold"
@@ -110,13 +120,24 @@ render_sql() {
     -e "s|\${M}|$M|g" \
     -e "s|\${D}|$D|g" \
     -e "s|\${EVENT_ID}|$EVENT_ID|g" \
-    -e "s|\${USER_ID}|$USER_ID|g" \
-    -e "s|\${PRODUCT_ID}|$PRODUCT_ID|g" \
-    -e "s|\${CAMPAIGN_ID}|$CAMPAIGN_ID|g" \
+    -e "s|\${EPK_ID}|$EPK_ID|g" \
+    -e "s|\${MODULE}|$MODULE|g" \
+    -e "s|\${NAME}|$NAME|g" \
     -e "s|\${STATUS}|$STATUS|g" \
-    -e "s|\${COUNTRY}|$COUNTRY|g" \
+    -e "s|\${CHANNEL}|$CHANNEL|g" \
     -e "s|\${TS_START}|$TS_START|g" \
     -e "s|\${TS_END}|$TS_END|g" \
+    -e "s|\${TS_1D_START}|$TS_1D_START|g" \
+    -e "s|\${TS_1D_END}|$TS_1D_END|g" \
+    -e "s|\${TS_14D_START}|$TS_14D_START|g" \
+    -e "s|\${TS_14D_END}|$TS_14D_END|g" \
+    -e "s|\${TS_31D_START}|$TS_31D_START|g" \
+    -e "s|\${TS_31D_END}|$TS_31D_END|g" \
+    -e "s|\${LIKE_TOKEN}|$LIKE_TOKEN|g" \
+    -e "s|\${RLIKE}|$RLIKE|g" \
+    -e "s|\${EPK_ID_B}|$EPK_ID_B|g" \
+    -e "s|\${EPK_ID_C}|$EPK_ID_C|g" \
+    -e "s|\${EPK_ID_D}|$EPK_ID_D|g" \
     "$file"
 }
 
@@ -128,7 +149,7 @@ beeline_cmd() {
   fi
 }
 
-echo "Hive factor profile=$PROFILE engine=$ENGINE cache=$CACHE_STATE orc=$ORC_LOCATION"
+echo "Hive factor profile=$PROFILE suite=$SUITE engine=$ENGINE cache=$CACHE_STATE orc=$ORC_LOCATION"
 
 # DDL once
 DDL_SQL="$(render_sql "$ROOT/scripts/hive/ddl_external_orc.sql")"
@@ -138,19 +159,43 @@ beeline_cmd "$DDL_SQL" >/dev/null || true
 INIT_SQL="$(printf '%s\n' "${SESSION_INIT[@]}")"
 beeline_cmd "$INIT_SQL" >/dev/null || true
 
-QUERIES=(
-  "partition_prune:SELECT count(*) FROM events_ext WHERE event_year=${Y} AND event_month=${M} AND event_day=${D}"
-  "filter_high_cardinality:SELECT count(*) FROM events_ext WHERE event_year=${Y} AND event_month=${M} AND event_day=${D} AND (event_id='${EVENT_ID}' OR user_id=${USER_ID})"
-  "filter_medium_cardinality:SELECT count(*) FROM events_ext WHERE event_year=${Y} AND event_month=${M} AND event_day=${D} AND (product_id=${PRODUCT_ID} OR campaign_id=${CAMPAIGN_ID})"
-  "filter_low_cardinality:SELECT count(*) FROM events_ext WHERE event_year=${Y} AND event_month=${M} AND event_day=${D} AND country_code='${COUNTRY}' AND status='${STATUS}'"
-  "filter_in:SELECT count(*) FROM events_ext WHERE event_year=${Y} AND event_month=${M} AND event_day=${D} AND event_id IN ('${EVENT_ID}','${EVENT_ID}-missing-a','${EVENT_ID}-missing-b')"
-  "filter_timestamp_range:SELECT count(*) FROM events_ext WHERE \`timestamp\` >= '${TS_START}' AND \`timestamp\` < '${TS_END}'"
-  "projection:SELECT count(event_id) FROM events_ext WHERE event_year=${Y} AND event_month=${M} AND event_day=${D}"
-  "full_scan:SELECT count(*) FROM events_ext WHERE event_year=${Y} AND event_month=${M} AND event_day=${D}"
-  "group_by:SELECT country_code, status, count(*) FROM events_ext WHERE event_year=${Y} AND event_month=${M} AND event_day=${D} GROUP BY country_code, status"
-  "group_by_heavy:SELECT product_id, count(*) FROM events_ext WHERE event_year=${Y} AND event_month=${M} GROUP BY product_id"
-  "join_dictionary:SELECT e.product_id, count(*) FROM events_ext e JOIN dictionary_ext d ON e.product_id=d.product_id WHERE e.event_year=${Y} AND e.event_month=${M} AND e.event_day=${D} AND d.product_type='featured' GROUP BY e.product_id"
-)
+case "$SUITE" in
+  audei)
+    QUERIES=(
+      "epk_eq_1d:SELECT count(*) FROM events_ext WHERE event_ts >= '${TS_1D_START}' AND event_ts < '${TS_1D_END}' AND epk_id='${EPK_ID}'"
+      "epk_eq_14d:SELECT count(*) FROM events_ext WHERE event_ts >= '${TS_14D_START}' AND event_ts < '${TS_14D_END}' AND epk_id='${EPK_ID}'"
+      "epk_page:SELECT count(*) FROM (SELECT * FROM events_ext WHERE event_ts >= '${TS_14D_START}' AND event_ts < '${TS_14D_END}' AND epk_id='${EPK_ID}' ORDER BY event_ts LIMIT 1000) t"
+      "eq_filters:SELECT count(*) FROM events_ext WHERE event_year=${Y} AND event_month=${M} AND event_day=${D} AND name='${NAME}' AND channel_type='${CHANNEL}' AND state='${STATUS}'"
+      "order_by_epk_day:SELECT count(*) FROM (SELECT * FROM events_ext WHERE event_year=${Y} AND event_month=${M} AND event_day=${D} ORDER BY epk_id) t"
+    )
+    ;;
+  st)
+    QUERIES=(
+      "no_filter:SELECT count(*) FROM events_ext WHERE event_ts >= '${TS_31D_START}' AND event_ts < '${TS_31D_END}'"
+      "like_single:SELECT count(*) FROM events_ext WHERE event_ts >= '${TS_31D_START}' AND event_ts < '${TS_31D_END}' AND payload_json LIKE '%${LIKE_TOKEN}%'"
+      "like_multi:SELECT count(*) FROM events_ext WHERE event_ts >= '${TS_31D_START}' AND event_ts < '${TS_31D_END}' AND payload_json LIKE '%${LIKE_TOKEN}%' AND payload_json LIKE '%AUDEI%' AND payload_json LIKE '%sms%' AND payload_json LIKE '%session%' AND payload_json LIKE '%pad%'"
+      "like_fulltext:SELECT count(*) FROM events_ext WHERE event_ts >= '${TS_31D_START}' AND event_ts < '${TS_31D_END}' AND payload_json LIKE '%${LIKE_TOKEN}%' AND payload_json LIKE '%AUDEI%' AND payload_json LIKE '%sms%' AND payload_json LIKE '%session%' AND payload_json LIKE '%pad%' AND payload_json LIKE '%device%' AND payload_json LIKE '%confirm%' AND payload_json LIKE '%metamodel%' AND payload_json LIKE '%param%' AND payload_json LIKE '%event%'"
+      "eq:SELECT count(*) FROM events_ext WHERE event_ts >= '${TS_31D_START}' AND event_ts < '${TS_31D_END}' AND epk_id='${EPK_ID}'"
+      "in_list:SELECT count(*) FROM events_ext WHERE event_ts >= '${TS_31D_START}' AND event_ts < '${TS_31D_END}' AND epk_id IN ('${EPK_ID}','${EPK_ID_B}','${EPK_ID_C}','${EPK_ID_D}')"
+      "rlike:SELECT count(*) FROM events_ext WHERE event_ts >= '${TS_31D_START}' AND event_ts < '${TS_31D_END}' AND payload_json RLIKE '${RLIKE}'"
+    )
+    ;;
+  *)
+    QUERIES=(
+      "partition_prune:SELECT count(*) FROM events_ext WHERE event_year=${Y} AND event_month=${M} AND event_day=${D}"
+      "filter_high_cardinality:SELECT count(*) FROM events_ext WHERE event_year=${Y} AND event_month=${M} AND event_day=${D} AND (epk_id='${EPK_ID}' OR event_id='${EVENT_ID}')"
+      "filter_medium_cardinality:SELECT count(*) FROM events_ext WHERE event_year=${Y} AND event_month=${M} AND event_day=${D} AND (module='${MODULE}' OR name='${NAME}')"
+      "filter_low_cardinality:SELECT count(*) FROM events_ext WHERE event_year=${Y} AND event_month=${M} AND event_day=${D} AND channel_type='${CHANNEL}' AND state='${STATUS}'"
+      "filter_in:SELECT count(*) FROM events_ext WHERE event_year=${Y} AND event_month=${M} AND event_day=${D} AND event_id IN ('${EVENT_ID}','${EVENT_ID}-missing-a','${EVENT_ID}-missing-b')"
+      "filter_timestamp_range:SELECT count(*) FROM events_ext WHERE event_ts >= '${TS_START}' AND event_ts < '${TS_END}'"
+      "projection:SELECT count(event_id) FROM events_ext WHERE event_year=${Y} AND event_month=${M} AND event_day=${D}"
+      "full_scan:SELECT count(*) FROM events_ext WHERE event_year=${Y} AND event_month=${M} AND event_day=${D}"
+      "group_by:SELECT name, state, count(*) FROM events_ext WHERE event_year=${Y} AND event_month=${M} AND event_day=${D} GROUP BY name, state"
+      "group_by_heavy:SELECT module, count(*) FROM events_ext WHERE event_year=${Y} AND event_month=${M} GROUP BY module"
+      "join_dictionary:SELECT e.name, count(*) FROM events_ext e JOIN dictionary_ext d ON e.name=d.event_name WHERE e.event_year=${Y} AND e.event_month=${M} AND e.event_day=${D} AND d.event_family='featured' GROUP BY e.name"
+    )
+    ;;
+esac
 
 echo "scenario,duration_ms,layout_id,engine,cache_state,dataset_label,sla_ok,sla_threshold_ms,format,run_index,warmup" > "$LOCAL_CSV"
 

@@ -27,6 +27,12 @@ class ExperimentMetaTest {
         assertEquals(0.1d, meta.scanRatio(100_000L), 1e-9);
         assertTrue(meta.slaOk(2500L));
         assertFalse(meta.slaOk(3001L));
+        assertTrue(meta.slaOk(50_000L, "archive"));
+        assertFalse(meta.slaOk(130_000L, "archive"));
+        assertEquals(120_000L, meta.archiveSlaThresholdMs());
+        assertEquals("1_month", ExperimentMeta.durationGroup(14));
+        assertEquals("2_quarter", ExperimentMeta.durationGroup(60));
+        assertEquals(1.0d, ExperimentMeta.secondsPerGb(1000L, 1L << 30), 1e-9);
     }
 
     @Test
@@ -37,11 +43,13 @@ class ExperimentMetaTest {
         kv.put("engine", "hive_llap");
         kv.put("cache-state", "warm");
         kv.put("sla-threshold-ms", "3000");
+        kv.put("archive-sla-threshold-ms", "90000");
         kv.put("dataset-bytes", "2048");
         ExperimentMeta meta = ExperimentMeta.from(kv);
         assertEquals("f1", meta.layoutId());
         assertEquals(EngineType.HIVE_LLAP, meta.engine());
         assertEquals(CacheState.WARM, meta.cacheState());
         assertEquals(2048L, meta.datasetBytes());
+        assertEquals(90000L, meta.archiveSlaThresholdMs());
     }
 }

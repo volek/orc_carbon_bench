@@ -298,6 +298,21 @@ public final class ReportRunner {
         Column slaSuccessRate = hasColumn(measured, "sla_ok")
                 ? avg(expr("cast(sla_ok as double)")).alias("sla_success_rate")
                 : lit(null).cast("double").alias("sla_success_rate");
+        Column avgSecondsPerGb = hasColumn(measured, "seconds_per_gb")
+                ? avg("seconds_per_gb").alias("avg_seconds_per_gb")
+                : lit(null).cast("double").alias("avg_seconds_per_gb");
+        Column queryCategory = hasColumn(measured, "query_category")
+                ? max("query_category").alias("query_category")
+                : lit(null).cast("string").alias("query_category");
+        Column slaClassCol = hasColumn(measured, "sla_class")
+                ? max("sla_class").alias("sla_class")
+                : lit(null).cast("string").alias("sla_class");
+        Column durationGroup = hasColumn(measured, "duration_group")
+                ? max("duration_group").alias("duration_group")
+                : lit(null).cast("string").alias("duration_group");
+        Column rowsCapRate = hasColumn(measured, "rows_cap_ok")
+                ? avg(expr("cast(rows_cap_ok as double)")).alias("rows_cap_ok_rate")
+                : lit(null).cast("double").alias("rows_cap_ok_rate");
         Column p99Duration = expr("cast(percentile_approx(duration_ms, 0.99) as double)").alias("p99_duration_ms");
 
         return measured.groupBy(
@@ -324,7 +339,12 @@ public final class ReportRunner {
                         bloomColumns,
                         sparkVersionAgg,
                         avgScanRatio,
-                        slaSuccessRate
+                        slaSuccessRate,
+                        avgSecondsPerGb,
+                        queryCategory,
+                        slaClassCol,
+                        durationGroup,
+                        rowsCapRate
                 )
                 .withColumn("passed", lit(null).cast("boolean"));
     }
@@ -354,7 +374,12 @@ public final class ReportRunner {
                 lit("spark").alias("engine"),
                 lit("-").alias("cache_state"),
                 lit(null).cast("double").alias("avg_scan_ratio"),
-                lit(null).cast("double").alias("sla_success_rate")
+                lit(null).cast("double").alias("sla_success_rate"),
+                lit(null).cast("double").alias("avg_seconds_per_gb"),
+                lit(null).cast("string").alias("query_category"),
+                lit(null).cast("string").alias("sla_class"),
+                lit(null).cast("string").alias("duration_group"),
+                lit(null).cast("double").alias("rows_cap_ok_rate")
         );
     }
 

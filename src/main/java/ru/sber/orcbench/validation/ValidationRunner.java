@@ -10,7 +10,7 @@ import ru.sber.orcbench.config.OrcWriteSettings;
 import ru.sber.orcbench.config.SparkRuntimeInfo;
 import ru.sber.orcbench.config.ValidationCheck;
 import ru.sber.orcbench.config.ValidationSettings;
-import ru.sber.orcbench.generator.LogFormatType;
+import ru.sber.orcbench.generator.EventNameType;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -121,24 +121,24 @@ public final class ValidationRunner {
             String runId, Dataset<Row> sample, SparkRuntimeInfo runtime
     ) {
         Row row = sample.agg(
-                countDistinct(col("country_code")).alias("country_distinct"),
-                countDistinct(col("device_type")).alias("device_distinct"),
-                countDistinct(col("status")).alias("status_distinct"),
-                countDistinct(col("log_format")).alias("log_format_distinct")
+                countDistinct(col("channel_type")).alias("channel_distinct"),
+                countDistinct(col("name")).alias("name_distinct"),
+                countDistinct(col("state")).alias("state_distinct"),
+                countDistinct(col("module")).alias("module_distinct")
         ).collectAsList().get(0);
 
-        long countryDistinct = row.getLong(0);
-        long deviceDistinct = row.getLong(1);
-        long statusDistinct = row.getLong(2);
-        long logFormatDistinct = row.getLong(3);
+        long channelDistinct = row.getLong(0);
+        long nameDistinct = row.getLong(1);
+        long stateDistinct = row.getLong(2);
+        long moduleDistinct = row.getLong(3);
 
-        boolean passed = countryDistinct <= 50
-                && deviceDistinct <= 5
-                && statusDistinct <= 4
-                && logFormatDistinct <= LogFormatType.ALL_VALUES.size();
+        boolean passed = channelDistinct <= 16
+                && nameDistinct <= EventNameType.ALL_VALUES.size()
+                && stateDistinct <= 4
+                && moduleDistinct <= 32;
 
-        String details = "country=" + countryDistinct + " device=" + deviceDistinct
-                + " status=" + statusDistinct + " log_format=" + logFormatDistinct;
+        String details = "channel=" + channelDistinct + " name=" + nameDistinct
+                + " state=" + stateDistinct + " module=" + moduleDistinct;
 
         return passed
                 ? ValidationResult.pass(runId, ValidationCheck.LOW_CARDINALITY_BOUNDS, "Low cardinality within bounds", details, runtime)
@@ -153,8 +153,8 @@ public final class ValidationRunner {
             SparkRuntimeInfo runtime
     ) {
         Row row = sample.agg(
-                min(col("timestamp")).alias("min_ts"),
-                max(col("timestamp")).alias("max_ts")
+                min(col("event_ts")).alias("min_ts"),
+                max(col("event_ts")).alias("max_ts")
         ).collectAsList().get(0);
 
         long minTs = row.getTimestamp(0).getTime();
@@ -175,48 +175,59 @@ public final class ValidationRunner {
             ValidationSettings settings,
             SparkRuntimeInfo runtime
     ) {
-        List<Row> rows = sample.groupBy(col("log_format")).agg(count(lit(1)).alias("cnt")).collectAsList();
+        List<Row> rows = sample.groupBy(col("name")).agg(count(lit(1)).alias("cnt")).collectAsList();
         if (rows.isEmpty()) {
-            return ValidationResult.fail(runId, ValidationCheck.LOG_FORMAT_DISTRIBUTION, "No log_format values", "", runtime);
+            return ValidationResult.fail(runId, ValidationCheck.LOG_FORMAT_DISTRIBUTION, "No event name values", "", runtime);
         }
 
-        long total = rows.stream().mapToLong(row -> row.getLong(1)).sum();
-        double expectedShare = 1.0 / LogFormatType.ALL_VALUES.size();
+        long total = rows.stream().mapToLong(r -> r.getLong(1)).sum();
         Map<String, Long> counts = rows.stream()
-                .collect(Collectors.toMap(row -> row.getString(0), row -> row.getLong(1)));
+                .collect(Collectors.toMap(r -> r.getString(0), r -> r.getLong(1)));
 
-        boolean allFormatsPresent = LogFormatType.ALL_VALUES.stream().allMatch(counts::containsKey);
-        boolean sharesBalanced = counts.values().stream().allMatch(count -> {
+        boolean allNamesPresent = EventNameType.ALL_VALUES.stream().allMatch(counts::containsKey);
+        boolean sharesBalanced = true;
+        for (EventNameType type : EventNameType.values()) {
+            Long count = counts.get(type.name());
+            if (count == null) {
+                sharesBalanced = false;
+                break;
+            }
             double share = (double) count / total;
-            return Math.abs(share - expectedShare) <= settings.logFormatShareTolerance();
-        });
+            if (Math.abs(share - type.expectedShare()) > settings.logFormatShareTolerance()) {
+                sharesBalanced = false;
+                break;
+            }
+        }
 
-        boolean passed = allFormatsPresent && sharesBalanced;
+        boolean passed = allNamesPresent && sharesBalanced;
         String details = "counts=" + counts + " tolerance=" + settings.logFormatShareTolerance();
 
         return passed
-                ? ValidationResult.pass(runId, ValidationCheck.LOG_FORMAT_DISTRIBUTION, "log_format distribution valid", details, runtime)
-                : ValidationResult.fail(runId, ValidationCheck.LOG_FORMAT_DISTRIBUTION, "log_format distribution invalid", details, runtime);
+                ? ValidationResult.pass(runId, ValidationCheck.LOG_FORMAT_DISTRIBUTION, "event name distribution valid", details, runtime)
+                : ValidationResult.fail(runId, ValidationCheck.LOG_FORMAT_DISTRIBUTION, "event name distribution invalid", details, runtime);
     }
 
     private static ValidationResult checkLogMessageStructure(
             String runId, Dataset<Row> sample, SparkRuntimeInfo runtime
     ) {
-        long emptyMessages = sample.filter(
-                col("log_message").isNull().or(length(col("log_message")).leq(0))
+        long emptyPayload = sample.filter(
+                col("payload_json").isNull().or(length(col("payload_json")).leq(0))
         ).count();
 
-        long jsonFormatInvalid = sample.filter(
-                col("log_format").equalTo(lit("json"))
-                        .and(col("log_message").isNull().or(not(col("log_message").startsWith(lit("{")))))
+        long jsonInvalid = sample.filter(
+                col("payload_json").isNull().or(not(col("payload_json").startsWith(lit("{"))))
         ).count();
 
-        boolean passed = emptyMessages == 0 && jsonFormatInvalid == 0;
-        String details = "emptyMessages=" + emptyMessages + " jsonFormatInvalid=" + jsonFormatInvalid;
+        long missingEpk = sample.filter(
+                col("epk_id").isNull().or(length(col("epk_id")).leq(0))
+        ).count();
+
+        boolean passed = emptyPayload == 0 && jsonInvalid == 0 && missingEpk == 0;
+        String details = "emptyPayload=" + emptyPayload + " jsonInvalid=" + jsonInvalid + " missingEpk=" + missingEpk;
 
         return passed
-                ? ValidationResult.pass(runId, ValidationCheck.LOG_MESSAGE_STRUCTURE, "Log messages valid", details, runtime)
-                : ValidationResult.fail(runId, ValidationCheck.LOG_MESSAGE_STRUCTURE, "Log messages invalid", details, runtime);
+                ? ValidationResult.pass(runId, ValidationCheck.LOG_MESSAGE_STRUCTURE, "Audit payloads valid", details, runtime)
+                : ValidationResult.fail(runId, ValidationCheck.LOG_MESSAGE_STRUCTURE, "Audit payloads invalid", details, runtime);
     }
 
     private static ValidationResult checkOrcBloomFilters(

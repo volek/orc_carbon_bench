@@ -10,7 +10,6 @@ import ru.sber.orcbench.writer.OrcWriter;
 
 import static org.apache.spark.sql.functions.col;
 import static org.apache.spark.sql.functions.lit;
-import static org.apache.spark.sql.functions.when;
 
 public final class GenerateRunner {
     private static final Logger LOG = LoggerFactory.getLogger(GenerateRunner.class);
@@ -95,19 +94,25 @@ public final class GenerateRunner {
     }
 
     /**
-     * Small dimension table for Q10 JOIN benchmarks (product_id → product_type).
+     * Small dimension table for JOIN benchmarks (event name → family).
      */
     static void writeDictionary(SparkSession spark, String dictionaryPath, long seed) {
         LOG.info("Writing dictionary ORC path={}", dictionaryPath);
-        Dataset<Row> dictionary = spark.range(0, 100_000L)
-                .withColumnRenamed("id", "product_id")
-                .withColumn(
-                        "product_type",
-                        when(col("product_id").plus(lit(seed)).mod(lit(10)).equalTo(lit(0)), lit("featured"))
-                                .otherwise(lit("standard"))
-                )
-                .withColumn("product_name", org.apache.spark.sql.functions.concat(lit("product-"), col("product_id")));
-        dictionary.coalesce(4)
+        Dataset<Row> dictionary = spark.createDataFrame(
+                java.util.Arrays.asList(
+                        org.apache.spark.sql.RowFactory.create("LAUNCHER", "featured"),
+                        org.apache.spark.sql.RowFactory.create("ESA", "featured"),
+                        org.apache.spark.sql.RowFactory.create("FIND", "standard"),
+                        org.apache.spark.sql.RowFactory.create("LOGON", "standard")
+                ),
+                org.apache.spark.sql.types.DataTypes.createStructType(new org.apache.spark.sql.types.StructField[]{
+                        org.apache.spark.sql.types.DataTypes.createStructField(
+                                "event_name", org.apache.spark.sql.types.DataTypes.StringType, false),
+                        org.apache.spark.sql.types.DataTypes.createStructField(
+                                "event_family", org.apache.spark.sql.types.DataTypes.StringType, false)
+                })
+        );
+        dictionary.coalesce(1)
                 .write()
                 .mode("overwrite")
                 .option("compression", "snappy")

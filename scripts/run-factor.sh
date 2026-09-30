@@ -4,30 +4,33 @@
 #
 # Usage:
 #   ./scripts/run-factor.sh --layout=b0
-#   LAYOUT=d1 TARGET_SIZE_TB=0.01 CACHE_STATE=cold ./scripts/run-factor.sh
+#   LAYOUT=d1 TARGET_SIZE_TB=0.02 CACHE_STATE=cold ./scripts/run-factor.sh
 #
 # Known layouts (see --help): b0, d0, d1, d2, e1, e2, e3, f0, f1, f2, f3,
 #   g001, g005, h5k, h10k, h20k, h50k, i64, i128, i256, jsnappy, jzstd, jzlib,
 #   k32, k256, k1024, best_orc
 #
 # Env: BASE, SEED, TARGET_SIZE_TB, BENCHMARK_WARMUP_RUNS, BENCHMARK_REPEAT_RUNS,
-#      CACHE_STATE, ENGINE, SLA_THRESHOLD_MS, SCENARIOS, SKIP_GENERATE, SKIP_VALIDATE
+#      CACHE_STATE, ENGINE, SLA_THRESHOLD_MS, ARCHIVE_SLA_THRESHOLD_MS, SCENARIOS,
+#      SKIP_GENERATE, SKIP_VALIDATE
 #
-# Dataset sizes (this cluster): Smoke 0.01 | S 0.1 (~100GB) | M 0.25 (~250GB) | L 0.5 (~500GB max).
-# HDFS free ≈ 700 GB — do not keep many large layouts at once.
+# Dataset sizes (this cluster): Smoke 0.01 (~10GB) | S 0.02 (~20GB) | M 0.05 (~50GB) | L 0.1 (~100GB max).
+# HDFS free ≈ 700 GB — do not keep many layouts at once.
+# Default SCENARIOS=audei for SLA-oriented factor runs; use SCENARIOS=doc for legacy Q1–Q10.
 # -----------------------------------------------------------------------------
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 BASE="${BASE:-hdfs:///user/hdfs_migration_user/orc_test}"
 SEED="${SEED:-42}"
-TARGET_SIZE_TB="${TARGET_SIZE_TB:-0.01}"
+TARGET_SIZE_TB="${TARGET_SIZE_TB:-0.02}"
 BENCHMARK_WARMUP_RUNS="${BENCHMARK_WARMUP_RUNS:-3}"
 BENCHMARK_REPEAT_RUNS="${BENCHMARK_REPEAT_RUNS:-5}"
 CACHE_STATE="${CACHE_STATE:-cold}"
 ENGINE="${ENGINE:-spark}"
 SLA_THRESHOLD_MS="${SLA_THRESHOLD_MS:-3000}"
-SCENARIOS="${SCENARIOS:-doc}"
+ARCHIVE_SLA_THRESHOLD_MS="${ARCHIVE_SLA_THRESHOLD_MS:-120000}"
+SCENARIOS="${SCENARIOS:-audei}"
 SKIP_GENERATE="${SKIP_GENERATE:-0}"
 SKIP_VALIDATE="${SKIP_VALIDATE:-0}"
 CLEAR_CACHE="${CLEAR_CACHE:-true}"
@@ -56,12 +59,12 @@ done
 LAYOUT="${LAYOUT:-${LAYOUT_ID:-b0}}"
 LAYOUT="$(echo "$LAYOUT" | tr '[:upper:]' '[:lower:]')"
 
-if awk "BEGIN { exit !($TARGET_SIZE_TB > 0.5) }"; then
-  echo "Refusing TARGET_SIZE_TB=$TARGET_SIZE_TB (>0.5). Max dataset on this cluster is 500 GB." >&2
+if awk "BEGIN { exit !($TARGET_SIZE_TB > 0.1) }"; then
+  echo "Refusing TARGET_SIZE_TB=$TARGET_SIZE_TB (>0.1). Max dataset on this cluster is 100 GB." >&2
   exit 1
 fi
 # Defaults for B0 ORC baseline
-PARTITION_BY="event_year,event_month,event_day,log_format"
+PARTITION_BY="event_year,event_month,event_day"
 BLOOM_COLUMNS="none"
 BLOOM_FPP="0.05"
 SORT_COLUMNS="none"
@@ -94,39 +97,39 @@ apply_layout() {
       BLOOM_COLUMNS="none"
       ;;
     e1)
-      SORT_COLUMNS="event_id"
+      SORT_COLUMNS="epk_id"
       BLOOM_COLUMNS="none"
       ;;
     e2)
-      SORT_COLUMNS="product_id"
+      SORT_COLUMNS="event_id"
       BLOOM_COLUMNS="none"
       ;;
     e3)
-      SORT_COLUMNS="timestamp,event_id"
+      SORT_COLUMNS="event_ts,epk_id"
       BLOOM_COLUMNS="none"
       ;;
     f0)
       BLOOM_COLUMNS="none"
       ;;
     f1)
-      BLOOM_COLUMNS="event_id,user_id"
+      BLOOM_COLUMNS="epk_id,event_id"
       ;;
     f2)
-      BLOOM_COLUMNS="product_id,campaign_id"
+      BLOOM_COLUMNS="module,name"
       ;;
     f3)
-      BLOOM_COLUMNS="event_id,user_id,product_id,campaign_id,status,country_code"
+      BLOOM_COLUMNS="epk_id,event_id,module,name,channel_type,state"
       ;;
     g005)
-      BLOOM_COLUMNS="event_id,user_id"
+      BLOOM_COLUMNS="epk_id,event_id"
       BLOOM_FPP="0.05"
       ;;
     g001)
-      BLOOM_COLUMNS="event_id,user_id"
+      BLOOM_COLUMNS="epk_id,event_id"
       BLOOM_FPP="0.01"
       ;;
     g0001)
-      BLOOM_COLUMNS="event_id,user_id"
+      BLOOM_COLUMNS="epk_id,event_id"
       BLOOM_FPP="0.001"
       ;;
     h5k)  STRIDE="5000" ;;
@@ -145,8 +148,8 @@ apply_layout() {
     best_orc)
       # Placeholder profile; override via EXTRA_APP_ARGS after S-scale winners.
       PARTITION_BY="event_year,event_month,event_day"
-      SORT_COLUMNS="event_id"
-      BLOOM_COLUMNS="event_id,user_id"
+      SORT_COLUMNS="epk_id"
+      BLOOM_COLUMNS="epk_id"
       BLOOM_FPP="0.01"
       STRIDE="10000"
       STRIPE_MB="64"
@@ -185,7 +188,7 @@ if [[ "$LAYOUT" == "s0" || "$LAYOUT" == "s1" ]]; then
   ORC_LAYOUT="best_orc"
 fi
 
-echo "Factor layout=$LAYOUT orc_layout=$ORC_LAYOUT BASE=$BASE TARGET_SIZE_TB=$TARGET_SIZE_TB CACHE_STATE=$CACHE_STATE"
+echo "Factor layout=$LAYOUT orc_layout=$ORC_LAYOUT BASE=$BASE TARGET_SIZE_TB=$TARGET_SIZE_TB CACHE_STATE=$CACHE_STATE SCENARIOS=$SCENARIOS"
 
 submit() {
   "$ROOT/scripts/submit-spark32.sh" -- "$@"
@@ -199,6 +202,7 @@ COMMON=(
   --engine="$ENGINE"
   --cache-state="$CACHE_STATE"
   --sla-threshold-ms="$SLA_THRESHOLD_MS"
+  --archive-sla-threshold-ms="$ARCHIVE_SLA_THRESHOLD_MS"
   --partition-by="$PARTITION_BY"
   --orc-bloom-filter-columns="$BLOOM_COLUMNS"
   --orc-bloom-filter-fpp="$BLOOM_FPP"
@@ -236,6 +240,7 @@ if [[ "$LAYOUT" == "s0" || "$LAYOUT" == "s1" ]]; then
     --engine="$ENGINE"
     --cache-state="$CACHE_STATE"
     --sla-threshold-ms="$SLA_THRESHOLD_MS"
+    --archive-sla-threshold-ms="$ARCHIVE_SLA_THRESHOLD_MS"
     --benchmark-dataset-label="$LAYOUT"
     --spark-orc-filter-pushdown="$SPARK_PUSHDOWN"
     --spark-orc-vectorized="$SPARK_VECTORIZED"

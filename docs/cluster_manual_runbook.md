@@ -3,11 +3,11 @@
 Кластер недоступен из среды разработки — прогон выполняется вручную с edge-ноды.  
 Кластер **не меняем**: используется штатный SDP Spark 3.2 (`spark-submit` на YARN).
 
-Документ описывает **факторный эксперимент ORC + HDFS + Spark + Hive** после реализации plan P0–P10:
+Документ описывает **факторный эксперимент ORC + HDFS + Spark + Hive** с профилем нагрузки **AUDEI/ЕРКЦ** (и ST archive mix):
 
 ```text
-smoke → B0 baseline → layout sweep (S) → BEST_ORC → Spark S0/S1
-      → Hive H0–H4 → concurrency → SLA matrix (L)
+smoke(audei) → B0 → layout sweep audei (S) → BEST_ORC → Spark S0/S1
+      → Hive H0–H4 → concurrency 9/18 → SLA matrix (L ≤ 100 GB)
 ```
 
 Принципы:
@@ -16,10 +16,12 @@ smoke → B0 baseline → layout sweep (S) → BEST_ORC → Spark S0/S1
 2. **Cold и warm не усреднять** (`--cache-state=cold|warm`).
 3. Решения по layout — на Dataset **S/M**; финальный SLA — на Dataset **L**.
 4. Hive читает **те же** ORC-файлы, что и Spark (`layouts/best_orc/orc`).
-5. **Лимит объёма:** один датасет ≤ **500 GB** (`--target-size-tb=0.5`). На HDFS сейчас ~**700 GB** свободно — копий layout’ов держать минимум.
+5. **Лимит объёма:** один датасет ≤ **100 GB** (`--target-size-tb=0.1`). На HDFS сейчас ~**700 GB** свободно — копий layout’ов всё равно держать минимум.
+6. **Dual SLA:** interactive ≤3 с (`audei`); archive soft ceiling 120 с (`st`). Mapping: [audei-st-workload-mapping.md](audei-st-workload-mapping.md).
 
 Канонический дизайн: [ORC + HDFS + Spark + Hive benchmark.md](ORC%20+%20HDFS%20+%20Spark%20+%20Hive%20benchmark.md).  
-CLI-справка: [README.md](../README.md).
+CLI-справка: [README.md](../README.md).  
+**Порядок прогонов / HDFS / проверки:** [cluster-run-protocol.md](cluster-run-protocol.md).
 
 ---
 
@@ -28,17 +30,17 @@ CLI-справка: [README.md](../README.md).
 | Имя | `--target-size-tb` | ≈ объём | Когда |
 |---|---|---|---|
 | Smoke | `0.01` | ~10 GB | первый прогон, проверка пайплайна |
-| Dataset **S** | `0.1` | ~100 GB | все layout-факторы (по одному / с очисткой) |
-| Dataset **M** | `0.25` | ~250 GB | спорные top-N layout’ов |
-| Dataset **L** | `0.5` | **~500 GB (максимум)** | финал: BEST_ORC, S0/S1, Hive, concurrency, SLA |
+| Dataset **S** | `0.02` | ~20 GB | все layout-факторы (по одному / с очисткой) |
+| Dataset **M** | `0.05` | ~50 GB | спорные top-N layout’ов |
+| Dataset **L** | `0.1` | **~100 GB (максимум)** | финал: BEST_ORC, S0/S1, Hive, concurrency, SLA |
 
 | Ограничение | Значение |
 |---|---|
-| Макс. размер **одного** ORC-layout | **500 GB** (`0.5` ТБ) |
+| Макс. размер **одного** ORC-layout | **100 GB** (`0.1` ТБ) |
 | Свободно на HDFS (ориентир) | **~700 GB** |
-| Запас под reports / dictionary / временные файлы | оставляйте ≥150–200 GB |
+| Запас под reports / dictionary / временные файлы | оставляйте ≥50–100 GB |
 
-**Бюджет места:** каждый layout — отдельная копия. При S≈100 GB пять layout’ов ≈ 500 GB; на L=500 GB перед generate удалите лишние `layouts/*`, кроме того что нужно для сравнения.
+**Бюджет места:** каждый layout — отдельная копия. При S≈20 GB десять layout’ов ≈ 200 GB; на L=100 GB перед generate удалите лишние `layouts/*`, кроме того что нужно для сравнения.
 
 ```bash
 # Пример очистки проигравших layout’ов перед Dataset L
@@ -47,7 +49,7 @@ hdfs dfs -du -h -s "$BASE"/layouts/*
 ```
 
 Не делайте выводы по performance только на smoke (`0.01`).  
-**Не** указывайте `--target-size-tb` > `0.5` на этом кластере.
+**Не** указывайте `--target-size-tb` > `0.1` на этом кластере.
 
 ---
 
@@ -135,7 +137,7 @@ export EXECUTOR_MEMORY=16g DRIVER_MEMORY=8g
 # Вариант C — флаги до --
 ./scripts/submit-spark32.sh \
   --num-executors 16 --executor-memory 16g --driver-memory 8g -- \
-  --mode=generate --base-path="$BASE" --layout-id=b0 --target-size-tb=0.01 \
+  --mode=generate --base-path="$BASE" --layout-id=b0 --target-size-tb=0.02 \
   --orc-bloom-filter-columns=none
 ```
 
@@ -146,8 +148,8 @@ export EXECUTOR_MEMORY=16g DRIVER_MEMORY=8g
 | Профиль | Workers | Executor memory | Когда |
 |---|---|---|---|
 | Smoke | 16 | 8g | `0.01` ТБ (~10 GB) |
-| Dataset S / M | 16 | 8–16g | `0.1`–`0.25` ТБ |
-| Dataset L (max 500 GB) | 16+ | 16g+ | `0.5` ТБ, при OOM — больше памяти |
+| Dataset S / M | 16 | 8–16g | `0.02`–`0.05` ТБ |
+| Dataset L (max 100 GB) | 16+ | 8–16g | `0.1` ТБ |
 
 В stderr submit пишет: `spark-submit resources: num-executors=...` — сверьте с квотой очереди.
 
@@ -211,29 +213,33 @@ $BASE/layouts/<id>/reports/summary/
 | Скрипт | Назначение | Типичный объём |
 |---|---|---|
 | [`submit-spark32.sh`](../scripts/submit-spark32.sh) | один `--mode=…` | любой |
-| [`run-smoke.sh`](../scripts/run-smoke.sh) | быстрый e2e (legacy пути, bloom ON по дефолту app) | `0.01` |
-| [`run-factor.sh`](../scripts/run-factor.sh) | **основной** фактор: generate→validate→benchmark→report для одного layout | `0.01`–`0.5` (макс.) |
-| [`run-layout-sweep.sh`](../scripts/run-layout-sweep.sh) | пачка layout’ов (P3–P6); следите за местом на HDFS | `0.1` (S) |
+| [`run-smoke.sh`](../scripts/run-smoke.sh) | e2e smoke suite `audei`, sort/bloom `epk_id` | `0.01` |
+| [`run-factor.sh`](../scripts/run-factor.sh) | **основной** фактор: generate→validate→benchmark→report для одного layout | `0.01`–`0.1` (макс.) |
+| [`run-layout-sweep.sh`](../scripts/run-layout-sweep.sh) | пачка layout’ов (P3–P6); следите за местом на HDFS | `0.02` (S) |
 | [`run-spark-exec-matrix.sh`](../scripts/run-spark-exec-matrix.sh) | S0/S1 + toggles pushdown/AQE/… на BEST_ORC | без generate |
-| [`run-bloom-ab.sh`](../scripts/run-bloom-ab.sh) | legacy bloom A/B (orc vs orc_bloom) | `0.1` |
+| [`run-bloom-ab.sh`](../scripts/run-bloom-ab.sh) | legacy bloom A/B (orc vs orc_bloom) | `0.02` |
 | [`run-bench-pipeline.sh`](../scripts/run-bench-pipeline.sh) | validate→benchmark→report без generate | — |
 | [`hive/run-hive-factor.sh`](../scripts/hive/run-hive-factor.sh) | Hive/Tez/LLAP H0–H4 на тех же ORC | после BEST_ORC |
-| [`run-concurrency.sh`](../scripts/run-concurrency.sh) | параллельные клиенты 1/5/10/25/50 | BEST_ORC |
+| [`run-concurrency.sh`](../scripts/run-concurrency.sh) | параллельные клиенты **9 / 18** на `epk_eq_14d` | BEST_ORC |
 | [`run-sla-matrix.sh`](../scripts/run-sla-matrix.sh) | финальный SLA Spark+Hive | Dataset L |
 
-Рекомендуемый порядок:
+Рекомендуемый порядок (кратко):
 
 ```text
 1. run-smoke.sh                         # инфраструктура OK?
-2. run-factor.sh --layout=b0            # baseline T0
-3. run-layout-sweep.sh                  # факторы на S
+2. run-factor.sh --layout=b0            # baseline (S, audei)
+3. run-layout-sweep.sh SWEEP=audei      # факторы на S → чистка losers
 4. выбрать победителей → best_orc
 5. run-factor.sh --layout=best_orc
 6. run-spark-exec-matrix.sh             # S0/S1
-7. hive/run-hive-factor.sh h0…h4
-8. run-concurrency.sh
-9. run-sla-matrix.sh                    # на L
+7. hive/run-hive-factor.sh h0…h4 SUITE=audei
+8. run-concurrency.sh (9/18)
+9. чистка layouts → L → run-sla-matrix.sh
+10. скачать reports с HDFS
 ```
+
+Подробно (параметры, когда чистить HDFS, чеклисты успеха, что выгружать):  
+**[cluster-run-protocol.md](cluster-run-protocol.md)**.
 
 ---
 
@@ -246,21 +252,21 @@ export BASE=hdfs:///user/hdfs_migration_user/orc_test
 export JAR=~/orc-bench/orc-bench-all.jar
 
 ./scripts/run-smoke.sh
-# эквивалент: TARGET_SIZE_TB=0.01, generate→validate→benchmark→report
+# эквивалент: TARGET_SIZE_TB=0.01, suite=audei, sort/bloom epk_id
 ```
 
 Критерий успеха:
 
 - все job `SUCCEEDED`
-- есть `$BASE/orc`, `$BASE/reports/raw/{benchmark,validation}`, `$BASE/reports/summary/`
+- есть `$BASE/orc` (или `layouts/…` при factor), `$BASE/reports/raw/{benchmark,validation}`, `$BASE/reports/summary/`
 - Validation PASS
-- в Benchmark Summary есть `avg_bytes_read`, `runs ≥ 3`
+- в Benchmark Summary есть сценарии `epk_eq_*`, поля `sla_class` / `seconds_per_gb`
 
 Альтернатива — smoke через factor (пути под `layouts/b0`):
 
 ```bash
 TARGET_SIZE_TB=0.01 BENCHMARK_REPEAT_RUNS=3 BENCHMARK_WARMUP_RUNS=1 \
-  ./scripts/run-factor.sh --layout=b0
+  SCENARIOS=audei ./scripts/run-factor.sh --layout=b0
 ```
 
 ---
@@ -272,7 +278,7 @@ TARGET_SIZE_TB=0.01 BENCHMARK_REPEAT_RUNS=3 BENCHMARK_WARMUP_RUNS=1 \
 ```bash
 ./scripts/run-factor.sh --layout=b0
 # или
-LAYOUT=d1 TARGET_SIZE_TB=0.1 CACHE_STATE=cold ./scripts/run-factor.sh
+LAYOUT=d1 TARGET_SIZE_TB=0.02 CACHE_STATE=cold ./scripts/run-factor.sh
 ```
 
 ### 6.1. Переменные окружения
@@ -281,13 +287,14 @@ LAYOUT=d1 TARGET_SIZE_TB=0.1 CACHE_STATE=cold ./scripts/run-factor.sh
 |---|---|---|
 | `BASE` | `…/orc_test` | корень эксперимента |
 | `SEED` | `42` | generate / фильтры |
-| `TARGET_SIZE_TB` | `0.01` | объём в ТБ; S=`0.1`, M=`0.25`, L=`0.5` (не больше) |
+| `TARGET_SIZE_TB` | `0.02` | объём в ТБ; S=`0.02`, M=`0.05`, L=`0.1` (не больше) |
 | `BENCHMARK_WARMUP_RUNS` | `3` | прогрев |
 | `BENCHMARK_REPEAT_RUNS` | `5` | измеряемые повторы |
 | `CACHE_STATE` | `cold` | метка cold/warm |
 | `ENGINE` | `spark` | метка engine в метриках |
-| `SLA_THRESHOLD_MS` | `3000` | порог `sla_ok` |
-| `SCENARIOS` | `doc` | suite Q1–Q10; `all` — все сценарии |
+| `SLA_THRESHOLD_MS` | `3000` | interactive SLA |
+| `ARCHIVE_SLA_THRESHOLD_MS` | `120000` | archive/ST SLA |
+| `SCENARIOS` | `audei` | `audei` / `st` / `doc` / `all` |
 | `SKIP_GENERATE` | `0` | `1` — только validate/benchmark |
 | `SKIP_VALIDATE` | `0` | пропуск validate |
 | `CLEAR_CACHE` | `true` | cold read между runs |
@@ -302,13 +309,13 @@ LAYOUT=d1 TARGET_SIZE_TB=0.1 CACHE_STATE=cold ./scripts/run-factor.sh
 | `d0` | `partition-by=none` | P3 |
 | `d1` | date partitions only (`year,month,day`) | P3 |
 | `d2` | + `event_hour` | P3 |
-| `e1` | sort `event_id` | P4 |
-| `e2` | sort `product_id` | P4 |
-| `e3` | sort `timestamp,event_id` | P4 |
+| `e1` | sort `epk_id` | P4 / AUDEI |
+| `e2` | sort `event_id` | P4 |
+| `e3` | sort `event_ts,epk_id` | P4 |
 | `f0` | bloom off | P5 |
-| `f1` | bloom high (`event_id,user_id`) | P5 |
-| `f2` | bloom medium | P5 |
-| `f3` | bloom high+medium+low | P5 |
+| `f1` | bloom high (`epk_id,event_id`) | P5 / AUDEI |
+| `f2` | bloom medium (`module,name`) | P5 |
+| `f3` | bloom wide | P5 |
 | `g005` / `g001` / `g0001` | FPP 0.05 / 0.01 / 0.001 | P5 |
 | `h5k` / `h10k` / `h20k` / `h50k` | row index stride | P6 |
 | `i64` / `i128` / `i256` | stripe MB | P6 |
@@ -336,7 +343,7 @@ export JAR=~/orc-bench/orc-bench-all.jar
 export NUM_EXECUTORS=16
 export EXECUTOR_MEMORY=8g
 
-TARGET_SIZE_TB=0.1 \
+TARGET_SIZE_TB=0.02 \
 BENCHMARK_WARMUP_RUNS=3 \
 BENCHMARK_REPEAT_RUNS=5 \
 CACHE_STATE=cold \
@@ -358,7 +365,7 @@ SCENARIOS=doc \
   --mode=generate \
   --base-path="$BASE" \
   --layout-id=b0 \
-  --target-size-tb=0.1 \
+  --target-size-tb=0.02 \
   --seed=42 \
   --orc-bloom-filter-columns=none \
   --orc-sort-columns=none \
@@ -374,45 +381,43 @@ SCENARIOS=doc \
 
 ## 7. Layout sweep (P3–P6) на Dataset S
 
-При ~700 GB свободно и S≈100 GB не гоняйте `SWEEP=all` без очистки: каждый layout — полная копия. Предпочтительно **по группам** и удалять проигравшие варианты после выбора победителя группы.
+При ~700 GB свободно и S≈10 GB не гоняйте `SWEEP=all` без очистки: каждый layout — полная копия. Предпочтительно **по группам** и удалять проигравшие варианты после выбора победителя группы.
 
 ```bash
 export BASE=hdfs:///user/hdfs_migration_user/orc_test
-export TARGET_SIZE_TB=0.1
+export TARGET_SIZE_TB=0.02
 export CACHE_STATE=cold
 
-hdfs dfs -df -h   # убедиться, что свободно ≳ 200–300 GB на группу
+hdfs dfs -df -h   # убедиться, что свободно ≳ 50–100 GB на группу
 
-# по группам (рекомендуется):
+# AUDEI-priority (рекомендуется первым):
+SWEEP=audei      ./scripts/run-layout-sweep.sh   # b0 + partition + sort + bloom
+
+# по группам:
 SWEEP=baseline   ./scripts/run-layout-sweep.sh   # b0
 SWEEP=partition  ./scripts/run-layout-sweep.sh   # d0 d1 d2
-# выбрать D*, удалить остальные partition-layout’ы, затем:
 SWEEP=sort       ./scripts/run-layout-sweep.sh   # e1 e2 e3
 SWEEP=bloom      ./scripts/run-layout-sweep.sh   # f0 f1 f2 f3
+SWEEP=secondary  ./scripts/run-layout-sweep.sh   # fpp/stride/stripe/compression/files
 SWEEP=fpp        ./scripts/run-layout-sweep.sh
-SWEEP=stride     ./scripts/run-layout-sweep.sh
-SWEEP=stripe     ./scripts/run-layout-sweep.sh
-SWEEP=compression ./scripts/run-layout-sweep.sh
-SWEEP=files      ./scripts/run-layout-sweep.sh
-
 # SWEEP=all — только если места хватает и старые layout’ы уже снесены
 ```
 
 В конце sweep пишет сводный report `layout-sweep-<SWEEP>.md` (discovery по `layouts/*/reports`).
 
-На Dataset **M** (`TARGET_SIZE_TB=0.25`) гоняйте только 2–3 кандидата в BEST_ORC, не весь sweep.
+На Dataset **M** (`TARGET_SIZE_TB=0.05`) гоняйте только 2–3 кандидата в BEST_ORC, не весь sweep.
 
 ### Как выбрать BEST_ORC
 
-1. Смотрите p50/p95, `avg_bytes_read`, `avg_scan_ratio`, `sla_success` **по одному фактору**.
-2. Зафиксируйте победителей (пример): `d1` + `e1` + `f1` + `g001` + `h10k` + `jsnappy` + `k256`.
-3. Профиль `best_orc` в `run-factor.sh` уже задан как разумный default — **подправьте** `apply_layout best_orc` в скрипте под ваши победители, либо передайте явные флаги:
+1. Смотрите p50/p95, `avg_bytes_read`, `avg_scan_ratio`, `sla_success` **по одному фактору** на suite `audei`.
+2. Зафиксируйте победителей (типичный AUDEI default): `d1` + `e1` (epk_id) + bloom `epk_id` + `g001`.
+3. Профиль `best_orc` в `run-factor.sh` уже: day + sort `epk_id` + bloom `epk_id` @ 0.01 — подправьте при необходимости:
 
 ```bash
-TARGET_SIZE_TB=0.1 ./scripts/run-factor.sh --layout=best_orc \
+TARGET_SIZE_TB=0.02 SCENARIOS=audei ./scripts/run-factor.sh --layout=best_orc \
   --partition-by=event_year,event_month,event_day \
-  --orc-sort-columns=event_id \
-  --orc-bloom-filter-columns=event_id,user_id \
+  --orc-sort-columns=epk_id \
+  --orc-bloom-filter-columns=epk_id \
   --orc-bloom-filter-fpp=0.01 \
   --orc-row-index-stride=10000 \
   --orc-compression=snappy \
@@ -429,7 +434,7 @@ TARGET_SIZE_TB=0.1 ./scripts/run-factor.sh --layout=best_orc \
 
 ```bash
 export BASE=hdfs:///user/hdfs_migration_user/orc_test
-export TARGET_SIZE_TB=0.1   # только для dataset-bytes / scan_ratio
+export TARGET_SIZE_TB=0.02   # только для dataset-bytes / scan_ratio
 export CACHE_STATE=cold
 
 ./scripts/run-spark-exec-matrix.sh
@@ -465,28 +470,22 @@ Warm: `CLEAR_CACHE=false` + `--cache-state=warm` (не смешивать в о�
 
 ## 9. Query suite (сценарии)
 
-| Сценарий | Документ | Что проверяет |
+Полный mapping: [audei-st-workload-mapping.md](audei-st-workload-mapping.md).
+
+| Alias | Сценарии | SLA |
 |---|---|---|
-| `partition_prune` | Q1 | pruning по `event_year/month/day` |
-| `filter_high_cardinality` | Q2 | point lookup / bloom / min-max |
-| `filter_medium_cardinality` | Q3 | medium card |
-| `filter_low_cardinality` | Q4 | low card (bloom часто слаб) |
-| `filter_in` | Q5 | `IN` / bloom |
-| `filter_timestamp_range` | Q6 | range / min-max |
-| `projection` / `full_scan` | Q7 | column pruning |
-| `group_by` | Q8 | aggregation |
-| `group_by_heavy` | Q9 | тяжёлый GROUP BY |
-| `join_dictionary` | Q10 | JOIN с `$…/dictionary` |
-| `filter_log_format`, `filter_combined`, `text_search` | доп. | в `all`, не в `doc` |
+| `audei` | `epk_eq_1d`, `epk_eq_14d`, `epk_page`, `eq_filters`, `order_by_epk_day` | interactive ≤3 с |
+| `st` | `no_filter`, `like_*`, `eq`, `in_list`, `rlike` | archive 120 с |
+| `doc` | legacy Q1–Q10 на AUDEI-колонках | legacy |
 
 ```bash
-# только document suite
-SCENARIOS=doc ./scripts/run-factor.sh --layout=b0
+# AUDEI interactive (default factor)
+SCENARIOS=audei ./scripts/run-factor.sh --layout=b0
 
 # один сценарий
 ./scripts/submit-spark32.sh -- \
   --mode=benchmark --base-path="$BASE" --layout-id=best_orc \
-  --benchmark-scenarios=filter_high_cardinality \
+  --benchmark-scenarios=epk_eq_14d \
   --benchmark-repeat-runs=10 --cache-state=cold
 ```
 
@@ -555,42 +554,42 @@ SQL-эталоны: [`scripts/hive/queries_q1_q10.sql`](../scripts/hive/queries_
 
 ---
 
-## 11. Concurrency (P9)
+## 11. Concurrency (P9) — AUDEI 9 / 18 QPS
 
 ```bash
 export BASE=hdfs:///user/hdfs_migration_user/orc_test
 export LAYOUT=best_orc
-export SCENARIO=filter_high_cardinality
+export SCENARIO=epk_eq_14d
 export CACHE_STATE=warm
 
-# Spark
-ENGINE=spark CONCURRENCY_LEVELS="1 5 10 25 50" ./scripts/run-concurrency.sh
+# AUDEI targets (~9 TPS / 18 QPS)
+ENGINE=spark CONCURRENCY_LEVELS="9 18" ./scripts/run-concurrency.sh
 
 # Hive LLAP warm
-ENGINE=hive_llap HIVE_PROFILE=h4 CONCURRENCY_LEVELS="1 5 10" ./scripts/run-concurrency.sh
+ENGINE=hive_llap HIVE_PROFILE=h4 CONCURRENCY_LEVELS="9 18" ./scripts/run-concurrency.sh
 ```
 
 Результат: `result/concurrency/concurrency-<engine>.csv`  
 колонки: `engine,concurrency,scenario,avg_ms,p50_ms,p95_ms,p99_ms,sla_success`.
 
-На большой конкуренции уменьшите `NUM_EXECUTORS` у параллельных Spark-клиентов или снизьте уровни — иначе очередь YARN раздует latency.
+На большой конкуренции уменьшите `NUM_EXECUTORS` у параллельных Spark-клиентов — иначе очередь YARN раздует latency.
 
 ---
 
 ## 12. Финальная SLA-матрица (P10)
 
-На Dataset **L** = **0.5 ТБ (~500 GB, максимум)** после готовности BEST_ORC на S/M:
+На Dataset **L** = **0.1 ТБ (~100 GB, максимум)** после готовности BEST_ORC на S/M:
 
 ```bash
 export BASE=hdfs:///user/hdfs_migration_user/orc_test
-export TARGET_SIZE_TB=0.5
+export TARGET_SIZE_TB=0.1
 export EXECUTOR_MEMORY=16g
 
-# Перед L: освободить место (нужно ~500 GB + запас; свободно ориентир ~700 GB)
+# Перед L: освободить место (нужно ~100 GB + запас; свободно ориентир ~700 GB)
 hdfs dfs -df -h
 hdfs dfs -du -h -s "$BASE"/layouts/*
 # удалить всё, кроме нужного; затем один generate BEST_ORC на L:
-TARGET_SIZE_TB=0.5 ./scripts/run-factor.sh --layout=best_orc
+TARGET_SIZE_TB=0.1 ./scripts/run-factor.sh --layout=best_orc
 
 ./scripts/run-sla-matrix.sh
 ```
@@ -612,7 +611,7 @@ TARGET_SIZE_TB=0.5 ./scripts/run-factor.sh --layout=best_orc
 
 ```bash
 export BASE=hdfs:///user/hdfs_migration_user/orc_test_pilot
-TARGET_SIZE_TB=0.1 BENCHMARK_REPEAT_RUNS=5 ./scripts/run-bloom-ab.sh
+TARGET_SIZE_TB=0.02 BENCHMARK_REPEAT_RUNS=5 ./scripts/run-bloom-ab.sh
 ```
 
 Пишет `$BASE/orc` + `$BASE/orc_bloom` и `bloom-ab-report.md`.  
@@ -637,22 +636,24 @@ TARGET_SIZE_TB=0.1 BENCHMARK_REPEAT_RUNS=5 ./scripts/run-bloom-ab.sh
 | `--seed` | `42` | воспроизводимость |
 | `--engine` | `spark` | метка в метриках |
 | `--cache-state` | `cold` | `cold` / `warm` |
-| `--sla-threshold-ms` | `3000` | порог SLA |
+| `--sla-threshold-ms` | `3000` | interactive SLA |
+| `--archive-sla-threshold-ms` | `120000` | archive/ST SLA |
 | `--dataset-bytes` | из `target-size-tb` | знаменатель scan_ratio |
 
 ### Generate / ORC write
 
 | Параметр | Дефолт | Описание |
 |---|---|---|
-| `--target-size-tb` | `0.5` | объём в ТБ; **макс. 0.5** (~500 GB) на этом кластере |
-| `--partition-by` | `event_year,event_month,event_day,log_format` | или `none` |
-| `--orc-sort-columns` | `none` | sortWithinPartitions |
-| `--orc-bloom-filter-columns` | high+medium ids | или `none` |
+| `--target-size-tb` | `0.1` | объём в ТБ; **макс. 0.1** (~100 GB) на этом кластере |
+| `--partition-by` | `event_year,event_month,event_day` | или `none` |
+| `--orc-sort-columns` | `epk_id` | `none` — unsorted |
+| `--orc-bloom-filter-columns` | `epk_id` | или `none` |
 | `--orc-bloom-filter-fpp` | `0.05` | FPP |
 | `--orc-row-index-stride` | `10000` | ORC stride |
 | `--orc-stripe-size-mb` | `64` | stripe |
 | `--orc-compression` | `snappy` | `snappy`/`zstd`/`zlib`/`none` |
 | `--target-file-size-mb` | `384` | целевой размер файла |
+| `--avg-row-bytes` | `1600` | оценка / padding payload |
 
 ### Benchmark / Spark exec
 
@@ -687,6 +688,8 @@ Report ищет parquet под `reports/raw/` и рекурсивно под `la
 
 ## 15. Проверки после прогона
 
+Полный поэтапный чеклист, очистка HDFS и выгрузка отчётов: **[cluster-run-protocol.md](cluster-run-protocol.md)** (§2, §5–§6).
+
 ```bash
 hdfs dfs -du -h -s "$BASE"/layouts/*/orc "$BASE"/reports 2>/dev/null
 hdfs dfs -ls -R "$BASE"/layouts/b0/reports/summary | head
@@ -700,7 +703,7 @@ Checklist адекватного прогона на S:
 
 | Проверка | Ожидание |
 |---|---|
-| Объём | `TARGET_SIZE_TB ≥ 0.1` |
+| Объём | `TARGET_SIZE_TB ≥ 0.02` (S) |
 | `runs` | ≥ 3 (лучше 5) |
 | Validation | PASS (bloom present/absent согласован) |
 | Cold/warm | отдельные файлы/метки, не смешаны |
@@ -793,20 +796,22 @@ export NUM_EXECUTORS=16 EXECUTOR_MEMORY=8g
 # 1) smoke
 ./scripts/run-smoke.sh
 
-# 2) baseline + sweep на S
-TARGET_SIZE_TB=0.1 ./scripts/run-factor.sh --layout=b0
-TARGET_SIZE_TB=0.1 ./scripts/run-layout-sweep.sh
+# 2) baseline + AUDEI-priority sweep на S
+TARGET_SIZE_TB=0.02 SCENARIOS=audei ./scripts/run-factor.sh --layout=b0
+TARGET_SIZE_TB=0.02 SWEEP=audei ./scripts/run-layout-sweep.sh
 
 # 3) freeze + Spark matrix
-TARGET_SIZE_TB=0.1 ./scripts/run-factor.sh --layout=best_orc
+TARGET_SIZE_TB=0.02 SCENARIOS=audei ./scripts/run-factor.sh --layout=best_orc
 ./scripts/run-spark-exec-matrix.sh
 
 # 4) Hive
-./scripts/hive/run-hive-factor.sh h0
-./scripts/hive/run-hive-factor.sh h4
+SUITE=audei ./scripts/hive/run-hive-factor.sh h0
+SUITE=audei ./scripts/hive/run-hive-factor.sh h4
 
-# 5) concurrency + SLA на L (макс. 500 GB); сначала очистить лишние layouts
-ENGINE=spark CONCURRENCY_LEVELS="1 5 10" ./scripts/run-concurrency.sh
-TARGET_SIZE_TB=0.5 EXECUTOR_MEMORY=16g ./scripts/run-factor.sh --layout=best_orc
-TARGET_SIZE_TB=0.5 EXECUTOR_MEMORY=16g ./scripts/run-sla-matrix.sh
+# 5) concurrency 9/18 + SLA на L (макс. 100 GB); сначала очистить лишние layouts
+ENGINE=spark CONCURRENCY_LEVELS="9 18" SCENARIO=epk_eq_14d ./scripts/run-concurrency.sh
+TARGET_SIZE_TB=0.1 SCENARIOS=audei EXECUTOR_MEMORY=8g ./scripts/run-factor.sh --layout=best_orc
+TARGET_SIZE_TB=0.1 EXECUTOR_MEMORY=8g ./scripts/run-sla-matrix.sh
 ```
+
+Mapping AUDEI/ST: [audei-st-workload-mapping.md](audei-st-workload-mapping.md).

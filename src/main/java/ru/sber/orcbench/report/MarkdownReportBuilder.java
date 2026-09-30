@@ -110,7 +110,7 @@ public final class MarkdownReportBuilder {
     }
 
     private static void appendSlaSection(StringBuilder md, List<Row> benchmark) {
-        md.append("## SLA ≤ 3s\n\n");
+        md.append("## SLA (interactive ≤ 3s / archive soft ceiling)\n\n");
         List<Row> withSla = benchmark.stream()
                 .filter(row -> asDouble(row, "sla_success_rate").isPresent())
                 .collect(Collectors.toList());
@@ -118,19 +118,24 @@ public final class MarkdownReportBuilder {
             md.append("_Нет SLA-метрик (нужны прогоны с `sla_ok` / `sla_threshold_ms`)._\n\n");
             return;
         }
-        md.append("| scenario | layout | cache | engine | sla_success | p95_ms | p99_ms |\n");
-        md.append("|---|---|---|---|---:|---:|---:|\n");
+        md.append("| scenario | sla_class | category | duration_group | layout | cache | sla_success | p95_ms | avg_sec/GB | rows_cap |\n");
+        md.append("|---|---|---|---|---|---|---:|---:|---:|---:|\n");
         for (Row row : withSla) {
             md.append("| ").append(row.getString(row.fieldIndex("scenario")))
+                    .append(" | ").append(nullableString(row, "sla_class"))
+                    .append(" | ").append(nullableString(row, "query_category"))
+                    .append(" | ").append(nullableString(row, "duration_group"))
                     .append(" | ").append(nullableString(row, "layout_id"))
                     .append(" | ").append(nullableString(row, "cache_state"))
-                    .append(" | ").append(nullableString(row, "engine"))
                     .append(" | ").append(formatPercent(row, "sla_success_rate"))
                     .append(" | ").append(formatDouble(row, "p95_duration_ms"))
-                    .append(" | ").append(formatDouble(row, "p99_duration_ms"))
+                    .append(" | ").append(formatDouble(row, "avg_seconds_per_gb"))
+                    .append(" | ").append(formatPercent(row, "rows_cap_ok_rate"))
                     .append(" |\n");
         }
         md.append("\n");
+        md.append("_`interactive` = AUDEI API path (default 3000 ms); `archive` = ST scan (default 120000 ms). "
+                + "`rows_cap` = доля прогонов с `rows_returned ≤ 2000`._\n\n");
     }
 
     private static void appendBloomSummary(StringBuilder md, List<Row> benchmark) {

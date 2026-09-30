@@ -5,7 +5,7 @@
 # Запуск:
 #   ./scripts/submit-spark32.sh -- --mode=benchmark --base-path="$BASE"
 #   ./scripts/submit-spark32.sh --driver-memory 8g --num-executors 16 -- \
-#       --mode=generate --base-path="$BASE" --target-size-tb=0.01
+#       --mode=generate --base-path="$BASE" --target-size-tb=0.02
 #
 # Аргументы:
 #   до "--"     флаги spark-submit (--driver-memory, --num-executors, ...)

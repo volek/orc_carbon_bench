@@ -67,7 +67,7 @@ class MarkdownReportBuilderTest {
         List<Row> rows = Arrays.asList(
                 benchmarkRow("filter_high_cardinality", "nobloom", 3L, 100.0, 1.0e9, "none"),
                 benchmarkRow("filter_high_cardinality", "bloom", 3L, 80.0, 2.0e8,
-                        "event_id,user_id,product_id,campaign_id")
+                        "epk_id,event_id")
         );
 
         String markdown = MarkdownReportBuilder.build(rows, "bloom-report");

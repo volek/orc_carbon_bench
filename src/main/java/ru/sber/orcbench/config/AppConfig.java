@@ -99,7 +99,9 @@ public final class AppConfig {
                 kv.getOrDefault("orc-bloom-filter-columns", String.join(",", OrcWriteSettings.DEFAULT_BLOOM_FILTER_COLUMNS))
         );
         double bloomFpp = OrcWriteSettings.parseBloomFilterFpp(kv.get("orc-bloom-filter-fpp"));
-        String[] sortColumns = OrcWriteSettings.parseSortColumns(kv.get("orc-sort-columns"));
+        String[] sortColumns = OrcWriteSettings.parseSortColumns(
+                kv.getOrDefault("orc-sort-columns", String.join(",", OrcWriteSettings.DEFAULT_SORT_COLUMNS))
+        );
         int rowIndexStride = OrcWriteSettings.parseRowIndexStride(kv.get("orc-row-index-stride"));
 
         OrcWriteSettings orcWrite = new OrcWriteSettings(
@@ -137,7 +139,13 @@ public final class AppConfig {
                 ? kv.get("benchmark-dataset-label").trim()
                 : resolveDefaultDatasetLabel(experiment, orcWrite);
 
-        double targetSizeTb = ArgParser.parsePositiveDouble(kv.getOrDefault("target-size-tb", "0.5"), "target-size-tb");
+        double targetSizeTb = ArgParser.parsePositiveDouble(kv.getOrDefault("target-size-tb", "0.1"), "target-size-tb");
+        // Cluster HDFS budget: one dataset must not exceed ~100 GB (0.1 TiB).
+        if (targetSizeTb > 0.1d) {
+            throw new IllegalArgumentException(
+                    "Argument --target-size-tb must be <= 0.1 (~100 GB) on this cluster: " + targetSizeTb
+            );
+        }
         ExperimentMeta experimentWithBytes = experiment.datasetBytes() > 0
                 ? experiment
                 : new ExperimentMeta(
@@ -145,6 +153,7 @@ public final class AppConfig {
                         experiment.engine(),
                         experiment.cacheState(),
                         experiment.slaThresholdMs(),
+                        experiment.archiveSlaThresholdMs(),
                         Math.max(1L, Math.round(targetSizeTb * (1L << 40)))
                 );
 
@@ -153,7 +162,7 @@ public final class AppConfig {
                 paths,
                 targetSizeTb,
                 parseLong(kv.getOrDefault("seed", "42"), "seed"),
-                parseLong(kv.getOrDefault("avg-row-bytes", "512"), "avg-row-bytes"),
+                parseLong(kv.getOrDefault("avg-row-bytes", "1600"), "avg-row-bytes"),
                 (int) parseLong(kv.getOrDefault("chunk-days", "1"), "chunk-days"),
                 timestampStart,
                 timestampEnd,

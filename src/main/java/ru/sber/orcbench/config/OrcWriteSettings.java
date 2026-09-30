@@ -2,13 +2,14 @@ package ru.sber.orcbench.config;
 
 public final class OrcWriteSettings {
     public static final String[] DEFAULT_PARTITION_BY =
-            {"event_year", "event_month", "event_day", "log_format"};
+            {"event_year", "event_month", "event_day"};
 
-    public static final String[] DEFAULT_BLOOM_FILTER_COLUMNS =
-            {"event_id", "user_id", "product_id", "campaign_id"};
+    public static final String[] DEFAULT_BLOOM_FILTER_COLUMNS = {"epk_id"};
 
-    public static final String[] BLOOM_HIGH_COLUMNS = {"event_id", "user_id"};
-    public static final String[] BLOOM_MEDIUM_COLUMNS = {"product_id", "campaign_id"};
+    public static final String[] BLOOM_HIGH_COLUMNS = {"epk_id", "event_id"};
+    public static final String[] BLOOM_MEDIUM_COLUMNS = {"module", "name"};
+
+    public static final String[] DEFAULT_SORT_COLUMNS = {"epk_id"};
 
     private static final double DEFAULT_BLOOM_FILTER_FPP = 0.05d;
     public static final int DEFAULT_ROW_INDEX_STRIDE = 10_000;
@@ -178,10 +179,14 @@ public final class OrcWriteSettings {
     }
 
     /**
-     * Parses sort columns; {@code none} / empty means unsorted write.
+     * Parses sort columns; empty defaults to {@link #DEFAULT_SORT_COLUMNS};
+     * {@code none} means unsorted write.
      */
     public static String[] parseSortColumns(String raw) {
-        if (raw == null || raw.trim().isEmpty() || "none".equalsIgnoreCase(raw.trim())) {
+        if (raw == null || raw.trim().isEmpty()) {
+            return DEFAULT_SORT_COLUMNS.clone();
+        }
+        if ("none".equalsIgnoreCase(raw.trim())) {
             return new String[0];
         }
         return ArgParser.parseCsv(raw);

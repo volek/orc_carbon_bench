@@ -30,6 +30,11 @@ public final class BenchmarkResult {
     private final double scanRatio;
     private final boolean slaOk;
     private final long slaThresholdMs;
+    private final String slaClass;
+    private final String queryCategory;
+    private final String durationGroup;
+    private final double secondsPerGb;
+    private final boolean rowsCapOk;
 
     public BenchmarkResult(
             String runId,
@@ -54,7 +59,12 @@ public final class BenchmarkResult {
             String cacheState,
             double scanRatio,
             boolean slaOk,
-            long slaThresholdMs
+            long slaThresholdMs,
+            String slaClass,
+            String queryCategory,
+            String durationGroup,
+            double secondsPerGb,
+            boolean rowsCapOk
     ) {
         this.runId = runId;
         this.scenario = scenario;
@@ -79,6 +89,11 @@ public final class BenchmarkResult {
         this.scanRatio = scanRatio;
         this.slaOk = slaOk;
         this.slaThresholdMs = slaThresholdMs;
+        this.slaClass = slaClass;
+        this.queryCategory = queryCategory;
+        this.durationGroup = durationGroup;
+        this.secondsPerGb = secondsPerGb;
+        this.rowsCapOk = rowsCapOk;
     }
 
     public static BenchmarkResult of(
@@ -100,6 +115,9 @@ public final class BenchmarkResult {
     ) {
         double selectivity = totalRows == 0 ? 0.0 : (double) rowsReturned / totalRows;
         ExperimentMeta meta = experiment == null ? ExperimentMeta.defaults() : experiment;
+        String slaClass = scenario.slaClass();
+        long threshold = meta.slaThresholdFor(slaClass);
+        String category = scenario.queryCategory();
         return new BenchmarkResult(
                 runId,
                 scenario,
@@ -122,8 +140,13 @@ public final class BenchmarkResult {
                 meta.engine().cliValue(),
                 meta.cacheState().cliValue(),
                 meta.scanRatio(bytesRead),
-                meta.slaOk(durationMs),
-                meta.slaThresholdMs()
+                meta.slaOk(durationMs, slaClass),
+                threshold,
+                slaClass,
+                category == null ? "" : category,
+                scenario.durationGroup(),
+                ExperimentMeta.secondsPerGb(durationMs, bytesRead),
+                rowsReturned <= ExperimentMeta.MAX_RESPONSE_ROWS
         );
     }
 
@@ -217,5 +240,25 @@ public final class BenchmarkResult {
 
     public long slaThresholdMs() {
         return slaThresholdMs;
+    }
+
+    public String slaClass() {
+        return slaClass;
+    }
+
+    public String queryCategory() {
+        return queryCategory;
+    }
+
+    public String durationGroup() {
+        return durationGroup;
+    }
+
+    public double secondsPerGb() {
+        return secondsPerGb;
+    }
+
+    public boolean rowsCapOk() {
+        return rowsCapOk;
     }
 }
