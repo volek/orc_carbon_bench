@@ -223,15 +223,35 @@ TARGET_SIZE_TB=0.02 SCENARIOS=audei \
 
 ---
 
-### Этап 6 — Hive H0–H4
+### Этап 6 — Hive H0–H4 (+ h2f)
+
+**Dual-SLA:** interactive ≤3 с — целевой engine **Spark**; Hive — archive/ST или post-tune после persistent-сессии.  
+Методика latency: [hive-latency-under-3s.md](hive-latency-under-3s.md).
 
 ```bash
+# Опционально: подтвердить session tax
+PROFILE=h2 ./scripts/hive/diagnose-session-tax.sh
+
+# Default SESSION_MODE=persistent → duration_ms = HS2 «Time taken»
 SUITE=audei LAYOUT=best_orc ./scripts/hive/run-hive-factor.sh h0
 SUITE=audei LAYOUT=best_orc ./scripts/hive/run-hive-factor.sh h1
-# … h2, h3 (LLAP cold), h4 (LLAP warm)
+SUITE=audei LAYOUT=best_orc ./scripts/hive/run-hive-factor.sh h2
+# A/B fetch path (не смешивать с Tez/LLAP SLA):
+SUITE=audei LAYOUT=best_orc ./scripts/hive/run-hive-factor.sh h2f
+
+# LLAP — только если preflight OK
+./scripts/hive/llap-preflight.sh
+SUITE=audei LAYOUT=best_orc ./scripts/hive/run-hive-factor.sh h3
+SUITE=audei LAYOUT=best_orc ./scripts/hive/run-hive-factor.sh h4
+
+# EXPLAIN prune checklist
+PROFILE=h2 ./scripts/hive/explain-audei.sh
+
+# Legacy A/B (~20 s wall-clock, как исторические отчёты):
+# SESSION_MODE=per_query SUITE=audei ./scripts/hive/run-hive-factor.sh h2
 ```
 
-**Успех:** CSV/логи Beeline без ошибок; external table читает тот же `layouts/best_orc/orc`.
+**Успех:** CSV в `result/hive/` без ошибок; в persistent-режиме в логе есть `METRIC hive_time_taken`; external table читает `layouts/best_orc/orc`.
 
 **Очистка:** нет (те же файлы).
 

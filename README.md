@@ -10,6 +10,8 @@ Java 8 / Spark SQL приложение: `generate → validate → benchmark �
 | [docs/cluster_manual_runbook.md](docs/cluster_manual_runbook.md) | Пошаговый запуск на edge-ноде |
 | [docs/cluster-run-protocol.md](docs/cluster-run-protocol.md) | **Порядок прогонов, очистка HDFS, проверки, выгрузка отчётов** |
 | [docs/hdfs-cleanup-before-l.md](docs/hdfs-cleanup-before-l.md) | Очистка `layouts/*` перед L: что оставить, выгрузка отчётов, команды |
+| [docs/benchmark-results-analysis.md](docs/benchmark-results-analysis.md) | Сводный анализ прогонов: таблицы, SLA, выводы |
+| [docs/hive-latency-under-3s.md](docs/hive-latency-under-3s.md) | Как снизить Hive latency до interactive ≤3 с |
 | [docs/audei-st-workload-mapping.md](docs/audei-st-workload-mapping.md) | AUDEI/ST профиль → schema, suites, dual SLA |
 | [docs/orc-hive-bench-plan.md](docs/orc-hive-bench-plan.md) | План реализации P0–P10 |
 | [docs/ORC + HDFS + Spark + Hive benchmark.md](docs/ORC%20+%20HDFS%20+%20Spark%20+%20Hive%20benchmark.md) | Методика факторного эксперимента |
@@ -241,14 +243,20 @@ Markdown: Benchmark Summary, **SLA ≤ 3s**, Bloom comparison, Validation, Recom
 ### Hive (отдельный runner)
 
 ```bash
-./scripts/hive/run-hive-factor.sh h0   # Tez, vec off
-./scripts/hive/run-hive-factor.sh h1   # + vectorization
-./scripts/hive/run-hive-factor.sh h2   # + CBO
-./scripts/hive/run-hive-factor.sh h3   # LLAP cold
-./scripts/hive/run-hive-factor.sh h4   # LLAP warm
+SUITE=audei ./scripts/hive/run-hive-factor.sh h0   # Tez baseline
+SUITE=audei ./scripts/hive/run-hive-factor.sh h1   # + vec / PPD
+SUITE=audei ./scripts/hive/run-hive-factor.sh h2   # + CBO
+SUITE=audei ./scripts/hive/run-hive-factor.sh h2f  # fetch.task.conversion A/B
+./scripts/hive/llap-preflight.sh
+SUITE=audei ./scripts/hive/run-hive-factor.sh h3   # LLAP cold
+SUITE=audei ./scripts/hive/run-hive-factor.sh h4   # LLAP warm
 ```
 
-Нужны `beeline` и (для h3/h4) Hive ≥ 2.0 с LLAP. DDL/SQL: [`scripts/hive/`](scripts/hive/).
+Default `SESSION_MODE=persistent` (HS2 `Time taken`). Legacy: `SESSION_MODE=per_query`.  
+Диагностика / prune: `diagnose-session-tax.sh`, `explain-audei.sh`.  
+Подробности: [docs/hive-latency-under-3s.md](docs/hive-latency-under-3s.md).
+
+Нужны `beeline` и (для h3/h4) Hive ≥ 2.0 с **живым** LLAP. DDL/SQL: [`scripts/hive/`](scripts/hive/).
 
 ## Ручной вызов одного mode
 

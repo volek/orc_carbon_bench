@@ -219,7 +219,10 @@ $BASE/layouts/<id>/reports/summary/
 | [`run-spark-exec-matrix.sh`](../scripts/run-spark-exec-matrix.sh) | S0/S1 + toggles pushdown/AQE/… на BEST_ORC | без generate |
 | [`run-bloom-ab.sh`](../scripts/run-bloom-ab.sh) | legacy bloom A/B (orc vs orc_bloom) | `0.02` |
 | [`run-bench-pipeline.sh`](../scripts/run-bench-pipeline.sh) | validate→benchmark→report без generate | — |
-| [`hive/run-hive-factor.sh`](../scripts/hive/run-hive-factor.sh) | Hive/Tez/LLAP H0–H4 на тех же ORC | после BEST_ORC |
+| [`hive/run-hive-factor.sh`](../scripts/hive/run-hive-factor.sh) | Hive/Tez/LLAP H0–H4 (+h2f); default persistent session | после BEST_ORC |
+| [`hive/diagnose-session-tax.sh`](../scripts/hive/diagnose-session-tax.sh) | A/B session tax (10× epk_eq_14d) | перед Hive factor |
+| [`hive/explain-audei.sh`](../scripts/hive/explain-audei.sh) | EXPLAIN EXTENDED audei + prune checklist | после DDL |
+| [`hive/llap-preflight.sh`](../scripts/hive/llap-preflight.sh) | проверка LLAP daemon перед h3/h4 | перед h3/h4 |
 | [`run-concurrency.sh`](../scripts/run-concurrency.sh) | параллельные клиенты **9 / 18** на `epk_eq_14d` | BEST_ORC |
 | [`run-sla-matrix.sh`](../scripts/run-sla-matrix.sh) | финальный SLA Spark+Hive | Dataset L |
 
@@ -508,23 +511,38 @@ SCENARIOS=audei ./scripts/run-factor.sh --layout=b0
 | Профиль | Engine | Настройки |
 |---|---|---|
 | `h0` | hive_tez | vectorization OFF, CBO OFF, LLAP none |
-| `h1` | hive_tez | vectorization ON |
-| `h2` | hive_tez | vectorization + CBO |
-| `h3` | hive_llap | LLAP **cold** |
-| `h4` | hive_llap | LLAP **warm** |
+| `h1` | hive_tez | vectorization + reduce vec + PPD/index + tez reuse |
+| `h2` | hive_tez | h1 + CBO + compute stats |
+| `h2f` | hive_tez | h2 + `hive.fetch.task.conversion=more` (отдельный A/B, не Tez/LLAP SLA) |
+| `h3` | hive_llap | LLAP **cold** (нужен live daemon; `llap-preflight.sh`) |
+| `h4` | hive_llap | LLAP **warm** (warmup в той же persistent-сессии) |
+
+Env:
+
+| Переменная | Default | Смысл |
+|---|---|---|
+| `SESSION_MODE` | `persistent` | `persistent` = один Beeline, `duration_ms` = HS2 Time taken; `per_query` = legacy wall-clock |
+| `SKIP_LLAP_PREFLIGHT` | `0` | `1` — пропустить проверку LLAP для h3/h4 |
+| `SUITE` | `doc` | `audei` \| `st` \| doc Q1–Q10 |
+
+См. также [hive-latency-under-3s.md](hive-latency-under-3s.md).
 
 ### 10.3. Запуск
 
 ```bash
 export BASE=hdfs:///user/hdfs_migration_user/orc_test
 export LAYOUT=best_orc
+export SUITE=audei
 
-# DDL + Q1–Q10 для профиля
+PROFILE=h2 ./scripts/hive/diagnose-session-tax.sh   # опционально
 ./scripts/hive/run-hive-factor.sh h0
 ./scripts/hive/run-hive-factor.sh h1
 ./scripts/hive/run-hive-factor.sh h2
-./scripts/hive/run-hive-factor.sh h3   # cold: при необходимости рестарт LLAP cache до прогона
-./scripts/hive/run-hive-factor.sh h4   # warm: повторные запросы на горячем cache
+./scripts/hive/run-hive-factor.sh h2f
+./scripts/hive/llap-preflight.sh
+./scripts/hive/run-hive-factor.sh h3   # cold
+./scripts/hive/run-hive-factor.sh h4   # warm в той же сессии
+PROFILE=h2 ./scripts/hive/explain-audei.sh
 ```
 
 Фильтры (если sample из Spark другой):
@@ -538,7 +556,7 @@ export FILTER_EVENT_ID='evt-…' FILTER_USER_ID=123
 Скрипт:
 
 1. Создаёт external tables (`scripts/hive/ddl_external_orc.sql`)
-2. Прогоняет сценарии с warmup/repeats
+2. В `SESSION_MODE=persistent` — один Beeline на suite; парсит `Time taken`
 3. Пишет CSV таймингов; при наличии `hdfs` — кладёт в  
    `$BASE/layouts/best_orc/reports/raw/benchmark_hive_<profile>/`
 4. Пытается ingest в parquet через [`ingest-hive-csv.sh`](../scripts/hive/ingest-hive-csv.sh)
