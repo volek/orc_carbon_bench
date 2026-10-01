@@ -9,6 +9,8 @@
 #   <out-dir>/                 parquet (_SUCCESS + part-*.parquet)
 #   <out-dir>.hive_results.csv CSV artifact (sibling of out-dir)
 #
+# Spark always reads the HDFS sibling CSV (YARN executors cannot see edge file://).
+#
 # Env:
 #   HDFS_RETRIES [8]  HDFS_RETRY_SLEEP_SEC [3]  SPARK_SUBMIT [spark-submit]
 #   LOG_DIR [ $ROOT/logs ]  INGEST_LOG [auto]  — set INGEST_LOG= to disable file log
@@ -18,7 +20,6 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 CSV_PATH="${1:?csv path (local file or hdfs://...)}"
 OUT_PATH="${2:?hdfs parquet output dir}"
-# Strip trailing slash so sibling naming is stable
 OUT_PATH="${OUT_PATH%/}"
 HDFS_CSV="${OUT_PATH}.hive_results.csv"
 HDFS_RETRIES="${HDFS_RETRIES:-8}"
@@ -70,29 +71,44 @@ resolve_local_csv() {
   exit 1
 }
 
+assert_csv_not_under_out() {
+  local csv="$1"
+  if [[ "$csv" == "$OUT_PATH" || "$csv" == "$OUT_PATH"/* ]]; then
+    echo "ERROR: CSV must not live under parquet out-dir (overwrite deletes it): $csv" >&2
+    exit 1
+  fi
+}
+
 LOCAL_CSV="$(resolve_local_csv "$CSV_PATH")"
 
-# Spark read path: prefer local file:// in client mode (avoids HDFS race with parquet overwrite).
+# Always stage CSV on HDFS as sibling of OUT_PATH, then Spark reads that path.
+hdfs_retry hdfs dfs -mkdir -p "$(dirname "$OUT_PATH")"
 if [[ -n "$LOCAL_CSV" ]]; then
-  SPARK_CSV="file://${LOCAL_CSV}"
+  echo "Uploading local CSV → $HDFS_CSV"
+  hdfs_retry hdfs dfs -put -f "$LOCAL_CSV" "$HDFS_CSV"
 elif [[ "$CSV_PATH" == hdfs://* || "$CSV_PATH" == viewfs://* ]]; then
-  SPARK_CSV="$CSV_PATH"
-  if [[ "$SPARK_CSV" == "$OUT_PATH" || "$SPARK_CSV" == "$OUT_PATH"/* ]]; then
-    echo "ERROR: CSV must not live under parquet out-dir (overwrite deletes it): $SPARK_CSV" >&2
-    exit 1
+  assert_csv_not_under_out "$CSV_PATH"
+  if [[ "$CSV_PATH" != "$HDFS_CSV" ]]; then
+    echo "Copying HDFS CSV $CSV_PATH → $HDFS_CSV"
+    hdfs_retry hdfs dfs -cp -f "$CSV_PATH" "$HDFS_CSV"
   fi
 else
   echo "ERROR: unsupported CSV path: $CSV_PATH" >&2
   exit 1
 fi
 
-echo "Hive ingest: read=$SPARK_CSV → parquet=$OUT_PATH (csv artifact=$HDFS_CSV)"
+assert_csv_not_under_out "$HDFS_CSV"
+if ! hdfs_retry hdfs dfs -test -e "$HDFS_CSV"; then
+  echo "ERROR: CSV not on HDFS: $HDFS_CSV" >&2
+  exit 1
+fi
 
-# Ensure parent exists; do NOT put CSV into OUT_PATH before overwrite.
-hdfs_retry hdfs dfs -mkdir -p "$(dirname "$OUT_PATH")"
+SPARK_CSV="$HDFS_CSV"
+echo "Hive ingest: read=$SPARK_CSV → parquet=$OUT_PATH"
 
 PY_SCRIPT="$(mktemp /tmp/orc-bench-hive-ingest-XXXXXX.py)"
-cleanup() { rm -f "$PY_SCRIPT"; }
+SCALA_SCRIPT="$(mktemp /tmp/orc-bench-hive-ingest-XXXXXX.scala)"
+cleanup() { rm -f "$PY_SCRIPT" "$SCALA_SCRIPT"; }
 trap cleanup EXIT
 
 cat > "$PY_SCRIPT" <<'PY'
@@ -130,17 +146,48 @@ try:
         .withColumn("run_index", F.col("run_index").cast("int"))
         .withColumn("sla_threshold_ms", F.col("sla_threshold_ms").cast("long"))
     )
-    measured = enriched.filter(F.col("warmup") == False)  # noqa: E712
-    # Materialize before overwrite so source is not needed mid-write.
-    measured = measured.cache()
+    measured = enriched.filter(F.col("warmup") == False).cache()  # noqa: E712
     count = measured.count()
     if count == 0:
         raise RuntimeError("No non-warmup rows in Hive CSV: " + csv_path)
     measured.coalesce(1).write.mode("overwrite").parquet(out_path)
-    print("Wrote %d measured Hive rows to %s" % (count, out_path))
+    print("ORC_BENCH_HIVE_INGEST_OK rows=%d path=%s" % (count, out_path))
 finally:
     spark.stop()
 PY
+
+# Single :load script — multiline chained vals break spark-shell REPL line-by-line.
+cat > "$SCALA_SCRIPT" <<EOF
+val csvPath = "$SPARK_CSV"
+val outPath = "$OUT_PATH"
+val raw = spark.read.option("header","true").option("inferSchema","true").csv(csvPath)
+if (raw.head(1).isEmpty) sys.error("Hive CSV is empty: " + csvPath)
+val enriched = raw
+  .withColumn("run_id", org.apache.spark.sql.functions.lit(java.util.UUID.randomUUID.toString))
+  .withColumn("rows_returned", org.apache.spark.sql.functions.lit(0L))
+  .withColumn("total_rows", org.apache.spark.sql.functions.lit(0L))
+  .withColumn("selectivity", org.apache.spark.sql.functions.lit(0.0))
+  .withColumn("bytes_read", org.apache.spark.sql.functions.lit(0L))
+  .withColumn("records_read", org.apache.spark.sql.functions.lit(0L))
+  .withColumn("seed", org.apache.spark.sql.functions.lit(42L))
+  .withColumn("orc_path", org.apache.spark.sql.functions.lit(""))
+  .withColumn("orc_bloom_columns", org.apache.spark.sql.functions.lit("none"))
+  .withColumn("executed_at", org.apache.spark.sql.functions.lit(java.time.Instant.now.toString))
+  .withColumn("spark_version", org.apache.spark.sql.functions.lit("hive"))
+  .withColumn("spark_runtime", org.apache.spark.sql.functions.lit("hive-tez-llap"))
+  .withColumn("scan_ratio", org.apache.spark.sql.functions.lit(0.0))
+  .withColumn("warmup", org.apache.spark.sql.functions.col("warmup").cast("boolean"))
+  .withColumn("sla_ok", org.apache.spark.sql.functions.col("sla_ok").cast("boolean"))
+  .withColumn("duration_ms", org.apache.spark.sql.functions.col("duration_ms").cast("long"))
+  .withColumn("run_index", org.apache.spark.sql.functions.col("run_index").cast("int"))
+  .withColumn("sla_threshold_ms", org.apache.spark.sql.functions.col("sla_threshold_ms").cast("long"))
+val measured = enriched.filter(org.apache.spark.sql.functions.col("warmup") === false).cache()
+val n = measured.count()
+if (n == 0) sys.error("No non-warmup rows in Hive CSV: " + csvPath)
+measured.coalesce(1).write.mode("overwrite").parquet(outPath)
+println("ORC_BENCH_HIVE_INGEST_OK rows=" + n + " path=" + outPath)
+sys.exit(0)
+EOF
 
 run_pyspark() {
   "$SPARK_SUBMIT" \
@@ -169,42 +216,13 @@ run_spark_shell() {
   "$SPARK_SHELL" --conf spark.ui.enabled=false \
     --conf spark.security.credentials.hive.enabled=false \
     --conf spark.security.credentials.hbase.enabled=false \
-    >"$shell_log" 2>&1 <<EOF
-val csvPath = "$SPARK_CSV"
-val outPath = "$OUT_PATH"
-val raw = spark.read.option("header","true").option("inferSchema","true").csv(csvPath)
-if (raw.head(1).isEmpty) { throw new RuntimeException("Hive CSV is empty: " + csvPath) }
-val enriched = raw
-  .withColumn("run_id", org.apache.spark.sql.functions.lit(java.util.UUID.randomUUID.toString))
-  .withColumn("rows_returned", org.apache.spark.sql.functions.lit(0L))
-  .withColumn("total_rows", org.apache.spark.sql.functions.lit(0L))
-  .withColumn("selectivity", org.apache.spark.sql.functions.lit(0.0))
-  .withColumn("bytes_read", org.apache.spark.sql.functions.lit(0L))
-  .withColumn("records_read", org.apache.spark.sql.functions.lit(0L))
-  .withColumn("seed", org.apache.spark.sql.functions.lit(42L))
-  .withColumn("orc_path", org.apache.spark.sql.functions.lit(""))
-  .withColumn("orc_bloom_columns", org.apache.spark.sql.functions.lit("none"))
-  .withColumn("executed_at", org.apache.spark.sql.functions.lit(java.time.Instant.now.toString))
-  .withColumn("spark_version", org.apache.spark.sql.functions.lit("hive"))
-  .withColumn("spark_runtime", org.apache.spark.sql.functions.lit("hive-tez-llap"))
-  .withColumn("scan_ratio", org.apache.spark.sql.functions.lit(0.0))
-  .withColumn("warmup", org.apache.spark.sql.functions.col("warmup").cast("boolean"))
-  .withColumn("sla_ok", org.apache.spark.sql.functions.col("sla_ok").cast("boolean"))
-  .withColumn("duration_ms", org.apache.spark.sql.functions.col("duration_ms").cast("long"))
-  .withColumn("run_index", org.apache.spark.sql.functions.col("run_index").cast("int"))
-  .withColumn("sla_threshold_ms", org.apache.spark.sql.functions.col("sla_threshold_ms").cast("long"))
-val measured = enriched.filter(org.apache.spark.sql.functions.col("warmup") === false).cache()
-val n = measured.count()
-if (n == 0) { throw new RuntimeException("No non-warmup rows in Hive CSV: " + csvPath) }
-measured.coalesce(1).write.mode("overwrite").parquet(outPath)
-println("Wrote " + n + " measured Hive rows to " + outPath)
-System.exit(0)
-EOF
+    -i "$SCALA_SCRIPT" \
+    >"$shell_log" 2>&1
   local rc=$?
   set -e
-  if (( rc != 0 )) || grep -qE 'FileNotFoundException|ERROR [a-zA-Z.]+Exception|Caused by:.*Exception|RuntimeException' "$shell_log"; then
+  if ! grep -q 'ORC_BENCH_HIVE_INGEST_OK' "$shell_log"; then
     echo "ERROR: spark-shell hive ingest failed (rc=$rc). Log: $shell_log" >&2
-    tail -n 60 "$shell_log" >&2 || true
+    tail -n 80 "$shell_log" >&2 || true
     return 1
   fi
   rm -f "$shell_log"
@@ -221,13 +239,6 @@ if (( SUBMIT_RC != 0 )); then
   if ! run_spark_shell; then
     exit 1
   fi
-fi
-
-# Archive CSV next to parquet dir (sibling — safe from overwrite)
-if [[ -n "$LOCAL_CSV" ]]; then
-  hdfs_retry hdfs dfs -put -f "$LOCAL_CSV" "$HDFS_CSV"
-elif [[ "$CSV_PATH" != "$HDFS_CSV" ]]; then
-  hdfs_retry hdfs dfs -cp -f "$CSV_PATH" "$HDFS_CSV"
 fi
 
 if ! hdfs dfs -test -e "$OUT_PATH/_SUCCESS" && ! hdfs dfs -ls "$OUT_PATH" 2>/dev/null | grep -q '\.parquet'; then
