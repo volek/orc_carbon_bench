@@ -1,0 +1,2 @@
+Hive factor profile=h0 engine=hive_tez cache=cold orc=hdfs:///orc_test/layouts/best_orc/orc
+Scenario partition_prune

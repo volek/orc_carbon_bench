@@ -1,0 +1,37 @@
+spark-submit resources: num-executors=16 executor-memory=8g executor-cores=4 driver-memory=4g yarn-am-memory=4g yarn-am-overhead=512m
+spark event log dir: hdfs:///dev1-primary/archive/sparkLogs
+26/10/01 13:53:09 WARN NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
+26/10/01 13:53:10 INFO ConfiguredRMFailoverProxyProvider: Failing over to rm2
+26/10/01 13:53:11 INFO Client: Requesting a new application from cluster with 6 NodeManagers
+26/10/01 13:53:12 WARN DomainSocketFactory: The short-circuit local reads feature cannot be used because libhadoop cannot be loaded.
+26/10/01 13:53:12 INFO Configuration: found resource resource-types.xml at file:/etc/hadoop/3.5.4.1-1/0/resource-types.xml
+26/10/01 13:53:12 INFO Client: Verifying our application has not requested more than the maximum memory capability of the cluster (46080 MB per container)
+26/10/01 13:53:12 INFO Client: Will allocate AM container, with 4505 MB memory including 409 MB overhead
+26/10/01 13:53:12 INFO Client: Setting up container launch context for our AM
+26/10/01 13:53:12 INFO Client: Setting up the launch environment for our AM container
+26/10/01 13:53:12 INFO Client: Preparing resources for our AM container
+26/10/01 13:53:13 WARN Client: Neither spark.yarn.jars nor spark.yarn.archive is set, falling back to uploading libraries under SPARK_HOME.
+26/10/01 13:53:22 INFO Client: Deleted staging directory hdfs://sdp-dzo-lt-omlt/user/pvm-omltp-sdp/.sparkStaging/application_1790656441704_0188
+Exception in thread "main" java.io.IOException: No space left on device
+	at java.io.FileOutputStream.writeBytes(Native Method)
+	at java.io.FileOutputStream.write(FileOutputStream.java:326)
+	at java.util.zip.DeflaterOutputStream.deflate(DeflaterOutputStream.java:253)
+	at java.util.zip.ZipOutputStream.closeEntry(ZipOutputStream.java:255)
+	at java.util.zip.ZipOutputStream.finish(ZipOutputStream.java:360)
+	at java.util.zip.DeflaterOutputStream.close(DeflaterOutputStream.java:238)
+	at java.util.zip.ZipOutputStream.close(ZipOutputStream.java:377)
+	at org.apache.spark.deploy.yarn.Client.prepareLocalResources(Client.scala:622)
+	at org.apache.spark.deploy.yarn.Client.createContainerLaunchContext(Client.scala:934)
+	at org.apache.spark.deploy.yarn.Client.submitApplication(Client.scala:208)
+	at org.apache.spark.deploy.yarn.Client.run(Client.scala:1274)
+	at org.apache.spark.deploy.yarn.YarnClusterApplication.start(Client.scala:1683)
+	at org.apache.spark.deploy.SparkSubmit.org$apache$spark$deploy$SparkSubmit$$runMain(SparkSubmit.scala:968)
+	at org.apache.spark.deploy.SparkSubmit.doRunMain$1(SparkSubmit.scala:180)
+	at org.apache.spark.deploy.SparkSubmit.submit(SparkSubmit.scala:203)
+	at org.apache.spark.deploy.SparkSubmit.doSubmit(SparkSubmit.scala:90)
+	at org.apache.spark.deploy.SparkSubmit$$anon$2.doSubmit(SparkSubmit.scala:1056)
+	at org.apache.spark.deploy.SparkSubmit$.main(SparkSubmit.scala:1065)
+	at org.apache.spark.deploy.SparkSubmit.main(SparkSubmit.scala)
+26/10/01 13:53:22 INFO ShutdownHookManager: Shutdown hook called
+26/10/01 13:53:22 INFO ShutdownHookManager: Deleting directory /tmp/spark-40c12262-fc93-43f5-9d39-34b985fe873a
+26/10/01 13:53:22 INFO ShutdownHookManager: Deleting directory /tmp/spark-f84f8e16-7dbe-44f0-9f5b-7d93e02d9825

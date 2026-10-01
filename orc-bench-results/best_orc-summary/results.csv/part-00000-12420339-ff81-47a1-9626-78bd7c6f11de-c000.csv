@@ -1,0 +1,12 @@
+source,scenario,format,spark_runtime,dataset_label,layout_id,engine,cache_state,runs,avg_duration_ms,p50_duration_ms,p95_duration_ms,p99_duration_ms,min_duration_ms,max_duration_ms,avg_selectivity,avg_bytes_read,avg_records_read,orc_bloom_columns,spark_version,avg_scan_ratio,sla_success_rate,avg_seconds_per_gb,query_category,sla_class,duration_group,rows_cap_ok_rate,passed
+benchmark,epk_eq_14d,orc,spark32-orc,o1_cbo_on,best_orc,spark,cold,5,906.2,839.0,1194.0,1194.0,766,1194,0.0,6.0606057E7,20000.0,epk_id,3.2.1.3.5.4.1-1,0.002756044386782246,1.0,16.054910830262394,7_EQ,interactive,1_month,1.0,""
+benchmark,eq_filters,orc,spark32-orc,o1_cbo_on,best_orc,spark,cold,5,221.2,163.0,445.0,445.0,162,445,3.798049970550561E-5,249911.0,37552.0,epk_id,3.2.1.3.5.4.1-1,1.1364636520490648E-5,1.0,950.385102971858,7_EQ,interactive,1_month,1.0,""
+benchmark,epk_eq_1d,orc,spark32-orc,o1_cbo_on,best_orc,spark,cold,5,1033.6,1040.0,1332.0,1332.0,800,1332,0.0,6.0606057E7,20000.0,epk_id,3.2.1.3.5.4.1-1,0.002756044386782246,1.0,18.31202365279101,7_EQ,interactive,1_month,1.0,""
+benchmark,order_by_epk_day,orc,spark32-orc,o1_cbo_on,best_orc,spark,cold,5,159.2,144.0,210.0,210.0,134,210,0.0027322676723010473,132384.0,37552.0,epk_id,3.2.1.3.5.4.1-1,6.0201273298439604E-6,1.0,1291.2413764563694,"",archive,1_month,0.0,""
+benchmark,epk_page,orc,spark32-orc,o1_cbo_on,best_orc,spark,cold,5,772.4,801.0,889.0,889.0,595,889,0.0,6.0606057E7,20000.0,epk_id,3.2.1.3.5.4.1-1,0.002756044386782246,1.0,13.684410864372847,7_EQ,interactive,1_month,1.0,""
+validation,row_count,orc,spark32-orc,-,default,spark,-,1,"","","","","","","","","","",3.2.1.3.5.4.1-1,"","","","","","","",true
+validation,low_cardinality_bounds,orc,spark32-orc,-,default,spark,-,1,"","","","","","","","","","",3.2.1.3.5.4.1-1,"","","","","","","",true
+validation,timestamp_range,orc,spark32-orc,-,default,spark,-,1,"","","","","","","","","","",3.2.1.3.5.4.1-1,"","","","","","","",true
+validation,log_format_distribution,orc,spark32-orc,-,default,spark,-,1,"","","","","","","","","","",3.2.1.3.5.4.1-1,"","","","","","","",true
+validation,log_message_structure,orc,spark32-orc,-,default,spark,-,1,"","","","","","","","","","",3.2.1.3.5.4.1-1,"","","","","","","",true
+validation,orc_bloom_filters,orc,spark32-orc,-,default,spark,-,1,"","","","","","","","","","",3.2.1.3.5.4.1-1,"","","","","","","",true
