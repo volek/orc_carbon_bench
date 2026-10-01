@@ -149,50 +149,80 @@ beeline_cmd() {
   fi
 }
 
+# Multi-statement scripts: beeline -e often runs only the first statement on SDP Hive.
+# Always use -f for DDL / multi-statement session batches.
+beeline_file() {
+  local sql_file="$1"
+  if [[ -n "$HIVE_JDBC_URL" ]]; then
+    "$BEELINE" -u "$HIVE_JDBC_URL" --silent=true --showHeader=false --outputformat=tsv2 -f "$sql_file"
+  else
+    "$BEELINE" --silent=true --showHeader=false --outputformat=tsv2 -f "$sql_file"
+  fi
+}
+
 echo "Hive factor profile=$PROFILE suite=$SUITE engine=$ENGINE cache=$CACHE_STATE orc=$ORC_LOCATION"
 
-# DDL once
-DDL_SQL="$(render_sql "$ROOT/scripts/hive/ddl_external_orc.sql")"
-beeline_cmd "$DDL_SQL" >/dev/null || true
+if command -v hdfs >/dev/null 2>&1; then
+  if ! hdfs dfs -test -d "$ORC_LOCATION"; then
+    echo "ERROR: ORC path missing: $ORC_LOCATION (run generate/factor for layout=$LAYOUT first)" >&2
+    exit 1
+  fi
+fi
 
-# Init session settings
-INIT_SQL="$(printf '%s\n' "${SESSION_INIT[@]}")"
-beeline_cmd "$INIT_SQL" >/dev/null || true
+# DDL once via -f (must succeed; do not swallow errors)
+DDL_FILE="$(mktemp /tmp/orc-bench-hive-ddl-XXXXXX.sql)"
+render_sql "$ROOT/scripts/hive/ddl_external_orc.sql" > "$DDL_FILE"
+echo "Running Hive DDL from $DDL_FILE (LOCATION=$ORC_LOCATION)"
+if ! beeline_file "$DDL_FILE"; then
+  echo "ERROR: Hive DDL failed. Check beeline output above and ORC path $ORC_LOCATION" >&2
+  rm -f "$DDL_FILE"
+  exit 1
+fi
+rm -f "$DDL_FILE"
+
+# Prove table exists in orc_bench (catches default-DB / silent-DDL issues)
+if ! beeline_cmd "DESCRIBE orc_bench.events_ext;" >/dev/null; then
+  echo "ERROR: orc_bench.events_ext not found after DDL" >&2
+  exit 1
+fi
+
+# Init session settings + always pin database (each beeline call is a new session)
+INIT_SQL="$(printf '%s\n' "USE orc_bench;" "${SESSION_INIT[@]}")"
 
 case "$SUITE" in
   audei)
     QUERIES=(
-      "epk_eq_1d:SELECT count(*) FROM events_ext WHERE event_ts >= '${TS_1D_START}' AND event_ts < '${TS_1D_END}' AND epk_id='${EPK_ID}'"
-      "epk_eq_14d:SELECT count(*) FROM events_ext WHERE event_ts >= '${TS_14D_START}' AND event_ts < '${TS_14D_END}' AND epk_id='${EPK_ID}'"
-      "epk_page:SELECT count(*) FROM (SELECT * FROM events_ext WHERE event_ts >= '${TS_14D_START}' AND event_ts < '${TS_14D_END}' AND epk_id='${EPK_ID}' ORDER BY event_ts LIMIT 1000) t"
-      "eq_filters:SELECT count(*) FROM events_ext WHERE event_year=${Y} AND event_month=${M} AND event_day=${D} AND name='${NAME}' AND channel_type='${CHANNEL}' AND state='${STATUS}'"
-      "order_by_epk_day:SELECT count(*) FROM (SELECT * FROM events_ext WHERE event_year=${Y} AND event_month=${M} AND event_day=${D} ORDER BY epk_id) t"
+      "epk_eq_1d:SELECT count(*) FROM orc_bench.events_ext WHERE event_ts >= '${TS_1D_START}' AND event_ts < '${TS_1D_END}' AND epk_id='${EPK_ID}'"
+      "epk_eq_14d:SELECT count(*) FROM orc_bench.events_ext WHERE event_ts >= '${TS_14D_START}' AND event_ts < '${TS_14D_END}' AND epk_id='${EPK_ID}'"
+      "epk_page:SELECT count(*) FROM (SELECT * FROM orc_bench.events_ext WHERE event_ts >= '${TS_14D_START}' AND event_ts < '${TS_14D_END}' AND epk_id='${EPK_ID}' ORDER BY event_ts LIMIT 1000) t"
+      "eq_filters:SELECT count(*) FROM orc_bench.events_ext WHERE event_year=${Y} AND event_month=${M} AND event_day=${D} AND name='${NAME}' AND channel_type='${CHANNEL}' AND state='${STATUS}'"
+      "order_by_epk_day:SELECT count(*) FROM (SELECT * FROM orc_bench.events_ext WHERE event_year=${Y} AND event_month=${M} AND event_day=${D} ORDER BY epk_id) t"
     )
     ;;
   st)
     QUERIES=(
-      "no_filter:SELECT count(*) FROM events_ext WHERE event_ts >= '${TS_31D_START}' AND event_ts < '${TS_31D_END}'"
-      "like_single:SELECT count(*) FROM events_ext WHERE event_ts >= '${TS_31D_START}' AND event_ts < '${TS_31D_END}' AND payload_json LIKE '%${LIKE_TOKEN}%'"
-      "like_multi:SELECT count(*) FROM events_ext WHERE event_ts >= '${TS_31D_START}' AND event_ts < '${TS_31D_END}' AND payload_json LIKE '%${LIKE_TOKEN}%' AND payload_json LIKE '%AUDEI%' AND payload_json LIKE '%sms%' AND payload_json LIKE '%session%' AND payload_json LIKE '%pad%'"
-      "like_fulltext:SELECT count(*) FROM events_ext WHERE event_ts >= '${TS_31D_START}' AND event_ts < '${TS_31D_END}' AND payload_json LIKE '%${LIKE_TOKEN}%' AND payload_json LIKE '%AUDEI%' AND payload_json LIKE '%sms%' AND payload_json LIKE '%session%' AND payload_json LIKE '%pad%' AND payload_json LIKE '%device%' AND payload_json LIKE '%confirm%' AND payload_json LIKE '%metamodel%' AND payload_json LIKE '%param%' AND payload_json LIKE '%event%'"
-      "eq:SELECT count(*) FROM events_ext WHERE event_ts >= '${TS_31D_START}' AND event_ts < '${TS_31D_END}' AND epk_id='${EPK_ID}'"
-      "in_list:SELECT count(*) FROM events_ext WHERE event_ts >= '${TS_31D_START}' AND event_ts < '${TS_31D_END}' AND epk_id IN ('${EPK_ID}','${EPK_ID_B}','${EPK_ID_C}','${EPK_ID_D}')"
-      "rlike:SELECT count(*) FROM events_ext WHERE event_ts >= '${TS_31D_START}' AND event_ts < '${TS_31D_END}' AND payload_json RLIKE '${RLIKE}'"
+      "no_filter:SELECT count(*) FROM orc_bench.events_ext WHERE event_ts >= '${TS_31D_START}' AND event_ts < '${TS_31D_END}'"
+      "like_single:SELECT count(*) FROM orc_bench.events_ext WHERE event_ts >= '${TS_31D_START}' AND event_ts < '${TS_31D_END}' AND payload_json LIKE '%${LIKE_TOKEN}%'"
+      "like_multi:SELECT count(*) FROM orc_bench.events_ext WHERE event_ts >= '${TS_31D_START}' AND event_ts < '${TS_31D_END}' AND payload_json LIKE '%${LIKE_TOKEN}%' AND payload_json LIKE '%AUDEI%' AND payload_json LIKE '%sms%' AND payload_json LIKE '%session%' AND payload_json LIKE '%pad%'"
+      "like_fulltext:SELECT count(*) FROM orc_bench.events_ext WHERE event_ts >= '${TS_31D_START}' AND event_ts < '${TS_31D_END}' AND payload_json LIKE '%${LIKE_TOKEN}%' AND payload_json LIKE '%AUDEI%' AND payload_json LIKE '%sms%' AND payload_json LIKE '%session%' AND payload_json LIKE '%pad%' AND payload_json LIKE '%device%' AND payload_json LIKE '%confirm%' AND payload_json LIKE '%metamodel%' AND payload_json LIKE '%param%' AND payload_json LIKE '%event%'"
+      "eq:SELECT count(*) FROM orc_bench.events_ext WHERE event_ts >= '${TS_31D_START}' AND event_ts < '${TS_31D_END}' AND epk_id='${EPK_ID}'"
+      "in_list:SELECT count(*) FROM orc_bench.events_ext WHERE event_ts >= '${TS_31D_START}' AND event_ts < '${TS_31D_END}' AND epk_id IN ('${EPK_ID}','${EPK_ID_B}','${EPK_ID_C}','${EPK_ID_D}')"
+      "rlike:SELECT count(*) FROM orc_bench.events_ext WHERE event_ts >= '${TS_31D_START}' AND event_ts < '${TS_31D_END}' AND payload_json RLIKE '${RLIKE}'"
     )
     ;;
   *)
     QUERIES=(
-      "partition_prune:SELECT count(*) FROM events_ext WHERE event_year=${Y} AND event_month=${M} AND event_day=${D}"
-      "filter_high_cardinality:SELECT count(*) FROM events_ext WHERE event_year=${Y} AND event_month=${M} AND event_day=${D} AND (epk_id='${EPK_ID}' OR event_id='${EVENT_ID}')"
-      "filter_medium_cardinality:SELECT count(*) FROM events_ext WHERE event_year=${Y} AND event_month=${M} AND event_day=${D} AND (module='${MODULE}' OR name='${NAME}')"
-      "filter_low_cardinality:SELECT count(*) FROM events_ext WHERE event_year=${Y} AND event_month=${M} AND event_day=${D} AND channel_type='${CHANNEL}' AND state='${STATUS}'"
-      "filter_in:SELECT count(*) FROM events_ext WHERE event_year=${Y} AND event_month=${M} AND event_day=${D} AND event_id IN ('${EVENT_ID}','${EVENT_ID}-missing-a','${EVENT_ID}-missing-b')"
-      "filter_timestamp_range:SELECT count(*) FROM events_ext WHERE event_ts >= '${TS_START}' AND event_ts < '${TS_END}'"
-      "projection:SELECT count(event_id) FROM events_ext WHERE event_year=${Y} AND event_month=${M} AND event_day=${D}"
-      "full_scan:SELECT count(*) FROM events_ext WHERE event_year=${Y} AND event_month=${M} AND event_day=${D}"
-      "group_by:SELECT name, state, count(*) FROM events_ext WHERE event_year=${Y} AND event_month=${M} AND event_day=${D} GROUP BY name, state"
-      "group_by_heavy:SELECT module, count(*) FROM events_ext WHERE event_year=${Y} AND event_month=${M} GROUP BY module"
-      "join_dictionary:SELECT e.name, count(*) FROM events_ext e JOIN dictionary_ext d ON e.name=d.event_name WHERE e.event_year=${Y} AND e.event_month=${M} AND e.event_day=${D} AND d.event_family='featured' GROUP BY e.name"
+      "partition_prune:SELECT count(*) FROM orc_bench.events_ext WHERE event_year=${Y} AND event_month=${M} AND event_day=${D}"
+      "filter_high_cardinality:SELECT count(*) FROM orc_bench.events_ext WHERE event_year=${Y} AND event_month=${M} AND event_day=${D} AND (epk_id='${EPK_ID}' OR event_id='${EVENT_ID}')"
+      "filter_medium_cardinality:SELECT count(*) FROM orc_bench.events_ext WHERE event_year=${Y} AND event_month=${M} AND event_day=${D} AND (module='${MODULE}' OR name='${NAME}')"
+      "filter_low_cardinality:SELECT count(*) FROM orc_bench.events_ext WHERE event_year=${Y} AND event_month=${M} AND event_day=${D} AND channel_type='${CHANNEL}' AND state='${STATUS}'"
+      "filter_in:SELECT count(*) FROM orc_bench.events_ext WHERE event_year=${Y} AND event_month=${M} AND event_day=${D} AND event_id IN ('${EVENT_ID}','${EVENT_ID}-missing-a','${EVENT_ID}-missing-b')"
+      "filter_timestamp_range:SELECT count(*) FROM orc_bench.events_ext WHERE event_ts >= '${TS_START}' AND event_ts < '${TS_END}'"
+      "projection:SELECT count(event_id) FROM orc_bench.events_ext WHERE event_year=${Y} AND event_month=${M} AND event_day=${D}"
+      "full_scan:SELECT count(*) FROM orc_bench.events_ext WHERE event_year=${Y} AND event_month=${M} AND event_day=${D}"
+      "group_by:SELECT name, state, count(*) FROM orc_bench.events_ext WHERE event_year=${Y} AND event_month=${M} AND event_day=${D} GROUP BY name, state"
+      "group_by_heavy:SELECT module, count(*) FROM orc_bench.events_ext WHERE event_year=${Y} AND event_month=${M} GROUP BY module"
+      "join_dictionary:SELECT e.name, count(*) FROM orc_bench.events_ext e JOIN orc_bench.dictionary_ext d ON e.name=d.event_name WHERE e.event_year=${Y} AND e.event_month=${M} AND e.event_day=${D} AND d.event_family='featured' GROUP BY e.name"
     )
     ;;
 esac
@@ -205,9 +235,16 @@ run_once() {
   local warmup_flag="$3"
   local run_index="$4"
   local start end duration sla_ok
+  local batch
+  batch="$(mktemp /tmp/orc-bench-hive-q-XXXXXX.sql)"
+  {
+    printf '%s\n' "$INIT_SQL"
+    printf '%s;\n' "$sql"
+  } > "$batch"
   start=$(date +%s%3N)
-  beeline_cmd "${INIT_SQL}; ${sql};" >/dev/null
+  beeline_file "$batch" >/dev/null
   end=$(date +%s%3N)
+  rm -f "$batch"
   duration=$((end - start))
   if (( duration <= SLA_THRESHOLD_MS )); then sla_ok=true; else sla_ok=false; fi
   echo "${scenario},${duration},${LAYOUT},${ENGINE},${CACHE_STATE},${PROFILE},${sla_ok},${SLA_THRESHOLD_MS},orc,${run_index},${warmup_flag}" >> "$LOCAL_CSV"
