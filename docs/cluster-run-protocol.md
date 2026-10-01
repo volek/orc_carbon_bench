@@ -2,7 +2,7 @@
 
 Пошаговый порядок тестов AUDEI/ORC-bench: параметры, очистка HDFS, проверки успеха, что забирать с HDFS.
 
-Связанные документы: [cluster_manual_runbook.md](cluster_manual_runbook.md), [audei-st-workload-mapping.md](audei-st-workload-mapping.md), [README.md](../README.md).
+Связанные документы: [cluster_manual_runbook.md](cluster_manual_runbook.md), [audei-st-workload-mapping.md](audei-st-workload-mapping.md), [hdfs-cleanup-before-l.md](hdfs-cleanup-before-l.md), [README.md](../README.md).
 
 ---
 
@@ -263,12 +263,16 @@ TARGET_SIZE_TB=0.05 SCENARIOS=audei CACHE_STATE=cold \
 
 ### Этап 9 — Dataset L + SLA matrix
 
+Полная инструкция (что оставить/удалить, выгрузка отчётов **до** `rm`, keep-list):  
+**[hdfs-cleanup-before-l.md](hdfs-cleanup-before-l.md)**.
+
 ```bash
 # 1) Проверить место
 hdfs dfs -df -h
 hdfs dfs -du -h -s "$BASE"/layouts/*
 
-# 2) Оставить только нужное (минимум best_orc)
+# 2) Выгрузить reports/summary (+ best_orc raw) — затем оставить только best_orc (+ опц. b0)
+# см. hdfs-cleanup-before-l.md
 # hdfs dfs -rm -r -skipTrash "$BASE"/layouts/<losers>...
 
 # 3) Generate L
@@ -395,11 +399,11 @@ TARGET_SIZE_TB=0.02 SCENARIOS=audei ./scripts/run-factor.sh --layout=best_orc
 SUITE=audei ./scripts/hive/run-hive-factor.sh h0
 CONCURRENCY_LEVELS="9 18" SCENARIO=epk_eq_14d ./scripts/run-concurrency.sh
 
-# 8–9 L
+# 8–9 L — см. hdfs-cleanup-before-l.md (выгрузка → rm losers → L)
 hdfs dfs -du -h -s "$BASE"/layouts/*
 # rm losers…
 TARGET_SIZE_TB=0.1 SCENARIOS=audei ./scripts/run-factor.sh --layout=best_orc
 TARGET_SIZE_TB=0.1 ./scripts/run-sla-matrix.sh
 
-# 10 скачать reports (см. §5)
+# 10 скачать reports (см. §5 и hdfs-cleanup-before-l.md §5)
 ```

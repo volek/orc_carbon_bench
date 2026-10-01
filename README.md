@@ -9,6 +9,7 @@ Java 8 / Spark SQL приложение: `generate → validate → benchmark �
 |---|---|
 | [docs/cluster_manual_runbook.md](docs/cluster_manual_runbook.md) | Пошаговый запуск на edge-ноде |
 | [docs/cluster-run-protocol.md](docs/cluster-run-protocol.md) | **Порядок прогонов, очистка HDFS, проверки, выгрузка отчётов** |
+| [docs/hdfs-cleanup-before-l.md](docs/hdfs-cleanup-before-l.md) | Очистка `layouts/*` перед L: что оставить, выгрузка отчётов, команды |
 | [docs/audei-st-workload-mapping.md](docs/audei-st-workload-mapping.md) | AUDEI/ST профиль → schema, suites, dual SLA |
 | [docs/orc-hive-bench-plan.md](docs/orc-hive-bench-plan.md) | План реализации P0–P10 |
 | [docs/ORC + HDFS + Spark + Hive benchmark.md](docs/ORC%20+%20HDFS%20+%20Spark%20+%20Hive%20benchmark.md) | Методика факторного эксперимента |
@@ -66,7 +67,7 @@ TARGET_SIZE_TB=0.02 SCENARIOS=audei ./scripts/run-factor.sh --layout=best_orc
 ./scripts/run-spark-exec-matrix.sh
 SUITE=audei ./scripts/hive/run-hive-factor.sh h0
 CONCURRENCY_LEVELS="9 18" SCENARIO=epk_eq_14d ./scripts/run-concurrency.sh
-# очистить лишние layouts/*, затем:
+# очистить лишние layouts/* (см. docs/hdfs-cleanup-before-l.md), затем:
 TARGET_SIZE_TB=0.1 SCENARIOS=audei ./scripts/run-factor.sh --layout=best_orc
 TARGET_SIZE_TB=0.1 ./scripts/run-sla-matrix.sh
 ```
