@@ -590,3 +590,6 @@ scala> println("Wrote " + n + " measured Hive rows to " + outPath)
                           ^
 
 scala> System.exit(0)
+
+
+
