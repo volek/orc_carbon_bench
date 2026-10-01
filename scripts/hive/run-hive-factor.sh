@@ -111,33 +111,38 @@ case "$PROFILE" in
     ;;
 esac
 
+# Escape sed replacement text when using '#' as s/// delimiter.
+sed_repl() {
+  printf '%s' "$1" | sed -e 's/[\\#&]/\\&/g'
+}
+
 render_sql() {
   local file="$1"
   sed \
-    -e "s|\${ORC_LOCATION}|$ORC_LOCATION|g" \
-    -e "s|\${DICTIONARY_LOCATION}|$DICT_LOCATION|g" \
-    -e "s|\${Y}|$Y|g" \
-    -e "s|\${M}|$M|g" \
-    -e "s|\${D}|$D|g" \
-    -e "s|\${EVENT_ID}|$EVENT_ID|g" \
-    -e "s|\${EPK_ID}|$EPK_ID|g" \
-    -e "s|\${MODULE}|$MODULE|g" \
-    -e "s|\${NAME}|$NAME|g" \
-    -e "s|\${STATUS}|$STATUS|g" \
-    -e "s|\${CHANNEL}|$CHANNEL|g" \
-    -e "s|\${TS_START}|$TS_START|g" \
-    -e "s|\${TS_END}|$TS_END|g" \
-    -e "s|\${TS_1D_START}|$TS_1D_START|g" \
-    -e "s|\${TS_1D_END}|$TS_1D_END|g" \
-    -e "s|\${TS_14D_START}|$TS_14D_START|g" \
-    -e "s|\${TS_14D_END}|$TS_14D_END|g" \
-    -e "s|\${TS_31D_START}|$TS_31D_START|g" \
-    -e "s|\${TS_31D_END}|$TS_31D_END|g" \
-    -e "s|\${LIKE_TOKEN}|$LIKE_TOKEN|g" \
-    -e "s|\${RLIKE}|$RLIKE|g" \
-    -e "s|\${EPK_ID_B}|$EPK_ID_B|g" \
-    -e "s|\${EPK_ID_C}|$EPK_ID_C|g" \
-    -e "s|\${EPK_ID_D}|$EPK_ID_D|g" \
+    -e "s#\${ORC_LOCATION}#$(sed_repl "$ORC_LOCATION")#g" \
+    -e "s#\${DICTIONARY_LOCATION}#$(sed_repl "$DICT_LOCATION")#g" \
+    -e "s#\${Y}#$(sed_repl "$Y")#g" \
+    -e "s#\${M}#$(sed_repl "$M")#g" \
+    -e "s#\${D}#$(sed_repl "$D")#g" \
+    -e "s#\${EVENT_ID}#$(sed_repl "$EVENT_ID")#g" \
+    -e "s#\${EPK_ID}#$(sed_repl "$EPK_ID")#g" \
+    -e "s#\${MODULE}#$(sed_repl "$MODULE")#g" \
+    -e "s#\${NAME}#$(sed_repl "$NAME")#g" \
+    -e "s#\${STATUS}#$(sed_repl "$STATUS")#g" \
+    -e "s#\${CHANNEL}#$(sed_repl "$CHANNEL")#g" \
+    -e "s#\${TS_START}#$(sed_repl "$TS_START")#g" \
+    -e "s#\${TS_END}#$(sed_repl "$TS_END")#g" \
+    -e "s#\${TS_1D_START}#$(sed_repl "$TS_1D_START")#g" \
+    -e "s#\${TS_1D_END}#$(sed_repl "$TS_1D_END")#g" \
+    -e "s#\${TS_14D_START}#$(sed_repl "$TS_14D_START")#g" \
+    -e "s#\${TS_14D_END}#$(sed_repl "$TS_14D_END")#g" \
+    -e "s#\${TS_31D_START}#$(sed_repl "$TS_31D_START")#g" \
+    -e "s#\${TS_31D_END}#$(sed_repl "$TS_31D_END")#g" \
+    -e "s#\${LIKE_TOKEN}#$(sed_repl "$LIKE_TOKEN")#g" \
+    -e "s#\${RLIKE}#$(sed_repl "$RLIKE")#g" \
+    -e "s#\${EPK_ID_B}#$(sed_repl "$EPK_ID_B")#g" \
+    -e "s#\${EPK_ID_C}#$(sed_repl "$EPK_ID_C")#g" \
+    -e "s#\${EPK_ID_D}#$(sed_repl "$EPK_ID_D")#g" \
     "$file"
 }
 
