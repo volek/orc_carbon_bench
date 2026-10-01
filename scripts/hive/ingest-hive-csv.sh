@@ -1,24 +1,25 @@
 #!/usr/bin/env bash
 # -----------------------------------------------------------------------------
-# Upload Hive timing CSV to HDFS (retry) and convert to parquet for ReportRunner.
+# Upload Hive timing CSV to HDFS and convert to parquet for ReportRunner.
 #
 # Usage:
 #   ./scripts/hive/ingest-hive-csv.sh <local-or-hdfs-csv> <hdfs-parquet-out-dir>
 #
-# Writes:
-#   <out-dir>/          parquet dataset (_SUCCESS + part-*.parquet)
-#   <out-dir>/hive_results.csv   copy of source CSV (re-put after parquet overwrite)
+# Layout (CSV is NEVER inside the parquet overwrite target):
+#   <out-dir>/                 parquet (_SUCCESS + part-*.parquet)
+#   <out-dir>.hive_results.csv CSV artifact (sibling of out-dir)
 #
 # Env:
-#   HDFS_RETRIES   attempts for hdfs dfs mkdir/put/test [8]
-#   HDFS_RETRY_SLEEP_SEC  pause between attempts [3]
-#   SPARK_SUBMIT   [spark-submit]
+#   HDFS_RETRIES [8]  HDFS_RETRY_SLEEP_SEC [3]  SPARK_SUBMIT [spark-submit]
 # -----------------------------------------------------------------------------
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 CSV_PATH="${1:?csv path (local file or hdfs://...)}"
 OUT_PATH="${2:?hdfs parquet output dir}"
+# Strip trailing slash so sibling naming is stable
+OUT_PATH="${OUT_PATH%/}"
+HDFS_CSV="${OUT_PATH}.hive_results.csv"
 HDFS_RETRIES="${HDFS_RETRIES:-8}"
 HDFS_RETRY_SLEEP_SEC="${HDFS_RETRY_SLEEP_SEC:-3}"
 SPARK_SUBMIT="${SPARK_SUBMIT:-spark-submit}"
@@ -57,31 +58,25 @@ resolve_local_csv() {
 }
 
 LOCAL_CSV="$(resolve_local_csv "$CSV_PATH")"
-HDFS_CSV="$OUT_PATH/hive_results.csv"
 
-echo "Hive ingest: csv=$CSV_PATH → parquet=$OUT_PATH"
-
+# Spark read path: prefer local file:// in client mode (avoids HDFS race with parquet overwrite).
 if [[ -n "$LOCAL_CSV" ]]; then
-  echo "Uploading local CSV $LOCAL_CSV → $HDFS_CSV"
-  hdfs_retry hdfs dfs -mkdir -p "$OUT_PATH"
-  hdfs_retry hdfs dfs -put -f "$LOCAL_CSV" "$HDFS_CSV"
+  SPARK_CSV="file://${LOCAL_CSV}"
 elif [[ "$CSV_PATH" == hdfs://* || "$CSV_PATH" == viewfs://* ]]; then
-  HDFS_CSV="$CSV_PATH"
-  if ! hdfs_retry hdfs dfs -test -e "$HDFS_CSV"; then
-    echo "ERROR: HDFS CSV missing: $HDFS_CSV" >&2
+  SPARK_CSV="$CSV_PATH"
+  if [[ "$SPARK_CSV" == "$OUT_PATH" || "$SPARK_CSV" == "$OUT_PATH"/* ]]; then
+    echo "ERROR: CSV must not live under parquet out-dir (overwrite deletes it): $SPARK_CSV" >&2
     exit 1
   fi
-  hdfs_retry hdfs dfs -mkdir -p "$OUT_PATH"
 else
   echo "ERROR: unsupported CSV path: $CSV_PATH" >&2
   exit 1
 fi
 
-if ! hdfs_retry hdfs dfs -test -e "$HDFS_CSV"; then
-  echo "ERROR: CSV not on HDFS after upload: $HDFS_CSV" >&2
-  exit 1
-fi
-echo "CSV ready on HDFS: $HDFS_CSV ($(hdfs dfs -du -h "$HDFS_CSV" | awk '{print $1,$2}'))"
+echo "Hive ingest: read=$SPARK_CSV → parquet=$OUT_PATH (csv artifact=$HDFS_CSV)"
+
+# Ensure parent exists; do NOT put CSV into OUT_PATH before overwrite.
+hdfs_retry hdfs dfs -mkdir -p "$(dirname "$OUT_PATH")"
 
 PY_SCRIPT="$(mktemp /tmp/orc-bench-hive-ingest-XXXXXX.py)"
 cleanup() { rm -f "$PY_SCRIPT"; }
@@ -123,6 +118,8 @@ try:
         .withColumn("sla_threshold_ms", F.col("sla_threshold_ms").cast("long"))
     )
     measured = enriched.filter(F.col("warmup") == False)  # noqa: E712
+    # Materialize before overwrite so source is not needed mid-write.
+    measured = measured.cache()
     count = measured.count()
     if count == 0:
         raise RuntimeError("No non-warmup rows in Hive CSV: " + csv_path)
@@ -132,37 +129,35 @@ finally:
     spark.stop()
 PY
 
-# Client mode: driver on edge; reads HDFS CSV (already verified) and writes parquet.
-set +e
-"$SPARK_SUBMIT" \
-  --master yarn \
-  --deploy-mode client \
-  --name orc-bench-hive-ingest \
-  --num-executors "${NUM_EXECUTORS:-2}" \
-  --executor-memory "${EXECUTOR_MEMORY:-2g}" \
-  --executor-cores "${EXECUTOR_CORES:-1}" \
-  --driver-memory "${DRIVER_MEMORY:-2g}" \
-  --conf spark.ui.enabled=false \
-  --conf spark.security.credentials.hive.enabled=false \
-  --conf spark.security.credentials.hbase.enabled=false \
-  "$PY_SCRIPT" "$HDFS_CSV" "$OUT_PATH"
-SUBMIT_RC=$?
-set -e
+run_pyspark() {
+  "$SPARK_SUBMIT" \
+    --master yarn \
+    --deploy-mode client \
+    --name orc-bench-hive-ingest \
+    --num-executors "${NUM_EXECUTORS:-2}" \
+    --executor-memory "${EXECUTOR_MEMORY:-2g}" \
+    --executor-cores "${EXECUTOR_CORES:-1}" \
+    --driver-memory "${DRIVER_MEMORY:-2g}" \
+    --conf spark.ui.enabled=false \
+    --conf spark.security.credentials.hive.enabled=false \
+    --conf spark.security.credentials.hbase.enabled=false \
+    "$PY_SCRIPT" "$SPARK_CSV" "$OUT_PATH"
+}
 
-if (( SUBMIT_RC != 0 )); then
-  echo "WARN: pyspark ingest failed (rc=$SUBMIT_RC); trying spark-shell fallback" >&2
+run_spark_shell() {
+  local shell_log
+  shell_log="$(mktemp /tmp/orc-bench-hive-ingest-shell-XXXXXX.log)"
   SPARK_SHELL="${SPARK_SHELL:-spark-shell}"
   if ! command -v "$SPARK_SHELL" >/dev/null 2>&1; then
-    echo "ERROR: spark-submit hive ingest failed and spark-shell not found" >&2
-    exit "$SUBMIT_RC"
+    echo "ERROR: spark-shell not found" >&2
+    return 1
   fi
-  SHELL_LOG="$(mktemp /tmp/orc-bench-hive-ingest-shell-XXXXXX.log)"
   set +e
   "$SPARK_SHELL" --conf spark.ui.enabled=false \
     --conf spark.security.credentials.hive.enabled=false \
     --conf spark.security.credentials.hbase.enabled=false \
-    >"$SHELL_LOG" 2>&1 <<EOF
-val csvPath = "$HDFS_CSV"
+    >"$shell_log" 2>&1 <<EOF
+val csvPath = "$SPARK_CSV"
 val outPath = "$OUT_PATH"
 val raw = spark.read.option("header","true").option("inferSchema","true").csv(csvPath)
 if (raw.head(1).isEmpty) { throw new RuntimeException("Hive CSV is empty: " + csvPath) }
@@ -185,28 +180,41 @@ val enriched = raw
   .withColumn("duration_ms", org.apache.spark.sql.functions.col("duration_ms").cast("long"))
   .withColumn("run_index", org.apache.spark.sql.functions.col("run_index").cast("int"))
   .withColumn("sla_threshold_ms", org.apache.spark.sql.functions.col("sla_threshold_ms").cast("long"))
-val measured = enriched.filter(org.apache.spark.sql.functions.col("warmup") === false)
+val measured = enriched.filter(org.apache.spark.sql.functions.col("warmup") === false).cache()
 val n = measured.count()
 if (n == 0) { throw new RuntimeException("No non-warmup rows in Hive CSV: " + csvPath) }
 measured.coalesce(1).write.mode("overwrite").parquet(outPath)
 println("Wrote " + n + " measured Hive rows to " + outPath)
 System.exit(0)
 EOF
-  SHELL_RC=$?
+  local rc=$?
   set -e
-  if (( SHELL_RC != 0 )) || grep -qE 'FileNotFoundException|ERROR [a-zA-Z.]+Exception|Caused by:.*Exception' "$SHELL_LOG"; then
-    echo "ERROR: spark-shell hive ingest failed (rc=$SHELL_RC). Log: $SHELL_LOG" >&2
-    tail -n 40 "$SHELL_LOG" >&2 || true
+  if (( rc != 0 )) || grep -qE 'FileNotFoundException|ERROR [a-zA-Z.]+Exception|Caused by:.*Exception|RuntimeException' "$shell_log"; then
+    echo "ERROR: spark-shell hive ingest failed (rc=$rc). Log: $shell_log" >&2
+    tail -n 60 "$shell_log" >&2 || true
+    return 1
+  fi
+  rm -f "$shell_log"
+  return 0
+}
+
+set +e
+run_pyspark
+SUBMIT_RC=$?
+set -e
+
+if (( SUBMIT_RC != 0 )); then
+  echo "WARN: pyspark ingest failed (rc=$SUBMIT_RC); trying spark-shell fallback" >&2
+  if ! run_spark_shell; then
     exit 1
   fi
-  rm -f "$SHELL_LOG"
 fi
 
-# overwrite parquet removes hive_results.csv — restore CSV artifact
+# Archive CSV next to parquet dir (sibling — safe from overwrite)
 if [[ -n "$LOCAL_CSV" ]]; then
-  hdfs_retry hdfs dfs -put -f "$LOCAL_CSV" "$HDFS_CSV" || true
+  hdfs_retry hdfs dfs -put -f "$LOCAL_CSV" "$HDFS_CSV"
 elif [[ "$CSV_PATH" != "$HDFS_CSV" ]]; then
-  hdfs_retry hdfs dfs -cp -f "$CSV_PATH" "$HDFS_CSV" || true
+  hdfs_retry hdfs dfs -cp -f "$CSV_PATH" "$HDFS_CSV"
 fi
 
 if ! hdfs dfs -test -e "$OUT_PATH/_SUCCESS" && ! hdfs dfs -ls "$OUT_PATH" 2>/dev/null | grep -q '\.parquet'; then
