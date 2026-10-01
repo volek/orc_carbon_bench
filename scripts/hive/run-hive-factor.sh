@@ -13,6 +13,8 @@
 #   SUITE=audei ./scripts/hive/run-hive-factor.sh h0
 #   SUITE=st ./scripts/hive/run-hive-factor.sh h0
 # Env: BASE, LAYOUT (default best_orc), SUITE (doc|audei|st), BEELINE, HIVE_JDBC_URL, FILTER_*
+# Лог: LOG_DIR (default $ROOT/logs) → hive-factor-<profile>-<ts>.log (stdout+stderr via tee).
+#   HIVE_LOG=/path/to/file.log — явный путь; HIVE_LOG=  (пусто) — только консоль.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
@@ -24,11 +26,25 @@ HIVE_JDBC_URL="${HIVE_JDBC_URL:-}"
 WARMUP="${BENCHMARK_WARMUP_RUNS:-2}"
 REPEATS="${BENCHMARK_REPEAT_RUNS:-5}"
 SLA_THRESHOLD_MS="${SLA_THRESHOLD_MS:-3000}"
+LOG_DIR="${LOG_DIR:-$ROOT/logs}"
+
+# Persist console output on the edge host (unlike earlier versions that only printed to TTY).
+if [[ -z "${HIVE_LOG+x}" ]]; then
+  mkdir -p "$LOG_DIR"
+  HIVE_LOG="$LOG_DIR/hive-factor-${PROFILE}-$(date +%Y%m%d-%H%M%S).log"
+fi
+if [[ -n "${HIVE_LOG}" ]]; then
+  mkdir -p "$(dirname "$HIVE_LOG")"
+  exec > >(tee -a "$HIVE_LOG") 2>&1
+  echo "Logging to $HIVE_LOG"
+fi
 
 ORC_LOCATION="$BASE/layouts/$LAYOUT/orc"
 DICT_LOCATION="$BASE/layouts/$LAYOUT/dictionary"
 OUT_DIR="$BASE/layouts/$LAYOUT/reports/raw/benchmark_hive_${PROFILE}"
-LOCAL_CSV="$(mktemp /tmp/orc-bench-hive-XXXXXX.csv)"
+RESULT_DIR="${RESULT_DIR:-$ROOT/result/hive}"
+mkdir -p "$RESULT_DIR"
+LOCAL_CSV="$RESULT_DIR/hive-${LAYOUT}-${PROFILE}-$(date +%Y%m%d-%H%M%S).csv"
 
 Y="${FILTER_Y:-2024}"
 M="${FILTER_M:-6}"
@@ -270,17 +286,21 @@ done
 
 echo "Hive timings written to $LOCAL_CSV"
 echo "Ingest into HDFS reports:"
-echo "  hdfs dfs -mkdir -p $OUT_DIR"
-echo "  hdfs dfs -put -f $LOCAL_CSV $OUT_DIR/hive_results.csv"
-echo "  $ROOT/scripts/hive/ingest-hive-csv.sh $OUT_DIR/hive_results.csv $OUT_DIR"
+echo "  $ROOT/scripts/hive/ingest-hive-csv.sh $LOCAL_CSV $OUT_DIR"
 
-# Best-effort local HDFS put + ingest when hdfs CLI is available
-if command -v hdfs >/dev/null 2>&1; then
-  hdfs dfs -mkdir -p "$OUT_DIR" || true
-  hdfs dfs -put -f "$LOCAL_CSV" "$OUT_DIR/hive_results.csv" || true
-  if [[ -x "$ROOT/scripts/hive/ingest-hive-csv.sh" ]]; then
-    "$ROOT/scripts/hive/ingest-hive-csv.sh" "$OUT_DIR/hive_results.csv" "$OUT_DIR" || true
+# Upload CSV + write parquet (ingest retries HDFS standby and verifies artifacts)
+if [[ -x "$ROOT/scripts/hive/ingest-hive-csv.sh" ]] && command -v hdfs >/dev/null 2>&1; then
+  if ! "$ROOT/scripts/hive/ingest-hive-csv.sh" "$LOCAL_CSV" "$OUT_DIR"; then
+    echo "ERROR: Hive CSV→parquet ingest failed. Local CSV kept at $LOCAL_CSV" >&2
+    echo "  Retry: $ROOT/scripts/hive/ingest-hive-csv.sh $LOCAL_CSV $OUT_DIR" >&2
+    exit 1
   fi
+elif command -v hdfs >/dev/null 2>&1; then
+  echo "WARN: ingest-hive-csv.sh missing; uploading CSV only" >&2
+  hdfs dfs -mkdir -p "$OUT_DIR"
+  hdfs dfs -put -f "$LOCAL_CSV" "$OUT_DIR/hive_results.csv"
+else
+  echo "WARN: hdfs CLI missing; results only local: $LOCAL_CSV" >&2
 fi
 
-echo "Hive profile $PROFILE complete."
+echo "Hive profile $PROFILE complete. Local CSV: $LOCAL_CSV${HIVE_LOG:+; log: $HIVE_LOG}"
