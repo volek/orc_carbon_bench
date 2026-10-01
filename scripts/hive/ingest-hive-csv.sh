@@ -11,6 +11,7 @@
 #
 # Env:
 #   HDFS_RETRIES [8]  HDFS_RETRY_SLEEP_SEC [3]  SPARK_SUBMIT [spark-submit]
+#   LOG_DIR [ $ROOT/logs ]  INGEST_LOG [auto]  — set INGEST_LOG= to disable file log
 # -----------------------------------------------------------------------------
 set -euo pipefail
 
@@ -23,6 +24,18 @@ HDFS_CSV="${OUT_PATH}.hive_results.csv"
 HDFS_RETRIES="${HDFS_RETRIES:-8}"
 HDFS_RETRY_SLEEP_SEC="${HDFS_RETRY_SLEEP_SEC:-3}"
 SPARK_SUBMIT="${SPARK_SUBMIT:-spark-submit}"
+LOG_DIR="${LOG_DIR:-$ROOT/logs}"
+
+OUT_BASENAME="$(basename "$OUT_PATH")"
+if [[ -z "${INGEST_LOG+x}" ]]; then
+  mkdir -p "$LOG_DIR"
+  INGEST_LOG="$LOG_DIR/hive-ingest-${OUT_BASENAME}-$(date +%Y%m%d-%H%M%S).log"
+fi
+if [[ -n "${INGEST_LOG}" ]]; then
+  mkdir -p "$(dirname "$INGEST_LOG")"
+  exec > >(tee -a "$INGEST_LOG") 2>&1
+  echo "Logging to $INGEST_LOG"
+fi
 
 hdfs_retry() {
   local attempt=1
@@ -222,4 +235,4 @@ if ! hdfs dfs -test -e "$OUT_PATH/_SUCCESS" && ! hdfs dfs -ls "$OUT_PATH" 2>/dev
   exit 1
 fi
 
-echo "Ingested Hive CSV → parquet $OUT_PATH (csv=$HDFS_CSV)"
+echo "Ingested Hive CSV → parquet $OUT_PATH (csv=$HDFS_CSV)${INGEST_LOG:+; log: $INGEST_LOG}"
