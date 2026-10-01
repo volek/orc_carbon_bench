@@ -1,4 +1,5 @@
- SUITE=audei ./scripts/hive/run-hive-factor.sh h0 
+ SUITE=audei ./scripts/hive/run-hive-factor.sh h0
+Hive factor profile=h0 engine=hive_tez cache=cold orc=hdfs:///orc_test/layouts/best_orc/orc
 find: ‘/opt/datainsight/atlas/hook/hive’: No such file or directory
 WARNING: Use "yarn jar" to launch YARN applications.
 SLF4J: Class path contains multiple SLF4J bindings.
@@ -6,7 +7,7 @@ SLF4J: Found binding in [jar:file:/usr/sdp/3.5.4.1-1/hive/lib/log4j-slf4j-impl-2
 SLF4J: Found binding in [jar:file:/usr/sdp/3.5.4.1-1/hadoop/lib/slf4j-log4j12-1.7.25.jar!/org/slf4j/impl/StaticLoggerBinder.class]
 SLF4J: See http://www.slf4j.org/codes.html#multiple_bindings for an explanation.
 SLF4J: Actual binding is of type [org.apache.logging.slf4j.Log4jLoggerFactory]
-26/10/01 00:01:32 [main]: INFO jdbc.HiveConnection: Connected to omlt-abyss-sdp-datanode-03.opsmon.sbt:10000
+26/10/01 10:40:15 [main]: INFO jdbc.HiveConnection: Connected to omlt-abyss-sdp-datanode-03.opsmon.sbt:10000
 find: ‘/opt/datainsight/atlas/hook/hive’: No such file or directory
 WARNING: Use "yarn jar" to launch YARN applications.
 SLF4J: Class path contains multiple SLF4J bindings.
@@ -14,7 +15,8 @@ SLF4J: Found binding in [jar:file:/usr/sdp/3.5.4.1-1/hive/lib/log4j-slf4j-impl-2
 SLF4J: Found binding in [jar:file:/usr/sdp/3.5.4.1-1/hadoop/lib/slf4j-log4j12-1.7.25.jar!/org/slf4j/impl/StaticLoggerBinder.class]
 SLF4J: See http://www.slf4j.org/codes.html#multiple_bindings for an explanation.
 SLF4J: Actual binding is of type [org.apache.logging.slf4j.Log4jLoggerFactory]
-26/10/01 00:01:37 [main]: INFO jdbc.HiveConnection: Connected to omlt-abyss-sdp-datanode-03.opsmon.sbt:10000
+26/10/01 10:40:19 [main]: INFO jdbc.HiveConnection: Connected to omlt-abyss-sdp-datanode-03.opsmon.sbt:10000
+Scenario partition_prune
 find: ‘/opt/datainsight/atlas/hook/hive’: No such file or directory
 WARNING: Use "yarn jar" to launch YARN applications.
 SLF4J: Class path contains multiple SLF4J bindings.
@@ -22,5 +24,5 @@ SLF4J: Found binding in [jar:file:/usr/sdp/3.5.4.1-1/hive/lib/log4j-slf4j-impl-2
 SLF4J: Found binding in [jar:file:/usr/sdp/3.5.4.1-1/hadoop/lib/slf4j-log4j12-1.7.25.jar!/org/slf4j/impl/StaticLoggerBinder.class]
 SLF4J: See http://www.slf4j.org/codes.html#multiple_bindings for an explanation.
 SLF4J: Actual binding is of type [org.apache.logging.slf4j.Log4jLoggerFactory]
-26/10/01 00:01:41 [main]: INFO jdbc.HiveConnection: Connected to omlt-abyss-sdp-datanode-03.opsmon.sbt:10000
+26/10/01 10:40:24 [main]: INFO jdbc.HiveConnection: Connected to omlt-abyss-sdp-datanode-03.opsmon.sbt:10000
 Error: Error while compiling statement: FAILED: SemanticException [Error 10001]: Line 1:21 Table not found 'events_ext' (state=42S02,code=10001)
