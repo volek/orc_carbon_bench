@@ -1,0 +1,429 @@
+Logging to /home/portos/orc_bench/logs/hive-ingest-benchmark_hive_h2-20261001-155933.log
+Uploading local CSV → hdfs:///orc_test/layouts/best_orc/reports/raw/benchmark_hive_h2.hive_results.csv
+Hive ingest: read=hdfs:///orc_test/layouts/best_orc/reports/raw/benchmark_hive_h2.hive_results.csv → parquet=hdfs:///orc_test/layouts/best_orc/reports/raw/benchmark_hive_h2
+26/10/01 15:59:43 INFO SparkContext: Running Spark version 3.2.1.3.5.4.1-1
+26/10/01 15:59:43 INFO ResourceUtils: ==============================================================
+26/10/01 15:59:43 INFO ResourceUtils: No custom resources configured for spark.driver.
+26/10/01 15:59:43 INFO ResourceUtils: ==============================================================
+26/10/01 15:59:43 INFO SparkContext: Submitted application: orc-bench-hive-ingest
+26/10/01 15:59:43 INFO ResourceProfile: Default ResourceProfile created, executor resources: Map(cores -> name: cores, amount: 1, script: , vendor: , memory -> name: memory, amount: 2048, script: , vendor: , offHeap -> name: offHeap, amount: 0, script: , vendor: ), task resources: Map(cpus -> name: cpus, amount: 1.0)
+26/10/01 15:59:43 INFO ResourceProfile: Limiting resource is cpus at 1 tasks per executor
+26/10/01 15:59:43 INFO ResourceProfileManager: Added ResourceProfile id: 0
+26/10/01 15:59:43 INFO SecurityManager: Changing view acls to: portos,pvm-omltp-sdp
+26/10/01 15:59:43 INFO SecurityManager: Changing modify acls to: portos,pvm-omltp-sdp
+26/10/01 15:59:43 INFO SecurityManager: Changing view acls groups to: 
+26/10/01 15:59:43 INFO SecurityManager: Changing modify acls groups to: 
+26/10/01 15:59:43 INFO SecurityManager: SecurityManager: authentication disabled; ui acls enabled; users  with view permissions: Set(portos, pvm-omltp-sdp); groups with view permissions: Set(); users  with modify permissions: Set(portos, pvm-omltp-sdp); groups with modify permissions: Set()
+26/10/01 15:59:43 INFO Utils: Successfully started service 'sparkDriver' on port 38932.
+26/10/01 15:59:43 INFO SparkEnv: Registering MapOutputTracker
+26/10/01 15:59:43 INFO SparkEnv: Registering BlockManagerMaster
+26/10/01 15:59:43 INFO BlockManagerMasterEndpoint: Using org.apache.spark.storage.DefaultTopologyMapper for getting topology information
+26/10/01 15:59:43 INFO BlockManagerMasterEndpoint: BlockManagerMasterEndpoint up
+26/10/01 15:59:43 INFO SparkEnv: Registering BlockManagerMasterHeartbeat
+26/10/01 15:59:43 INFO DiskBlockManager: Created local directory at /tmp/blockmgr-e2d44f82-85f5-42d9-a41b-90da41473cb0
+26/10/01 15:59:43 INFO MemoryStore: MemoryStore started with capacity 912.3 MiB
+26/10/01 15:59:43 INFO SparkEnv: Registering OutputCommitCoordinator
+26/10/01 15:59:44 INFO HadoopDelegationTokenManager: Attempting to load user's ticket cache.
+26/10/01 15:59:44 INFO HadoopFSDelegationTokenProvider: getting token for: DFS[DFSClient[clientName=DFSClient_NONMAPREDUCE_-1730429853_26, ugi=pvm-omltp-sdp@OPSMON.SBT (auth:KERBEROS)]] with renewer rm/omlt-abyss-sdp-namenode-02.opsmon.sbt@OPSMON.SBT
+26/10/01 15:59:44 INFO DFSClient: Created token for pvm-omltp-sdp: HDFS_DELEGATION_TOKEN owner=pvm-omltp-sdp@OPSMON.SBT, renewer=yarn, realUser=, issueDate=1790859584974, maxDate=1791464384974, sequenceNumber=190590, masterKeyId=1140 on ha-hdfs:sdp-dzo-lt-omlt
+26/10/01 15:59:45 INFO HadoopFSDelegationTokenProvider: getting token for: DFS[DFSClient[clientName=DFSClient_NONMAPREDUCE_-1730429853_26, ugi=pvm-omltp-sdp@OPSMON.SBT (auth:KERBEROS)]] with renewer pvm-omltp-sdp@OPSMON.SBT
+26/10/01 15:59:45 INFO DFSClient: Created token for pvm-omltp-sdp: HDFS_DELEGATION_TOKEN owner=pvm-omltp-sdp@OPSMON.SBT, renewer=pvm-omltp-sdp, realUser=, issueDate=1790859585016, maxDate=1791464385016, sequenceNumber=190591, masterKeyId=1140 on ha-hdfs:sdp-dzo-lt-omlt
+26/10/01 15:59:45 INFO HadoopFSDelegationTokenProvider: Renewal interval is 86400072 for token HDFS_DELEGATION_TOKEN
+26/10/01 15:59:45 INFO HadoopDelegationTokenManager: Calculated delay on renewal is 64799961, based on next renewal 1790945985046 and the ratio 0.75, and current time 1790859585097
+26/10/01 15:59:45 INFO HadoopDelegationTokenManager: Scheduling renewal in 18.0 h.
+26/10/01 15:59:45 INFO HadoopDelegationTokenManager: Updating delegation tokens.
+26/10/01 15:59:45 INFO SparkHadoopUtil: Updating delegation tokens for current user.
+26/10/01 15:59:45 INFO SparkHadoopUtil: Updating delegation tokens for current user.
+26/10/01 15:59:45 INFO ConfiguredRMFailoverProxyProvider: Failing over to rm2
+26/10/01 15:59:45 INFO Client: Requesting a new application from cluster with 6 NodeManagers
+26/10/01 15:59:45 INFO Configuration: found resource resource-types.xml at file:/etc/hadoop/3.5.4.1-1/0/resource-types.xml
+26/10/01 15:59:45 INFO Client: Verifying our application has not requested more than the maximum memory capability of the cluster (46080 MB per container)
+26/10/01 15:59:45 INFO Client: Will allocate AM container, with 896 MB memory including 384 MB overhead
+26/10/01 15:59:45 INFO Client: Setting up container launch context for our AM
+26/10/01 15:59:45 INFO Client: Setting up the launch environment for our AM container
+26/10/01 15:59:45 INFO Client: Preparing resources for our AM container
+26/10/01 15:59:45 WARN Client: Exception encountered while connecting to the server 
+org.apache.hadoop.ipc.RemoteException(org.apache.hadoop.ipc.StandbyException): Operation category READ is not supported in state standby. Visit https://s.apache.org/sbnn-error
+	at org.apache.hadoop.security.SaslRpcClient.saslConnect(SaslRpcClient.java:376)
+	at org.apache.hadoop.ipc.Client$Connection.setupSaslConnection(Client.java:623)
+	at org.apache.hadoop.ipc.Client$Connection.access$2300(Client.java:414)
+	at org.apache.hadoop.ipc.Client$Connection$2.run(Client.java:832)
+	at org.apache.hadoop.ipc.Client$Connection$2.run(Client.java:828)
+	at java.security.AccessController.doPrivileged(Native Method)
+	at javax.security.auth.Subject.doAs(Subject.java:422)
+	at org.apache.hadoop.security.UserGroupInformation.doAs(UserGroupInformation.java:1878)
+	at org.apache.hadoop.ipc.Client$Connection.setupIOstreams(Client.java:828)
+	at org.apache.hadoop.ipc.Client$Connection.access$3800(Client.java:414)
+	at org.apache.hadoop.ipc.Client.getConnection(Client.java:1647)
+	at org.apache.hadoop.ipc.Client.call(Client.java:1463)
+	at org.apache.hadoop.ipc.Client.call(Client.java:1416)
+	at org.apache.hadoop.ipc.ProtobufRpcEngine2$Invoker.invoke(ProtobufRpcEngine2.java:242)
+	at org.apache.hadoop.ipc.ProtobufRpcEngine2$Invoker.invoke(ProtobufRpcEngine2.java:129)
+	at com.sun.proxy.$Proxy14.mkdirs(Unknown Source)
+	at org.apache.hadoop.hdfs.protocolPB.ClientNamenodeProtocolTranslatorPB.mkdirs(ClientNamenodeProtocolTranslatorPB.java:674)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.hadoop.io.retry.RetryInvocationHandler.invokeMethod(RetryInvocationHandler.java:422)
+	at org.apache.hadoop.io.retry.RetryInvocationHandler$Call.invokeMethod(RetryInvocationHandler.java:165)
+	at org.apache.hadoop.io.retry.RetryInvocationHandler$Call.invoke(RetryInvocationHandler.java:157)
+	at org.apache.hadoop.io.retry.RetryInvocationHandler$Call.invokeOnce(RetryInvocationHandler.java:95)
+	at org.apache.hadoop.io.retry.RetryInvocationHandler.invoke(RetryInvocationHandler.java:359)
+	at com.sun.proxy.$Proxy15.mkdirs(Unknown Source)
+	at org.apache.hadoop.hdfs.DFSClient.primitiveMkdir(DFSClient.java:2499)
+	at org.apache.hadoop.hdfs.DFSClient.mkdirs(DFSClient.java:2475)
+	at org.apache.hadoop.hdfs.DistributedFileSystem$27.doCall(DistributedFileSystem.java:1484)
+	at org.apache.hadoop.hdfs.DistributedFileSystem$27.doCall(DistributedFileSystem.java:1481)
+	at org.apache.hadoop.fs.FileSystemLinkResolver.resolve(FileSystemLinkResolver.java:81)
+	at org.apache.hadoop.hdfs.DistributedFileSystem.mkdirsInternal(DistributedFileSystem.java:1498)
+	at org.apache.hadoop.hdfs.DistributedFileSystem.mkdirs(DistributedFileSystem.java:1473)
+	at org.apache.hadoop.fs.FileSystem.mkdirs(FileSystem.java:2388)
+	at org.apache.hadoop.fs.FileSystem.mkdirs(FileSystem.java:750)
+	at org.apache.spark.deploy.yarn.Client.prepareLocalResources(Client.scala:459)
+	at org.apache.spark.deploy.yarn.Client.createContainerLaunchContext(Client.scala:934)
+	at org.apache.spark.deploy.yarn.Client.submitApplication(Client.scala:208)
+	at org.apache.spark.scheduler.cluster.YarnClientSchedulerBackend.start(YarnClientSchedulerBackend.scala:62)
+	at org.apache.spark.scheduler.TaskSchedulerImpl.start(TaskSchedulerImpl.scala:220)
+	at org.apache.spark.SparkContext.<init>(SparkContext.scala:581)
+	at org.apache.spark.api.java.JavaSparkContext.<init>(JavaSparkContext.scala:58)
+	at sun.reflect.NativeConstructorAccessorImpl.newInstance0(Native Method)
+	at sun.reflect.NativeConstructorAccessorImpl.newInstance(NativeConstructorAccessorImpl.java:62)
+	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
+	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
+	at py4j.reflection.MethodInvoker.invoke(MethodInvoker.java:247)
+	at py4j.reflection.ReflectionEngine.invoke(ReflectionEngine.java:357)
+	at py4j.Gateway.invoke(Gateway.java:238)
+	at py4j.commands.ConstructorCommand.invokeConstructor(ConstructorCommand.java:80)
+	at py4j.commands.ConstructorCommand.execute(ConstructorCommand.java:69)
+	at py4j.GatewayConnection.run(GatewayConnection.java:238)
+	at java.lang.Thread.run(Thread.java:748)
+26/10/01 15:59:45 WARN Client: Neither spark.yarn.jars nor spark.yarn.archive is set, falling back to uploading libraries under SPARK_HOME.
+26/10/01 15:59:50 INFO Client: Uploading resource file:/tmp/spark-6a6847be-d723-4cb1-9fd6-06f72311320d/__spark_libs__5519849836985195213.zip -> hdfs://sdp-dzo-lt-omlt/user/pvm-omltp-sdp/.sparkStaging/application_1790656441704_0313/__spark_libs__5519849836985195213.zip
+26/10/01 15:59:51 WARN Client: Exception encountered while connecting to the server 
+org.apache.hadoop.ipc.RemoteException(org.apache.hadoop.ipc.StandbyException): Operation category READ is not supported in state standby. Visit https://s.apache.org/sbnn-error
+	at org.apache.hadoop.security.SaslRpcClient.saslConnect(SaslRpcClient.java:376)
+	at org.apache.hadoop.ipc.Client$Connection.setupSaslConnection(Client.java:623)
+	at org.apache.hadoop.ipc.Client$Connection.access$2300(Client.java:414)
+	at org.apache.hadoop.ipc.Client$Connection$2.run(Client.java:832)
+	at org.apache.hadoop.ipc.Client$Connection$2.run(Client.java:828)
+	at java.security.AccessController.doPrivileged(Native Method)
+	at javax.security.auth.Subject.doAs(Subject.java:422)
+	at org.apache.hadoop.security.UserGroupInformation.doAs(UserGroupInformation.java:1878)
+	at org.apache.hadoop.ipc.Client$Connection.setupIOstreams(Client.java:828)
+	at org.apache.hadoop.ipc.Client$Connection.access$3800(Client.java:414)
+	at org.apache.hadoop.ipc.Client.getConnection(Client.java:1647)
+	at org.apache.hadoop.ipc.Client.call(Client.java:1463)
+	at org.apache.hadoop.ipc.Client.call(Client.java:1416)
+	at org.apache.hadoop.ipc.ProtobufRpcEngine2$Invoker.invoke(ProtobufRpcEngine2.java:242)
+	at org.apache.hadoop.ipc.ProtobufRpcEngine2$Invoker.invoke(ProtobufRpcEngine2.java:129)
+	at com.sun.proxy.$Proxy14.getFileInfo(Unknown Source)
+	at org.apache.hadoop.hdfs.protocolPB.ClientNamenodeProtocolTranslatorPB.getFileInfo(ClientNamenodeProtocolTranslatorPB.java:965)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.apache.hadoop.io.retry.RetryInvocationHandler.invokeMethod(RetryInvocationHandler.java:422)
+	at org.apache.hadoop.io.retry.RetryInvocationHandler$Call.invokeMethod(RetryInvocationHandler.java:165)
+	at org.apache.hadoop.io.retry.RetryInvocationHandler$Call.invoke(RetryInvocationHandler.java:157)
+	at org.apache.hadoop.io.retry.RetryInvocationHandler$Call.invokeOnce(RetryInvocationHandler.java:95)
+	at org.apache.hadoop.io.retry.RetryInvocationHandler.invoke(RetryInvocationHandler.java:359)
+	at com.sun.proxy.$Proxy15.getFileInfo(Unknown Source)
+	at org.apache.hadoop.hdfs.DFSClient.getFileInfo(DFSClient.java:1731)
+	at org.apache.hadoop.fs.Hdfs.getFileStatus(Hdfs.java:149)
+	at org.apache.hadoop.fs.AbstractFileSystem.resolvePath(AbstractFileSystem.java:509)
+	at org.apache.hadoop.fs.FileContext$25.next(FileContext.java:2305)
+	at org.apache.hadoop.fs.FileContext$25.next(FileContext.java:2301)
+	at org.apache.hadoop.fs.FSLinkResolver.resolve(FSLinkResolver.java:90)
+	at org.apache.hadoop.fs.FileContext.resolve(FileContext.java:2307)
+	at org.apache.hadoop.fs.FileContext.resolvePath(FileContext.java:616)
+	at org.apache.spark.deploy.yarn.Client.$anonfun$copyFileToRemote$4(Client.scala:428)
+	at scala.collection.mutable.HashMap.getOrElseUpdate(HashMap.scala:86)
+	at org.apache.spark.deploy.yarn.Client.copyFileToRemote(Client.scala:426)
+	at org.apache.spark.deploy.yarn.Client.distribute$1(Client.scala:508)
+	at org.apache.spark.deploy.yarn.Client.prepareLocalResources(Client.scala:625)
+	at org.apache.spark.deploy.yarn.Client.createContainerLaunchContext(Client.scala:934)
+	at org.apache.spark.deploy.yarn.Client.submitApplication(Client.scala:208)
+	at org.apache.spark.scheduler.cluster.YarnClientSchedulerBackend.start(YarnClientSchedulerBackend.scala:62)
+	at org.apache.spark.scheduler.TaskSchedulerImpl.start(TaskSchedulerImpl.scala:220)
+	at org.apache.spark.SparkContext.<init>(SparkContext.scala:581)
+	at org.apache.spark.api.java.JavaSparkContext.<init>(JavaSparkContext.scala:58)
+	at sun.reflect.NativeConstructorAccessorImpl.newInstance0(Native Method)
+	at sun.reflect.NativeConstructorAccessorImpl.newInstance(NativeConstructorAccessorImpl.java:62)
+	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
+	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
+	at py4j.reflection.MethodInvoker.invoke(MethodInvoker.java:247)
+	at py4j.reflection.ReflectionEngine.invoke(ReflectionEngine.java:357)
+	at py4j.Gateway.invoke(Gateway.java:238)
+	at py4j.commands.ConstructorCommand.invokeConstructor(ConstructorCommand.java:80)
+	at py4j.commands.ConstructorCommand.execute(ConstructorCommand.java:69)
+	at py4j.GatewayConnection.run(GatewayConnection.java:238)
+	at java.lang.Thread.run(Thread.java:748)
+26/10/01 15:59:51 INFO Client: Uploading resource file:/usr/sdp/3.5.4.1-1/spark3/python/lib/pyspark.zip -> hdfs://sdp-dzo-lt-omlt/user/pvm-omltp-sdp/.sparkStaging/application_1790656441704_0313/pyspark.zip
+26/10/01 15:59:51 INFO Client: Uploading resource file:/usr/sdp/3.5.4.1-1/spark3/python/lib/py4j-0.10.9.3-src.zip -> hdfs://sdp-dzo-lt-omlt/user/pvm-omltp-sdp/.sparkStaging/application_1790656441704_0313/py4j-0.10.9.3-src.zip
+26/10/01 15:59:51 INFO Client: Uploading resource file:/tmp/spark-6a6847be-d723-4cb1-9fd6-06f72311320d/__spark_conf__4268949368453804363.zip -> hdfs://sdp-dzo-lt-omlt/user/pvm-omltp-sdp/.sparkStaging/application_1790656441704_0313/__spark_conf__.zip
+26/10/01 15:59:51 INFO SecurityManager: Changing view acls to: portos,pvm-omltp-sdp
+26/10/01 15:59:51 INFO SecurityManager: Changing modify acls to: portos,pvm-omltp-sdp
+26/10/01 15:59:51 INFO SecurityManager: Changing view acls groups to: 
+26/10/01 15:59:51 INFO SecurityManager: Changing modify acls groups to: 
+26/10/01 15:59:51 INFO SecurityManager: SecurityManager: authentication disabled; ui acls enabled; users  with view permissions: Set(portos, pvm-omltp-sdp); groups with view permissions: Set(); users  with modify permissions: Set(portos, pvm-omltp-sdp); groups with modify permissions: Set()
+26/10/01 15:59:51 INFO Client: Submitting application application_1790656441704_0313 to ResourceManager
+26/10/01 15:59:52 INFO YarnClientImpl: Submitted application application_1790656441704_0313
+26/10/01 15:59:53 INFO Client: Application report for application_1790656441704_0313 (state: ACCEPTED)
+26/10/01 15:59:53 INFO Client: 
+	 client token: Token { kind: YARN_CLIENT_TOKEN, service:  }
+	 diagnostics: AM container is launched, waiting for AM container to Register with RM
+	 ApplicationMaster host: N/A
+	 ApplicationMaster RPC port: -1
+	 queue: default
+	 start time: 1790859591847
+	 final status: UNDEFINED
+	 tracking URL: https://omlt-abyss-sdp-namenode-01.opsmon.sbt:8090/proxy/application_1790656441704_0313/
+	 user: pvm-omltp-sdp
+26/10/01 15:59:54 INFO Client: Application report for application_1790656441704_0313 (state: ACCEPTED)
+26/10/01 15:59:55 INFO Client: Application report for application_1790656441704_0313 (state: ACCEPTED)
+26/10/01 15:59:56 INFO Client: Application report for application_1790656441704_0313 (state: ACCEPTED)
+26/10/01 15:59:57 INFO Client: Application report for application_1790656441704_0313 (state: ACCEPTED)
+26/10/01 15:59:58 INFO Client: Application report for application_1790656441704_0313 (state: ACCEPTED)
+26/10/01 15:59:59 INFO Client: Application report for application_1790656441704_0313 (state: ACCEPTED)
+26/10/01 15:59:59 INFO YarnClientSchedulerBackend: Add WebUI Filter. org.apache.hadoop.yarn.server.webproxy.amfilter.AmIpFilter, Map(PROXY_HOSTS -> omlt-abyss-sdp-namenode-02.opsmon.sbt,omlt-abyss-sdp-namenode-01.opsmon.sbt, PROXY_URI_BASES -> https://omlt-abyss-sdp-namenode-02.opsmon.sbt:8090/proxy/application_1790656441704_0313,https://omlt-abyss-sdp-namenode-01.opsmon.sbt:8090/proxy/application_1790656441704_0313, RM_HA_URLS -> omlt-abyss-sdp-namenode-02.opsmon.sbt:8090,omlt-abyss-sdp-namenode-01.opsmon.sbt:8090), /proxy/application_1790656441704_0313
+26/10/01 16:00:00 INFO Client: Application report for application_1790656441704_0313 (state: RUNNING)
+26/10/01 16:00:00 INFO Client: 
+	 client token: Token { kind: YARN_CLIENT_TOKEN, service:  }
+	 diagnostics: N/A
+	 ApplicationMaster host: 10.21.68.46
+	 ApplicationMaster RPC port: -1
+	 queue: default
+	 start time: 1790859591847
+	 final status: UNDEFINED
+	 tracking URL: https://omlt-abyss-sdp-namenode-01.opsmon.sbt:8090/proxy/application_1790656441704_0313/
+	 user: pvm-omltp-sdp
+26/10/01 16:00:00 INFO YarnClientSchedulerBackend: Application application_1790656441704_0313 has started running.
+26/10/01 16:00:00 INFO Utils: Successfully started service 'org.apache.spark.network.netty.NettyBlockTransferService' on port 39622.
+26/10/01 16:00:00 INFO NettyBlockTransferService: Server created on omlt-abyss-sdp-namenode-01.opsmon.sbt:39622
+26/10/01 16:00:00 INFO BlockManager: Using org.apache.spark.storage.RandomBlockReplicationPolicy for block replication policy
+26/10/01 16:00:00 INFO BlockManagerMaster: Registering BlockManager BlockManagerId(driver, omlt-abyss-sdp-namenode-01.opsmon.sbt, 39622, None)
+26/10/01 16:00:00 INFO BlockManagerMasterEndpoint: Registering block manager omlt-abyss-sdp-namenode-01.opsmon.sbt:39622 with 912.3 MiB RAM, BlockManagerId(driver, omlt-abyss-sdp-namenode-01.opsmon.sbt, 39622, None)
+26/10/01 16:00:00 INFO BlockManagerMaster: Registered BlockManager BlockManagerId(driver, omlt-abyss-sdp-namenode-01.opsmon.sbt, 39622, None)
+26/10/01 16:00:00 INFO BlockManager: Initialized BlockManager: BlockManagerId(driver, omlt-abyss-sdp-namenode-01.opsmon.sbt, 39622, None)
+26/10/01 16:00:00 INFO log: Logging initialized @19588ms to org.sparkproject.jetty.util.log.Slf4jLog
+26/10/01 16:00:00 INFO SingleEventLogFileWriter: Logging events to hdfs:/spark3-history/application_1790656441704_0313.inprogress
+26/10/01 16:00:00 INFO YarnSchedulerBackend$YarnSchedulerEndpoint: ApplicationMaster registered as NettyRpcEndpointRef(spark-client://YarnAM)
+26/10/01 16:00:09 INFO YarnSchedulerBackend$YarnDriverEndpoint: Registered executor NettyRpcEndpointRef(spark-client://Executor) (10.21.68.47:53204) with ID 1,  ResourceProfileId 0
+26/10/01 16:00:09 INFO BlockManagerMasterEndpoint: Registering block manager omlt-abyss-sdp-datanode-05.opsmon.sbt:43850 with 912.3 MiB RAM, BlockManagerId(1, omlt-abyss-sdp-datanode-05.opsmon.sbt, 43850, None)
+26/10/01 16:00:11 INFO YarnSchedulerBackend$YarnDriverEndpoint: Registered executor NettyRpcEndpointRef(spark-client://Executor) (10.21.68.44:43658) with ID 2,  ResourceProfileId 0
+26/10/01 16:00:11 INFO YarnClientSchedulerBackend: SchedulerBackend is ready for scheduling beginning after reached minRegisteredResourcesRatio: 0.8
+/usr/sdp/current/spark3-client/python/lib/pyspark.zip/pyspark/context.py:238: FutureWarning: Python 3.6 support is deprecated in Spark 3.2.
+  FutureWarning
+26/10/01 16:00:11 INFO BlockManagerMasterEndpoint: Registering block manager omlt-abyss-sdp-datanode-02.opsmon.sbt:39299 with 912.3 MiB RAM, BlockManagerId(2, omlt-abyss-sdp-datanode-02.opsmon.sbt, 39299, None)
+26/10/01 16:00:11 INFO SharedState: Setting hive.metastore.warehouse.dir ('null') to the value of spark.sql.warehouse.dir.
+26/10/01 16:00:11 INFO SharedState: Warehouse path is 'hdfs://sdp-dzo-lt-omlt/apps/spark/warehouse'.
+26/10/01 16:00:12 INFO InMemoryFileIndex: It took 55 ms to list leaf files for 1 paths.
+26/10/01 16:00:12 INFO InMemoryFileIndex: It took 7 ms to list leaf files for 1 paths.
+26/10/01 16:00:15 INFO FileSourceStrategy: Pushed Filters: 
+26/10/01 16:00:15 INFO FileSourceStrategy: Post-Scan Filters: (length(trim(value#0, None)) > 0)
+26/10/01 16:00:15 INFO FileSourceStrategy: Output Data Schema: struct<value: string>
+26/10/01 16:00:16 INFO CodeGenerator: Code generated in 246.095503 ms
+26/10/01 16:00:16 INFO MemoryStore: Block broadcast_0 stored as values in memory (estimated size 506.3 KiB, free 911.8 MiB)
+26/10/01 16:00:16 INFO MemoryStore: Block broadcast_0_piece0 stored as bytes in memory (estimated size 53.1 KiB, free 911.8 MiB)
+26/10/01 16:00:16 INFO BlockManagerInfo: Added broadcast_0_piece0 in memory on omlt-abyss-sdp-namenode-01.opsmon.sbt:39622 (size: 53.1 KiB, free: 912.2 MiB)
+26/10/01 16:00:16 INFO SparkContext: Created broadcast 0 from csv at NativeMethodAccessorImpl.java:0
+26/10/01 16:00:16 INFO FileSourceScanExec: Planning scan with bin packing, max size: 4194304 bytes, open cost is considered as scanning 4194304 bytes.
+26/10/01 16:00:16 INFO SparkContext: Starting job: csv at NativeMethodAccessorImpl.java:0
+26/10/01 16:00:16 INFO DAGScheduler: Got job 0 (csv at NativeMethodAccessorImpl.java:0) with 1 output partitions
+26/10/01 16:00:16 INFO DAGScheduler: Final stage: ResultStage 0 (csv at NativeMethodAccessorImpl.java:0)
+26/10/01 16:00:16 INFO DAGScheduler: Parents of final stage: List()
+26/10/01 16:00:16 INFO DAGScheduler: Missing parents: List()
+26/10/01 16:00:16 INFO DAGScheduler: Submitting ResultStage 0 (MapPartitionsRDD[3] at csv at NativeMethodAccessorImpl.java:0), which has no missing parents
+26/10/01 16:00:16 INFO MemoryStore: Block broadcast_1 stored as values in memory (estimated size 11.7 KiB, free 911.7 MiB)
+26/10/01 16:00:16 INFO MemoryStore: Block broadcast_1_piece0 stored as bytes in memory (estimated size 5.8 KiB, free 911.7 MiB)
+26/10/01 16:00:16 INFO BlockManagerInfo: Added broadcast_1_piece0 in memory on omlt-abyss-sdp-namenode-01.opsmon.sbt:39622 (size: 5.8 KiB, free: 912.2 MiB)
+26/10/01 16:00:16 INFO SparkContext: Created broadcast 1 from broadcast at DAGScheduler.scala:1478
+26/10/01 16:00:16 INFO DAGScheduler: Submitting 1 missing tasks from ResultStage 0 (MapPartitionsRDD[3] at csv at NativeMethodAccessorImpl.java:0) (first 15 tasks are for partitions Vector(0))
+26/10/01 16:00:16 INFO YarnScheduler: Adding task set 0.0 with 1 tasks resource profile 0
+26/10/01 16:00:16 INFO TaskSetManager: Starting task 0.0 in stage 0.0 (TID 0) (omlt-abyss-sdp-datanode-05.opsmon.sbt, executor 1, partition 0, NODE_LOCAL, 4931 bytes) taskResourceAssignments Map()
+26/10/01 16:00:17 INFO BlockManagerInfo: Added broadcast_1_piece0 in memory on omlt-abyss-sdp-datanode-05.opsmon.sbt:43850 (size: 5.8 KiB, free: 912.3 MiB)
+26/10/01 16:00:18 INFO BlockManagerInfo: Added broadcast_0_piece0 in memory on omlt-abyss-sdp-datanode-05.opsmon.sbt:43850 (size: 53.1 KiB, free: 912.2 MiB)
+26/10/01 16:00:19 INFO TaskSetManager: Finished task 0.0 in stage 0.0 (TID 0) in 2174 ms on omlt-abyss-sdp-datanode-05.opsmon.sbt (executor 1) (1/1)
+26/10/01 16:00:19 INFO YarnScheduler: Removed TaskSet 0.0, whose tasks have all completed, from pool 
+26/10/01 16:00:19 INFO DAGScheduler: ResultStage 0 (csv at NativeMethodAccessorImpl.java:0) finished in 2.352 s
+26/10/01 16:00:19 INFO DAGScheduler: Job 0 is finished. Cancelling potential speculative or zombie tasks for this job
+26/10/01 16:00:19 INFO YarnScheduler: Killing all running tasks in stage 0: Stage finished
+26/10/01 16:00:19 INFO DAGScheduler: Job 0 finished: csv at NativeMethodAccessorImpl.java:0, took 2.406740 s
+26/10/01 16:00:19 INFO CodeGenerator: Code generated in 15.485586 ms
+26/10/01 16:00:19 INFO FileSourceStrategy: Pushed Filters: 
+26/10/01 16:00:19 INFO FileSourceStrategy: Post-Scan Filters: 
+26/10/01 16:00:19 INFO FileSourceStrategy: Output Data Schema: struct<value: string>
+26/10/01 16:00:19 INFO MemoryStore: Block broadcast_2 stored as values in memory (estimated size 506.3 KiB, free 911.2 MiB)
+26/10/01 16:00:19 INFO MemoryStore: Block broadcast_2_piece0 stored as bytes in memory (estimated size 53.1 KiB, free 911.2 MiB)
+26/10/01 16:00:19 INFO BlockManagerInfo: Added broadcast_2_piece0 in memory on omlt-abyss-sdp-namenode-01.opsmon.sbt:39622 (size: 53.1 KiB, free: 912.2 MiB)
+26/10/01 16:00:19 INFO SparkContext: Created broadcast 2 from csv at NativeMethodAccessorImpl.java:0
+26/10/01 16:00:19 INFO FileSourceScanExec: Planning scan with bin packing, max size: 4194304 bytes, open cost is considered as scanning 4194304 bytes.
+26/10/01 16:00:19 INFO SparkContext: Starting job: csv at NativeMethodAccessorImpl.java:0
+26/10/01 16:00:19 INFO DAGScheduler: Got job 1 (csv at NativeMethodAccessorImpl.java:0) with 1 output partitions
+26/10/01 16:00:19 INFO DAGScheduler: Final stage: ResultStage 1 (csv at NativeMethodAccessorImpl.java:0)
+26/10/01 16:00:19 INFO DAGScheduler: Parents of final stage: List()
+26/10/01 16:00:19 INFO DAGScheduler: Missing parents: List()
+26/10/01 16:00:19 INFO DAGScheduler: Submitting ResultStage 1 (MapPartitionsRDD[9] at csv at NativeMethodAccessorImpl.java:0), which has no missing parents
+26/10/01 16:00:19 INFO MemoryStore: Block broadcast_3 stored as values in memory (estimated size 19.1 KiB, free 911.2 MiB)
+26/10/01 16:00:19 INFO MemoryStore: Block broadcast_3_piece0 stored as bytes in memory (estimated size 9.9 KiB, free 911.2 MiB)
+26/10/01 16:00:19 INFO BlockManagerInfo: Added broadcast_3_piece0 in memory on omlt-abyss-sdp-namenode-01.opsmon.sbt:39622 (size: 9.9 KiB, free: 912.2 MiB)
+26/10/01 16:00:19 INFO SparkContext: Created broadcast 3 from broadcast at DAGScheduler.scala:1478
+26/10/01 16:00:19 INFO DAGScheduler: Submitting 1 missing tasks from ResultStage 1 (MapPartitionsRDD[9] at csv at NativeMethodAccessorImpl.java:0) (first 15 tasks are for partitions Vector(0))
+26/10/01 16:00:19 INFO YarnScheduler: Adding task set 1.0 with 1 tasks resource profile 0
+26/10/01 16:00:19 INFO TaskSetManager: Starting task 0.0 in stage 1.0 (TID 1) (omlt-abyss-sdp-datanode-05.opsmon.sbt, executor 1, partition 0, NODE_LOCAL, 4931 bytes) taskResourceAssignments Map()
+26/10/01 16:00:19 INFO BlockManagerInfo: Added broadcast_3_piece0 in memory on omlt-abyss-sdp-datanode-05.opsmon.sbt:43850 (size: 9.9 KiB, free: 912.2 MiB)
+26/10/01 16:00:20 INFO BlockManagerInfo: Added broadcast_2_piece0 in memory on omlt-abyss-sdp-datanode-05.opsmon.sbt:43850 (size: 53.1 KiB, free: 912.2 MiB)
+26/10/01 16:00:20 INFO TaskSetManager: Finished task 0.0 in stage 1.0 (TID 1) in 1332 ms on omlt-abyss-sdp-datanode-05.opsmon.sbt (executor 1) (1/1)
+26/10/01 16:00:20 INFO YarnScheduler: Removed TaskSet 1.0, whose tasks have all completed, from pool 
+26/10/01 16:00:20 INFO DAGScheduler: ResultStage 1 (csv at NativeMethodAccessorImpl.java:0) finished in 1.360 s
+26/10/01 16:00:20 INFO DAGScheduler: Job 1 is finished. Cancelling potential speculative or zombie tasks for this job
+26/10/01 16:00:20 INFO YarnScheduler: Killing all running tasks in stage 1: Stage finished
+26/10/01 16:00:20 INFO DAGScheduler: Job 1 finished: csv at NativeMethodAccessorImpl.java:0, took 1.369401 s
+26/10/01 16:00:20 INFO FileSourceStrategy: Pushed Filters: 
+26/10/01 16:00:20 INFO FileSourceStrategy: Post-Scan Filters: 
+26/10/01 16:00:20 INFO FileSourceStrategy: Output Data Schema: struct<scenario: string, duration_ms: int, layout_id: string, engine: string, cache_state: string ... 9 more fields>
+26/10/01 16:00:20 INFO MemoryStore: Block broadcast_4 stored as values in memory (estimated size 506.2 KiB, free 910.7 MiB)
+26/10/01 16:00:20 INFO MemoryStore: Block broadcast_4_piece0 stored as bytes in memory (estimated size 53.1 KiB, free 910.6 MiB)
+26/10/01 16:00:20 INFO BlockManagerInfo: Added broadcast_4_piece0 in memory on omlt-abyss-sdp-namenode-01.opsmon.sbt:39622 (size: 53.1 KiB, free: 912.1 MiB)
+26/10/01 16:00:20 INFO SparkContext: Created broadcast 4 from javaToPython at NativeMethodAccessorImpl.java:0
+26/10/01 16:00:20 INFO FileSourceScanExec: Planning scan with bin packing, max size: 4194304 bytes, open cost is considered as scanning 4194304 bytes.
+26/10/01 16:00:20 INFO SparkContext: Starting job: runJob at PythonRDD.scala:166
+26/10/01 16:00:20 INFO DAGScheduler: Got job 2 (runJob at PythonRDD.scala:166) with 1 output partitions
+26/10/01 16:00:20 INFO DAGScheduler: Final stage: ResultStage 2 (runJob at PythonRDD.scala:166)
+26/10/01 16:00:20 INFO DAGScheduler: Parents of final stage: List()
+26/10/01 16:00:20 INFO DAGScheduler: Missing parents: List()
+26/10/01 16:00:20 INFO DAGScheduler: Submitting ResultStage 2 (PythonRDD[15] at RDD at PythonRDD.scala:53), which has no missing parents
+26/10/01 16:00:20 INFO MemoryStore: Block broadcast_5 stored as values in memory (estimated size 18.0 KiB, free 910.6 MiB)
+26/10/01 16:00:20 INFO MemoryStore: Block broadcast_5_piece0 stored as bytes in memory (estimated size 9.9 KiB, free 910.6 MiB)
+26/10/01 16:00:20 INFO BlockManagerInfo: Added broadcast_5_piece0 in memory on omlt-abyss-sdp-namenode-01.opsmon.sbt:39622 (size: 9.9 KiB, free: 912.1 MiB)
+26/10/01 16:00:20 INFO SparkContext: Created broadcast 5 from broadcast at DAGScheduler.scala:1478
+26/10/01 16:00:20 INFO DAGScheduler: Submitting 1 missing tasks from ResultStage 2 (PythonRDD[15] at RDD at PythonRDD.scala:53) (first 15 tasks are for partitions Vector(0))
+26/10/01 16:00:20 INFO YarnScheduler: Adding task set 2.0 with 1 tasks resource profile 0
+26/10/01 16:00:20 INFO TaskSetManager: Starting task 0.0 in stage 2.0 (TID 2) (omlt-abyss-sdp-datanode-05.opsmon.sbt, executor 1, partition 0, NODE_LOCAL, 4931 bytes) taskResourceAssignments Map()
+26/10/01 16:00:20 INFO BlockManagerInfo: Added broadcast_5_piece0 in memory on omlt-abyss-sdp-datanode-05.opsmon.sbt:43850 (size: 9.9 KiB, free: 912.2 MiB)
+26/10/01 16:00:21 INFO BlockManagerInfo: Added broadcast_4_piece0 in memory on omlt-abyss-sdp-datanode-05.opsmon.sbt:43850 (size: 53.1 KiB, free: 912.1 MiB)
+26/10/01 16:00:21 INFO TaskSetManager: Finished task 0.0 in stage 2.0 (TID 2) in 895 ms on omlt-abyss-sdp-datanode-05.opsmon.sbt (executor 1) (1/1)
+26/10/01 16:00:21 INFO YarnScheduler: Removed TaskSet 2.0, whose tasks have all completed, from pool 
+26/10/01 16:00:21 INFO PythonAccumulatorV2: Connected to AccumulatorServer at host: 127.0.0.1 port: 50020
+26/10/01 16:00:21 INFO DAGScheduler: ResultStage 2 (runJob at PythonRDD.scala:166) finished in 0.922 s
+26/10/01 16:00:21 INFO DAGScheduler: Job 2 is finished. Cancelling potential speculative or zombie tasks for this job
+26/10/01 16:00:21 INFO YarnScheduler: Killing all running tasks in stage 2: Stage finished
+26/10/01 16:00:21 INFO DAGScheduler: Job 2 finished: runJob at PythonRDD.scala:166, took 0.929069 s
+26/10/01 16:00:22 INFO BlockManagerInfo: Removed broadcast_0_piece0 on omlt-abyss-sdp-namenode-01.opsmon.sbt:39622 in memory (size: 53.1 KiB, free: 912.2 MiB)
+26/10/01 16:00:22 INFO BlockManagerInfo: Removed broadcast_0_piece0 on omlt-abyss-sdp-datanode-05.opsmon.sbt:43850 in memory (size: 53.1 KiB, free: 912.2 MiB)
+26/10/01 16:00:22 INFO BlockManagerInfo: Removed broadcast_3_piece0 on omlt-abyss-sdp-namenode-01.opsmon.sbt:39622 in memory (size: 9.9 KiB, free: 912.2 MiB)
+26/10/01 16:00:22 INFO BlockManagerInfo: Removed broadcast_3_piece0 on omlt-abyss-sdp-datanode-05.opsmon.sbt:43850 in memory (size: 9.9 KiB, free: 912.2 MiB)
+26/10/01 16:00:22 INFO BlockManagerInfo: Removed broadcast_2_piece0 on omlt-abyss-sdp-namenode-01.opsmon.sbt:39622 in memory (size: 53.1 KiB, free: 912.2 MiB)
+26/10/01 16:00:22 INFO BlockManagerInfo: Removed broadcast_2_piece0 on omlt-abyss-sdp-datanode-05.opsmon.sbt:43850 in memory (size: 53.1 KiB, free: 912.2 MiB)
+26/10/01 16:00:22 INFO BlockManagerInfo: Removed broadcast_5_piece0 on omlt-abyss-sdp-namenode-01.opsmon.sbt:39622 in memory (size: 9.9 KiB, free: 912.2 MiB)
+26/10/01 16:00:22 INFO BlockManagerInfo: Removed broadcast_5_piece0 on omlt-abyss-sdp-datanode-05.opsmon.sbt:43850 in memory (size: 9.9 KiB, free: 912.2 MiB)
+26/10/01 16:00:22 INFO FileSourceStrategy: Pushed Filters: IsNotNull(warmup),EqualTo(warmup,false)
+26/10/01 16:00:22 INFO FileSourceStrategy: Post-Scan Filters: isnotnull(warmup#26),(warmup#26 = false)
+26/10/01 16:00:22 INFO FileSourceStrategy: Output Data Schema: struct<scenario: string, duration_ms: int, layout_id: string, engine: string, cache_state: string ... 9 more fields>
+26/10/01 16:00:22 INFO BlockManagerInfo: Removed broadcast_1_piece0 on omlt-abyss-sdp-datanode-05.opsmon.sbt:43850 in memory (size: 5.8 KiB, free: 912.2 MiB)
+26/10/01 16:00:22 INFO BlockManagerInfo: Removed broadcast_1_piece0 on omlt-abyss-sdp-namenode-01.opsmon.sbt:39622 in memory (size: 5.8 KiB, free: 912.2 MiB)
+26/10/01 16:00:22 INFO CodeGenerator: Code generated in 14.70824 ms
+26/10/01 16:00:22 INFO CodeGenerator: Code generated in 35.177027 ms
+26/10/01 16:00:22 INFO MemoryStore: Block broadcast_6 stored as values in memory (estimated size 506.2 KiB, free 911.3 MiB)
+26/10/01 16:00:22 INFO MemoryStore: Block broadcast_6_piece0 stored as bytes in memory (estimated size 53.1 KiB, free 911.2 MiB)
+26/10/01 16:00:22 INFO BlockManagerInfo: Added broadcast_6_piece0 in memory on omlt-abyss-sdp-namenode-01.opsmon.sbt:39622 (size: 53.1 KiB, free: 912.2 MiB)
+26/10/01 16:00:22 INFO SparkContext: Created broadcast 6 from count at NativeMethodAccessorImpl.java:0
+26/10/01 16:00:22 INFO FileSourceScanExec: Planning scan with bin packing, max size: 4194304 bytes, open cost is considered as scanning 4194304 bytes.
+26/10/01 16:00:22 INFO DAGScheduler: Registering RDD 25 (count at NativeMethodAccessorImpl.java:0) as input to shuffle 0
+26/10/01 16:00:22 INFO DAGScheduler: Got map stage job 3 (count at NativeMethodAccessorImpl.java:0) with 1 output partitions
+26/10/01 16:00:22 INFO DAGScheduler: Final stage: ShuffleMapStage 3 (count at NativeMethodAccessorImpl.java:0)
+26/10/01 16:00:22 INFO DAGScheduler: Parents of final stage: List()
+26/10/01 16:00:22 INFO DAGScheduler: Missing parents: List()
+26/10/01 16:00:22 INFO DAGScheduler: Submitting ShuffleMapStage 3 (MapPartitionsRDD[25] at count at NativeMethodAccessorImpl.java:0), which has no missing parents
+26/10/01 16:00:23 INFO MemoryStore: Block broadcast_7 stored as values in memory (estimated size 30.3 KiB, free 911.2 MiB)
+26/10/01 16:00:23 INFO MemoryStore: Block broadcast_7_piece0 stored as bytes in memory (estimated size 12.6 KiB, free 911.2 MiB)
+26/10/01 16:00:23 INFO BlockManagerInfo: Added broadcast_7_piece0 in memory on omlt-abyss-sdp-namenode-01.opsmon.sbt:39622 (size: 12.6 KiB, free: 912.2 MiB)
+26/10/01 16:00:23 INFO SparkContext: Created broadcast 7 from broadcast at DAGScheduler.scala:1478
+26/10/01 16:00:23 INFO DAGScheduler: Submitting 1 missing tasks from ShuffleMapStage 3 (MapPartitionsRDD[25] at count at NativeMethodAccessorImpl.java:0) (first 15 tasks are for partitions Vector(0))
+26/10/01 16:00:23 INFO YarnScheduler: Adding task set 3.0 with 1 tasks resource profile 0
+26/10/01 16:00:23 INFO TaskSetManager: Starting task 0.0 in stage 3.0 (TID 3) (omlt-abyss-sdp-datanode-05.opsmon.sbt, executor 1, partition 0, NODE_LOCAL, 4920 bytes) taskResourceAssignments Map()
+26/10/01 16:00:23 INFO BlockManagerInfo: Added broadcast_7_piece0 in memory on omlt-abyss-sdp-datanode-05.opsmon.sbt:43850 (size: 12.6 KiB, free: 912.2 MiB)
+26/10/01 16:00:23 INFO BlockManagerInfo: Added broadcast_6_piece0 in memory on omlt-abyss-sdp-datanode-05.opsmon.sbt:43850 (size: 53.1 KiB, free: 912.2 MiB)
+26/10/01 16:00:23 INFO BlockManagerInfo: Added rdd_20_0 in memory on omlt-abyss-sdp-datanode-05.opsmon.sbt:43850 (size: 4.3 KiB, free: 912.2 MiB)
+26/10/01 16:00:23 INFO TaskSetManager: Finished task 0.0 in stage 3.0 (TID 3) in 364 ms on omlt-abyss-sdp-datanode-05.opsmon.sbt (executor 1) (1/1)
+26/10/01 16:00:23 INFO YarnScheduler: Removed TaskSet 3.0, whose tasks have all completed, from pool 
+26/10/01 16:00:23 INFO DAGScheduler: ShuffleMapStage 3 (count at NativeMethodAccessorImpl.java:0) finished in 0.405 s
+26/10/01 16:00:23 INFO DAGScheduler: looking for newly runnable stages
+26/10/01 16:00:23 INFO DAGScheduler: running: Set()
+26/10/01 16:00:23 INFO DAGScheduler: waiting: Set()
+26/10/01 16:00:23 INFO DAGScheduler: failed: Set()
+26/10/01 16:00:23 INFO CodeGenerator: Code generated in 13.171586 ms
+26/10/01 16:00:23 INFO SparkContext: Starting job: count at NativeMethodAccessorImpl.java:0
+26/10/01 16:00:23 INFO DAGScheduler: Got job 4 (count at NativeMethodAccessorImpl.java:0) with 1 output partitions
+26/10/01 16:00:23 INFO DAGScheduler: Final stage: ResultStage 5 (count at NativeMethodAccessorImpl.java:0)
+26/10/01 16:00:23 INFO DAGScheduler: Parents of final stage: List(ShuffleMapStage 4)
+26/10/01 16:00:23 INFO DAGScheduler: Missing parents: List()
+26/10/01 16:00:23 INFO DAGScheduler: Submitting ResultStage 5 (MapPartitionsRDD[28] at count at NativeMethodAccessorImpl.java:0), which has no missing parents
+26/10/01 16:00:23 INFO MemoryStore: Block broadcast_8 stored as values in memory (estimated size 11.0 KiB, free 911.2 MiB)
+26/10/01 16:00:23 INFO MemoryStore: Block broadcast_8_piece0 stored as bytes in memory (estimated size 5.5 KiB, free 911.1 MiB)
+26/10/01 16:00:23 INFO BlockManagerInfo: Added broadcast_8_piece0 in memory on omlt-abyss-sdp-namenode-01.opsmon.sbt:39622 (size: 5.5 KiB, free: 912.2 MiB)
+26/10/01 16:00:23 INFO SparkContext: Created broadcast 8 from broadcast at DAGScheduler.scala:1478
+26/10/01 16:00:23 INFO DAGScheduler: Submitting 1 missing tasks from ResultStage 5 (MapPartitionsRDD[28] at count at NativeMethodAccessorImpl.java:0) (first 15 tasks are for partitions Vector(0))
+26/10/01 16:00:23 INFO YarnScheduler: Adding task set 5.0 with 1 tasks resource profile 0
+26/10/01 16:00:23 INFO TaskSetManager: Starting task 0.0 in stage 5.0 (TID 4) (omlt-abyss-sdp-datanode-05.opsmon.sbt, executor 1, partition 0, NODE_LOCAL, 4464 bytes) taskResourceAssignments Map()
+26/10/01 16:00:23 INFO BlockManagerInfo: Added broadcast_8_piece0 in memory on omlt-abyss-sdp-datanode-05.opsmon.sbt:43850 (size: 5.5 KiB, free: 912.2 MiB)
+26/10/01 16:00:23 INFO MapOutputTrackerMasterEndpoint: Asked to send map output locations for shuffle 0 to 10.21.68.47:53204
+26/10/01 16:00:23 INFO TaskSetManager: Finished task 0.0 in stage 5.0 (TID 4) in 155 ms on omlt-abyss-sdp-datanode-05.opsmon.sbt (executor 1) (1/1)
+26/10/01 16:00:23 INFO YarnScheduler: Removed TaskSet 5.0, whose tasks have all completed, from pool 
+26/10/01 16:00:23 INFO DAGScheduler: ResultStage 5 (count at NativeMethodAccessorImpl.java:0) finished in 0.164 s
+26/10/01 16:00:23 INFO DAGScheduler: Job 4 is finished. Cancelling potential speculative or zombie tasks for this job
+26/10/01 16:00:23 INFO YarnScheduler: Killing all running tasks in stage 5: Stage finished
+26/10/01 16:00:23 INFO DAGScheduler: Job 4 finished: count at NativeMethodAccessorImpl.java:0, took 0.177408 s
+26/10/01 16:00:23 INFO ParquetFileFormat: Using default output committer for Parquet: org.apache.parquet.hadoop.ParquetOutputCommitter
+26/10/01 16:00:23 INFO FileOutputCommitter: File Output Committer Algorithm version is 1
+26/10/01 16:00:23 INFO FileOutputCommitter: FileOutputCommitter skip cleanup _temporary folders under output directory:false, ignore cleanup failures: false
+26/10/01 16:00:23 INFO SQLHadoopMapReduceCommitProtocol: Using user defined output committer class org.apache.parquet.hadoop.ParquetOutputCommitter
+26/10/01 16:00:23 INFO FileOutputCommitter: File Output Committer Algorithm version is 1
+26/10/01 16:00:23 INFO FileOutputCommitter: FileOutputCommitter skip cleanup _temporary folders under output directory:false, ignore cleanup failures: false
+26/10/01 16:00:23 INFO SQLHadoopMapReduceCommitProtocol: Using output committer class org.apache.parquet.hadoop.ParquetOutputCommitter
+26/10/01 16:00:23 INFO SparkContext: Starting job: parquet at NativeMethodAccessorImpl.java:0
+26/10/01 16:00:23 INFO DAGScheduler: Got job 5 (parquet at NativeMethodAccessorImpl.java:0) with 1 output partitions
+26/10/01 16:00:23 INFO DAGScheduler: Final stage: ResultStage 6 (parquet at NativeMethodAccessorImpl.java:0)
+26/10/01 16:00:23 INFO DAGScheduler: Parents of final stage: List()
+26/10/01 16:00:23 INFO DAGScheduler: Missing parents: List()
+26/10/01 16:00:23 INFO DAGScheduler: Submitting ResultStage 6 (CoalescedRDD[32] at parquet at NativeMethodAccessorImpl.java:0), which has no missing parents
+26/10/01 16:00:23 INFO MemoryStore: Block broadcast_9 stored as values in memory (estimated size 340.5 KiB, free 910.8 MiB)
+26/10/01 16:00:23 INFO MemoryStore: Block broadcast_9_piece0 stored as bytes in memory (estimated size 118.1 KiB, free 910.7 MiB)
+26/10/01 16:00:23 INFO BlockManagerInfo: Added broadcast_9_piece0 in memory on omlt-abyss-sdp-namenode-01.opsmon.sbt:39622 (size: 118.1 KiB, free: 912.1 MiB)
+26/10/01 16:00:23 INFO SparkContext: Created broadcast 9 from broadcast at DAGScheduler.scala:1478
+26/10/01 16:00:23 INFO DAGScheduler: Submitting 1 missing tasks from ResultStage 6 (CoalescedRDD[32] at parquet at NativeMethodAccessorImpl.java:0) (first 15 tasks are for partitions Vector(0))
+26/10/01 16:00:23 INFO YarnScheduler: Adding task set 6.0 with 1 tasks resource profile 0
+26/10/01 16:00:23 INFO TaskSetManager: Starting task 0.0 in stage 6.0 (TID 5) (omlt-abyss-sdp-datanode-05.opsmon.sbt, executor 1, partition 0, NODE_LOCAL, 5160 bytes) taskResourceAssignments Map()
+26/10/01 16:00:23 INFO BlockManagerInfo: Added broadcast_9_piece0 in memory on omlt-abyss-sdp-datanode-05.opsmon.sbt:43850 (size: 118.1 KiB, free: 912.1 MiB)
+26/10/01 16:00:25 INFO TaskSetManager: Finished task 0.0 in stage 6.0 (TID 5) in 1235 ms on omlt-abyss-sdp-datanode-05.opsmon.sbt (executor 1) (1/1)
+26/10/01 16:00:25 INFO YarnScheduler: Removed TaskSet 6.0, whose tasks have all completed, from pool 
+26/10/01 16:00:25 INFO DAGScheduler: ResultStage 6 (parquet at NativeMethodAccessorImpl.java:0) finished in 1.278 s
+26/10/01 16:00:25 INFO DAGScheduler: Job 5 is finished. Cancelling potential speculative or zombie tasks for this job
+26/10/01 16:00:25 INFO YarnScheduler: Killing all running tasks in stage 6: Stage finished
+26/10/01 16:00:25 INFO DAGScheduler: Job 5 finished: parquet at NativeMethodAccessorImpl.java:0, took 1.285961 s
+26/10/01 16:00:25 INFO FileFormatWriter: Start to commit write Job 3275646a-3844-4b30-9146-70e2a1dbd6e6.
+26/10/01 16:00:25 INFO FileFormatWriter: Write Job 3275646a-3844-4b30-9146-70e2a1dbd6e6 committed. Elapsed time: 34 ms.
+26/10/01 16:00:25 INFO FileFormatWriter: Finished processing stats for write job 3275646a-3844-4b30-9146-70e2a1dbd6e6.
+26/10/01 16:00:25 INFO InMemoryFileIndex: It took 3 ms to list leaf files for 1 paths.
+26/10/01 16:00:25 INFO MapPartitionsRDD: Removing RDD 20 from persistence list
+26/10/01 16:00:25 INFO BlockManager: Removing RDD 20
+26/10/01 16:00:25 INFO FileSourceStrategy: Pushed Filters: IsNotNull(warmup),EqualTo(warmup,false)
+26/10/01 16:00:25 INFO FileSourceStrategy: Post-Scan Filters: isnotnull(warmup#26),(warmup#26 = false)
+26/10/01 16:00:25 INFO FileSourceStrategy: Output Data Schema: struct<scenario: string, duration_ms: int, layout_id: string, engine: string, cache_state: string ... 9 more fields>
+ORC_BENCH_HIVE_INGEST_OK rows=25 path=hdfs:///orc_test/layouts/best_orc/reports/raw/benchmark_hive_h2
+26/10/01 16:00:25 INFO YarnClientSchedulerBackend: Interrupting monitor thread
+26/10/01 16:00:25 INFO YarnClientSchedulerBackend: Shutting down all executors
+26/10/01 16:00:25 INFO YarnSchedulerBackend$YarnDriverEndpoint: Asking each executor to shut down
+26/10/01 16:00:25 INFO YarnClientSchedulerBackend: YARN client scheduler backend Stopped
+26/10/01 16:00:25 INFO MapOutputTrackerMasterEndpoint: MapOutputTrackerMasterEndpoint stopped!
+26/10/01 16:00:25 INFO MemoryStore: MemoryStore cleared
+26/10/01 16:00:25 INFO BlockManager: BlockManager stopped
+26/10/01 16:00:25 INFO BlockManagerMaster: BlockManagerMaster stopped
+26/10/01 16:00:25 INFO OutputCommitCoordinator$OutputCommitCoordinatorEndpoint: OutputCommitCoordinator stopped!
+26/10/01 16:00:25 INFO SparkContext: Successfully stopped SparkContext
+26/10/01 16:00:25 INFO ShutdownHookManager: Shutdown hook called
+26/10/01 16:00:25 INFO ShutdownHookManager: Deleting directory /tmp/spark-6a6847be-d723-4cb1-9fd6-06f72311320d
+26/10/01 16:00:25 INFO ShutdownHookManager: Deleting directory /tmp/spark-6a6847be-d723-4cb1-9fd6-06f72311320d/pyspark-ef38a853-16f9-46eb-8307-303d980f292c
+26/10/01 16:00:25 INFO ShutdownHookManager: Deleting directory /tmp/spark-5d400572-3245-4689-b967-4c73db1c1cfc
+Ingested Hive CSV → parquet hdfs:///orc_test/layouts/best_orc/reports/raw/benchmark_hive_h2 (csv=hdfs:///orc_test/layouts/best_orc/reports/raw/benchmark_hive_h2.hive_results.csv); log: /home/portos/orc_bench/logs/hive-ingest-benchmark_hive_h2-20261001-155933.log

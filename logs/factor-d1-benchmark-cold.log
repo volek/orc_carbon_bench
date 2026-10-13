@@ -1,0 +1,150 @@
+spark-submit resources: num-executors=16 executor-memory=8g executor-cores=4 driver-memory=4g yarn-am-memory=4g yarn-am-overhead=512m
+spark event log dir: hdfs:///dev1-primary/archive/sparkLogs
+26/09/30 14:02:48 WARN NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
+26/09/30 14:02:48 INFO ConfiguredRMFailoverProxyProvider: Failing over to rm2
+26/09/30 14:02:48 INFO Client: Requesting a new application from cluster with 6 NodeManagers
+26/09/30 14:02:49 WARN DomainSocketFactory: The short-circuit local reads feature cannot be used because libhadoop cannot be loaded.
+26/09/30 14:02:49 INFO Configuration: found resource resource-types.xml at file:/etc/hadoop/3.5.4.1-1/0/resource-types.xml
+26/09/30 14:02:49 INFO Client: Verifying our application has not requested more than the maximum memory capability of the cluster (46080 MB per container)
+26/09/30 14:02:49 INFO Client: Will allocate AM container, with 4505 MB memory including 409 MB overhead
+26/09/30 14:02:49 INFO Client: Setting up container launch context for our AM
+26/09/30 14:02:49 INFO Client: Setting up the launch environment for our AM container
+26/09/30 14:02:49 INFO Client: Preparing resources for our AM container
+26/09/30 14:02:49 WARN Client: Neither spark.yarn.jars nor spark.yarn.archive is set, falling back to uploading libraries under SPARK_HOME.
+26/09/30 14:02:54 INFO Client: Uploading resource file:/tmp/spark-3676b6c5-25b4-42ff-8796-1308661b680e/__spark_libs__427973508827851552.zip -> hdfs://sdp-dzo-lt-omlt/user/pvm-omltp-sdp/.sparkStaging/application_1790656441704_0024/__spark_libs__427973508827851552.zip
+26/09/30 14:02:55 INFO Client: Uploading resource file:/home/portos/orc_bench/build/libs/orc-bench-all.jar -> hdfs://sdp-dzo-lt-omlt/user/pvm-omltp-sdp/.sparkStaging/application_1790656441704_0024/orc-bench-all.jar
+26/09/30 14:02:55 INFO Client: Uploading resource file:/tmp/spark-3676b6c5-25b4-42ff-8796-1308661b680e/__spark_conf__7855703612315708283.zip -> hdfs://sdp-dzo-lt-omlt/user/pvm-omltp-sdp/.sparkStaging/application_1790656441704_0024/__spark_conf__.zip
+26/09/30 14:02:55 INFO SecurityManager: Changing view acls to: portos,pvm-omltp-sdp
+26/09/30 14:02:55 INFO SecurityManager: Changing modify acls to: portos,pvm-omltp-sdp
+26/09/30 14:02:55 INFO SecurityManager: Changing view acls groups to: 
+26/09/30 14:02:55 INFO SecurityManager: Changing modify acls groups to: 
+26/09/30 14:02:55 INFO SecurityManager: SecurityManager: authentication disabled; ui acls enabled; users  with view permissions: Set(portos, pvm-omltp-sdp); groups with view permissions: Set(); users  with modify permissions: Set(portos, pvm-omltp-sdp); groups with modify permissions: Set()
+26/09/30 14:02:56 INFO HadoopDelegationTokenManager: Attempting to load user's ticket cache.
+26/09/30 14:02:56 INFO HadoopFSDelegationTokenProvider: getting token for: DFS[DFSClient[clientName=DFSClient_NONMAPREDUCE_213037861_1, ugi=pvm-omltp-sdp@OPSMON.SBT (auth:KERBEROS)]] with renewer rm/omlt-abyss-sdp-namenode-02.opsmon.sbt@OPSMON.SBT
+26/09/30 14:02:56 INFO DFSClient: Created token for pvm-omltp-sdp: HDFS_DELEGATION_TOKEN owner=pvm-omltp-sdp@OPSMON.SBT, renewer=yarn, realUser=, issueDate=1790766176110, maxDate=1791370976110, sequenceNumber=190042, masterKeyId=1139 on ha-hdfs:sdp-dzo-lt-omlt
+26/09/30 14:02:56 INFO HadoopFSDelegationTokenProvider: getting token for: DFS[DFSClient[clientName=DFSClient_NONMAPREDUCE_213037861_1, ugi=pvm-omltp-sdp@OPSMON.SBT (auth:KERBEROS)]] with renewer pvm-omltp-sdp@OPSMON.SBT
+26/09/30 14:02:56 INFO DFSClient: Created token for pvm-omltp-sdp: HDFS_DELEGATION_TOKEN owner=pvm-omltp-sdp@OPSMON.SBT, renewer=pvm-omltp-sdp, realUser=, issueDate=1790766176123, maxDate=1791370976123, sequenceNumber=190043, masterKeyId=1139 on ha-hdfs:sdp-dzo-lt-omlt
+26/09/30 14:02:56 INFO HadoopFSDelegationTokenProvider: Renewal interval is 86400045 for token HDFS_DELEGATION_TOKEN
+26/09/30 14:02:56 INFO Client: Submitting application application_1790656441704_0024 to ResourceManager
+26/09/30 14:02:56 INFO YarnClientImpl: Submitted application application_1790656441704_0024
+26/09/30 14:02:57 INFO Client: Application report for application_1790656441704_0024 (state: ACCEPTED)
+26/09/30 14:02:57 INFO Client: 
+	 client token: Token { kind: YARN_CLIENT_TOKEN, service:  }
+	 diagnostics: AM container is launched, waiting for AM container to Register with RM
+	 ApplicationMaster host: N/A
+	 ApplicationMaster RPC port: -1
+	 queue: default
+	 start time: 1790766176197
+	 final status: UNDEFINED
+	 tracking URL: https://omlt-abyss-sdp-namenode-01.opsmon.sbt:8090/proxy/application_1790656441704_0024/
+	 user: pvm-omltp-sdp
+26/09/30 14:02:58 INFO Client: Application report for application_1790656441704_0024 (state: ACCEPTED)
+26/09/30 14:02:59 INFO Client: Application report for application_1790656441704_0024 (state: ACCEPTED)
+26/09/30 14:03:00 INFO Client: Application report for application_1790656441704_0024 (state: ACCEPTED)
+26/09/30 14:03:01 INFO Client: Application report for application_1790656441704_0024 (state: ACCEPTED)
+26/09/30 14:03:02 INFO Client: Application report for application_1790656441704_0024 (state: ACCEPTED)
+26/09/30 14:03:03 INFO Client: Application report for application_1790656441704_0024 (state: ACCEPTED)
+26/09/30 14:03:04 INFO Client: Application report for application_1790656441704_0024 (state: ACCEPTED)
+26/09/30 14:03:05 INFO Client: Application report for application_1790656441704_0024 (state: ACCEPTED)
+26/09/30 14:03:06 INFO Client: Application report for application_1790656441704_0024 (state: ACCEPTED)
+26/09/30 14:03:07 INFO Client: Application report for application_1790656441704_0024 (state: ACCEPTED)
+26/09/30 14:03:08 INFO Client: Application report for application_1790656441704_0024 (state: ACCEPTED)
+26/09/30 14:03:09 INFO Client: Application report for application_1790656441704_0024 (state: RUNNING)
+26/09/30 14:03:09 INFO Client: 
+	 client token: Token { kind: YARN_CLIENT_TOKEN, service:  }
+	 diagnostics: N/A
+	 ApplicationMaster host: omlt-abyss-sdp-datanode-04.opsmon.sbt
+	 ApplicationMaster RPC port: 34234
+	 queue: default
+	 start time: 1790766176197
+	 final status: UNDEFINED
+	 tracking URL: https://omlt-abyss-sdp-namenode-01.opsmon.sbt:8090/proxy/application_1790656441704_0024/
+	 user: pvm-omltp-sdp
+26/09/30 14:03:10 INFO Client: Application report for application_1790656441704_0024 (state: RUNNING)
+26/09/30 14:03:11 INFO Client: Application report for application_1790656441704_0024 (state: RUNNING)
+26/09/30 14:03:12 INFO Client: Application report for application_1790656441704_0024 (state: RUNNING)
+26/09/30 14:03:13 INFO Client: Application report for application_1790656441704_0024 (state: RUNNING)
+26/09/30 14:03:14 INFO Client: Application report for application_1790656441704_0024 (state: RUNNING)
+26/09/30 14:03:15 INFO Client: Application report for application_1790656441704_0024 (state: RUNNING)
+26/09/30 14:03:16 INFO Client: Application report for application_1790656441704_0024 (state: RUNNING)
+26/09/30 14:03:17 INFO Client: Application report for application_1790656441704_0024 (state: RUNNING)
+26/09/30 14:03:18 INFO Client: Application report for application_1790656441704_0024 (state: RUNNING)
+26/09/30 14:03:19 INFO Client: Application report for application_1790656441704_0024 (state: RUNNING)
+26/09/30 14:03:20 INFO Client: Application report for application_1790656441704_0024 (state: RUNNING)
+26/09/30 14:03:21 INFO Client: Application report for application_1790656441704_0024 (state: RUNNING)
+26/09/30 14:03:22 INFO Client: Application report for application_1790656441704_0024 (state: RUNNING)
+26/09/30 14:03:23 INFO Client: Application report for application_1790656441704_0024 (state: RUNNING)
+26/09/30 14:03:24 INFO Client: Application report for application_1790656441704_0024 (state: RUNNING)
+26/09/30 14:03:25 INFO Client: Application report for application_1790656441704_0024 (state: RUNNING)
+26/09/30 14:03:26 INFO Client: Application report for application_1790656441704_0024 (state: RUNNING)
+26/09/30 14:03:27 INFO Client: Application report for application_1790656441704_0024 (state: RUNNING)
+26/09/30 14:03:28 INFO Client: Application report for application_1790656441704_0024 (state: RUNNING)
+26/09/30 14:03:29 INFO Client: Application report for application_1790656441704_0024 (state: RUNNING)
+26/09/30 14:03:30 INFO Client: Application report for application_1790656441704_0024 (state: RUNNING)
+26/09/30 14:03:31 INFO Client: Application report for application_1790656441704_0024 (state: RUNNING)
+26/09/30 14:03:32 INFO Client: Application report for application_1790656441704_0024 (state: RUNNING)
+26/09/30 14:03:33 INFO Client: Application report for application_1790656441704_0024 (state: RUNNING)
+26/09/30 14:03:34 INFO Client: Application report for application_1790656441704_0024 (state: RUNNING)
+26/09/30 14:03:35 INFO Client: Application report for application_1790656441704_0024 (state: RUNNING)
+26/09/30 14:03:36 INFO Client: Application report for application_1790656441704_0024 (state: RUNNING)
+26/09/30 14:03:37 INFO Client: Application report for application_1790656441704_0024 (state: RUNNING)
+26/09/30 14:03:38 INFO Client: Application report for application_1790656441704_0024 (state: RUNNING)
+26/09/30 14:03:39 INFO Client: Application report for application_1790656441704_0024 (state: RUNNING)
+26/09/30 14:03:40 INFO Client: Application report for application_1790656441704_0024 (state: RUNNING)
+26/09/30 14:03:41 INFO Client: Application report for application_1790656441704_0024 (state: RUNNING)
+26/09/30 14:03:42 INFO Client: Application report for application_1790656441704_0024 (state: RUNNING)
+26/09/30 14:03:43 INFO Client: Application report for application_1790656441704_0024 (state: RUNNING)
+26/09/30 14:03:44 INFO Client: Application report for application_1790656441704_0024 (state: RUNNING)
+26/09/30 14:03:45 INFO Client: Application report for application_1790656441704_0024 (state: RUNNING)
+26/09/30 14:03:46 INFO Client: Application report for application_1790656441704_0024 (state: RUNNING)
+26/09/30 14:03:47 INFO Client: Application report for application_1790656441704_0024 (state: RUNNING)
+26/09/30 14:03:48 INFO Client: Application report for application_1790656441704_0024 (state: RUNNING)
+26/09/30 14:03:49 INFO Client: Application report for application_1790656441704_0024 (state: RUNNING)
+26/09/30 14:03:50 INFO Client: Application report for application_1790656441704_0024 (state: RUNNING)
+26/09/30 14:03:51 INFO Client: Application report for application_1790656441704_0024 (state: RUNNING)
+26/09/30 14:03:52 INFO Client: Application report for application_1790656441704_0024 (state: RUNNING)
+26/09/30 14:03:53 INFO Client: Application report for application_1790656441704_0024 (state: RUNNING)
+26/09/30 14:03:54 INFO Client: Application report for application_1790656441704_0024 (state: RUNNING)
+26/09/30 14:03:55 INFO Client: Application report for application_1790656441704_0024 (state: RUNNING)
+26/09/30 14:03:56 INFO Client: Application report for application_1790656441704_0024 (state: RUNNING)
+26/09/30 14:03:57 INFO Client: Application report for application_1790656441704_0024 (state: RUNNING)
+26/09/30 14:03:58 INFO Client: Application report for application_1790656441704_0024 (state: RUNNING)
+26/09/30 14:03:59 INFO Client: Application report for application_1790656441704_0024 (state: RUNNING)
+26/09/30 14:04:00 INFO Client: Application report for application_1790656441704_0024 (state: RUNNING)
+26/09/30 14:04:01 INFO Client: Application report for application_1790656441704_0024 (state: RUNNING)
+26/09/30 14:04:02 INFO Client: Application report for application_1790656441704_0024 (state: RUNNING)
+26/09/30 14:04:03 INFO Client: Application report for application_1790656441704_0024 (state: RUNNING)
+26/09/30 14:04:04 INFO Client: Application report for application_1790656441704_0024 (state: RUNNING)
+26/09/30 14:04:05 INFO Client: Application report for application_1790656441704_0024 (state: RUNNING)
+26/09/30 14:04:06 INFO Client: Application report for application_1790656441704_0024 (state: RUNNING)
+26/09/30 14:04:07 INFO Client: Application report for application_1790656441704_0024 (state: RUNNING)
+26/09/30 14:04:08 INFO Client: Application report for application_1790656441704_0024 (state: RUNNING)
+26/09/30 14:04:09 INFO Client: Application report for application_1790656441704_0024 (state: RUNNING)
+26/09/30 14:04:10 INFO Client: Application report for application_1790656441704_0024 (state: RUNNING)
+26/09/30 14:04:11 INFO Client: Application report for application_1790656441704_0024 (state: RUNNING)
+26/09/30 14:04:12 INFO Client: Application report for application_1790656441704_0024 (state: RUNNING)
+26/09/30 14:04:13 INFO Client: Application report for application_1790656441704_0024 (state: RUNNING)
+26/09/30 14:04:14 INFO Client: Application report for application_1790656441704_0024 (state: RUNNING)
+26/09/30 14:04:15 INFO Client: Application report for application_1790656441704_0024 (state: RUNNING)
+26/09/30 14:04:16 INFO Client: Application report for application_1790656441704_0024 (state: RUNNING)
+26/09/30 14:04:17 INFO Client: Application report for application_1790656441704_0024 (state: RUNNING)
+26/09/30 14:04:18 INFO Client: Application report for application_1790656441704_0024 (state: RUNNING)
+26/09/30 14:04:19 INFO Client: Application report for application_1790656441704_0024 (state: RUNNING)
+26/09/30 14:04:20 INFO Client: Application report for application_1790656441704_0024 (state: RUNNING)
+26/09/30 14:04:21 INFO Client: Application report for application_1790656441704_0024 (state: RUNNING)
+26/09/30 14:04:22 INFO Client: Application report for application_1790656441704_0024 (state: RUNNING)
+26/09/30 14:04:23 INFO Client: Application report for application_1790656441704_0024 (state: RUNNING)
+26/09/30 14:04:24 INFO Client: Application report for application_1790656441704_0024 (state: FINISHED)
+26/09/30 14:04:24 INFO Client: 
+	 client token: Token { kind: YARN_CLIENT_TOKEN, service:  }
+	 diagnostics: N/A
+	 ApplicationMaster host: omlt-abyss-sdp-datanode-04.opsmon.sbt
+	 ApplicationMaster RPC port: 34234
+	 queue: default
+	 start time: 1790766176197
+	 final status: SUCCEEDED
+	 tracking URL: https://omlt-abyss-sdp-namenode-01.opsmon.sbt:8090/proxy/application_1790656441704_0024/
+	 user: pvm-omltp-sdp
+26/09/30 14:04:24 INFO ShutdownHookManager: Shutdown hook called
+26/09/30 14:04:24 INFO ShutdownHookManager: Deleting directory /tmp/spark-3676b6c5-25b4-42ff-8796-1308661b680e
+26/09/30 14:04:24 INFO ShutdownHookManager: Deleting directory /tmp/spark-15034618-d3ea-458c-8e21-e4fa73cbb256

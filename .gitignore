@@ -4,3 +4,5 @@ build/*
 build/libs/*
 !build/libs/orc-bench-all.jar
 dist/
+data/*.csv
+data/*.orc

@@ -2,7 +2,7 @@
 
 Пошаговый порядок тестов AUDEI/ORC-bench: параметры, очистка HDFS, проверки успеха, что забирать с HDFS.
 
-Связанные документы: [cluster_manual_runbook.md](cluster_manual_runbook.md), [audei-st-workload-mapping.md](audei-st-workload-mapping.md), [README.md](../README.md).
+Связанные документы: [cluster_manual_runbook.md](cluster_manual_runbook.md), [audei-st-workload-mapping.md](audei-st-workload-mapping.md), [hdfs-cleanup-before-l.md](hdfs-cleanup-before-l.md), [README.md](../README.md).
 
 ---
 
@@ -223,15 +223,35 @@ TARGET_SIZE_TB=0.02 SCENARIOS=audei \
 
 ---
 
-### Этап 6 — Hive H0–H4
+### Этап 6 — Hive H0–H4 (+ h2f)
+
+**Dual-SLA:** interactive ≤3 с — целевой engine **Spark**; Hive — archive/ST или post-tune после persistent-сессии.  
+Методика latency: [hive-latency-under-3s.md](hive-latency-under-3s.md).
 
 ```bash
+# Опционально: подтвердить session tax
+PROFILE=h2 ./scripts/hive/diagnose-session-tax.sh
+
+# Default SESSION_MODE=persistent → duration_ms = HS2 «Time taken»
 SUITE=audei LAYOUT=best_orc ./scripts/hive/run-hive-factor.sh h0
 SUITE=audei LAYOUT=best_orc ./scripts/hive/run-hive-factor.sh h1
-# … h2, h3 (LLAP cold), h4 (LLAP warm)
+SUITE=audei LAYOUT=best_orc ./scripts/hive/run-hive-factor.sh h2
+# A/B fetch path (не смешивать с Tez/LLAP SLA):
+SUITE=audei LAYOUT=best_orc ./scripts/hive/run-hive-factor.sh h2f
+
+# LLAP — только если preflight OK
+./scripts/hive/llap-preflight.sh
+SUITE=audei LAYOUT=best_orc ./scripts/hive/run-hive-factor.sh h3
+SUITE=audei LAYOUT=best_orc ./scripts/hive/run-hive-factor.sh h4
+
+# EXPLAIN prune checklist
+PROFILE=h2 ./scripts/hive/explain-audei.sh
+
+# Legacy A/B (~20 s wall-clock, как исторические отчёты):
+# SESSION_MODE=per_query SUITE=audei ./scripts/hive/run-hive-factor.sh h2
 ```
 
-**Успех:** CSV/логи Beeline без ошибок; external table читает тот же `layouts/best_orc/orc`.
+**Успех:** CSV в `result/hive/` без ошибок; в persistent-режиме в логе есть `METRIC hive_time_taken`; external table читает `layouts/best_orc/orc`.
 
 **Очистка:** нет (те же файлы).
 
@@ -263,12 +283,16 @@ TARGET_SIZE_TB=0.05 SCENARIOS=audei CACHE_STATE=cold \
 
 ### Этап 9 — Dataset L + SLA matrix
 
+Полная инструкция (что оставить/удалить, выгрузка отчётов **до** `rm`, keep-list):  
+**[hdfs-cleanup-before-l.md](hdfs-cleanup-before-l.md)**.
+
 ```bash
 # 1) Проверить место
 hdfs dfs -df -h
 hdfs dfs -du -h -s "$BASE"/layouts/*
 
-# 2) Оставить только нужное (минимум best_orc)
+# 2) Выгрузить reports/summary (+ best_orc raw) — затем оставить только best_orc (+ опц. b0)
+# см. hdfs-cleanup-before-l.md
 # hdfs dfs -rm -r -skipTrash "$BASE"/layouts/<losers>...
 
 # 3) Generate L
@@ -395,11 +419,11 @@ TARGET_SIZE_TB=0.02 SCENARIOS=audei ./scripts/run-factor.sh --layout=best_orc
 SUITE=audei ./scripts/hive/run-hive-factor.sh h0
 CONCURRENCY_LEVELS="9 18" SCENARIO=epk_eq_14d ./scripts/run-concurrency.sh
 
-# 8–9 L
+# 8–9 L — см. hdfs-cleanup-before-l.md (выгрузка → rm losers → L)
 hdfs dfs -du -h -s "$BASE"/layouts/*
 # rm losers…
 TARGET_SIZE_TB=0.1 SCENARIOS=audei ./scripts/run-factor.sh --layout=best_orc
 TARGET_SIZE_TB=0.1 ./scripts/run-sla-matrix.sh
 
-# 10 скачать reports (см. §5)
+# 10 скачать reports (см. §5 и hdfs-cleanup-before-l.md §5)
 ```

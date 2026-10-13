@@ -1,0 +1,12 @@
+source,scenario,format,spark_runtime,dataset_label,layout_id,engine,cache_state,runs,avg_duration_ms,p50_duration_ms,p95_duration_ms,p99_duration_ms,min_duration_ms,max_duration_ms,avg_selectivity,avg_bytes_read,avg_records_read,orc_bloom_columns,spark_version,avg_scan_ratio,sla_success_rate,avg_seconds_per_gb,query_category,sla_class,duration_group,rows_cap_ok_rate,passed
+benchmark,eq_filters,orc,spark32-orc,d1,d1,spark,cold,5,218.8,231.0,252.0,252.0,179,252,3.7907740127525715E-5,212415.0,37552.0,none,3.2.1.3.5.4.1-1,9.65951585364398E-6,1.0,1106.0175180246215,7_EQ,interactive,1_month,1.0,""
+benchmark,order_by_epk_day,orc,spark32-orc,d1,d1,spark,cold,5,220.4,171.0,411.0,411.0,154,411,0.0027322676723010473,132304.0,37552.0,none,3.2.1.3.5.4.1-1,6.0164893510369475E-6,1.0,1788.7040301850284,"",archive,1_month,0.0,""
+benchmark,epk_page,orc,spark32-orc,d1,d1,spark,cold,5,892.2,890.0,1117.0,1117.0,721,1117,0.0,5.67009162E8,1.3743895E7,none,3.2.1.3.5.4.1-1,0.025784591434222577,1.0,1.6895537489970927,7_EQ,interactive,1_month,1.0,""
+benchmark,epk_eq_14d,orc,spark32-orc,d1,d1,spark,cold,5,1275.4,1188.0,1697.0,1697.0,1106,1697,0.0,5.67009162E8,1.3743895E7,none,3.2.1.3.5.4.1-1,0.025784591434222577,1.0,2.41521727356074,7_EQ,interactive,1_month,1.0,""
+benchmark,epk_eq_1d,orc,spark32-orc,d1,d1,spark,cold,5,1240.6,1278.0,1556.0,1556.0,975,1556,0.0,5.67009162E8,1.3743895E7,none,3.2.1.3.5.4.1-1,0.025784591434222577,1.0,2.3493167238352317,7_EQ,interactive,1_month,1.0,""
+validation,row_count,orc,spark32-orc,-,default,spark,-,1,"","","","","","","","","","",3.2.1.3.5.4.1-1,"","","","","","","",true
+validation,low_cardinality_bounds,orc,spark32-orc,-,default,spark,-,1,"","","","","","","","","","",3.2.1.3.5.4.1-1,"","","","","","","",true
+validation,timestamp_range,orc,spark32-orc,-,default,spark,-,1,"","","","","","","","","","",3.2.1.3.5.4.1-1,"","","","","","","",true
+validation,log_format_distribution,orc,spark32-orc,-,default,spark,-,1,"","","","","","","","","","",3.2.1.3.5.4.1-1,"","","","","","","",true
+validation,log_message_structure,orc,spark32-orc,-,default,spark,-,1,"","","","","","","","","","",3.2.1.3.5.4.1-1,"","","","","","","",true
+validation,orc_bloom_filters,orc,spark32-orc,-,default,spark,-,1,"","","","","","","","","","",3.2.1.3.5.4.1-1,"","","","","","","",true
